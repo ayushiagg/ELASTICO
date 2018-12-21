@@ -16,12 +16,17 @@ class Elastico:
 			committee_size - number of nodes in a committee
 			global r - number of bits in random string 
 			epoch_randomness - r-bit random string generated at the end of previous epoch
-			global D - difficulty level , leading bits of O must have D 0's	
+			global D - difficulty level , leading bits of O must have D 0's	(keep w.r.t to hex)
 			IP - IP addr of a node
 			PK - public key of a node
 			global s - where 2^s is the number of committees
 			
 	"""
+	def __init__(self):
+		self.D = 20
+
+
+
 	def get_IP():
 		"""
 			for each node(processor) , get IP addr
@@ -36,13 +41,20 @@ class Elastico:
 			will return PK
 		"""
 		pass
-
-	
-	def search_nonce(epoch_randomness , IP , PK):
+ 
+ 
+	def compute_PoW(self , epoch_randomness , IP , PK):
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
-		pass
+		nonce = 0
+		while True: 
+			data =  {"IP" : IP , "PK" : PK , "epoch_randomness" : epoch_randomness , "nonce" : nonce}
+			data_string = json.dumps(data, sort_keys = True)
+			hash_val = sha256(data_string.encode()).hexdigest()
+			if hash_val.startswith('0' * D):
+				return hash_val
+			nonce += 1
 
 
 	def get_committeeid(PoW):
