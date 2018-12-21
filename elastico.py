@@ -7,24 +7,25 @@ class Elastico:
 			node - single processor
 			committee_id - committee to which a processor(node) belongs to
 			txn_block - block of txns that the committee will agree on
-			same_committee - list of nodes in the same committee
+			commitee_list - list of nodes in all committees
 			directory_committee - list of nodes in the directory committee
 			final_committee - list of nodes in the final committee
 			is_direcotory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
-			network_nodes - total nodes in the network
+			global network_nodes - total nodes in the network
 			committee_size - number of nodes in a committee
 			global r - number of bits in random string 
 			epoch_randomness - r-bit random string generated at the end of previous epoch
 			global D - difficulty level , leading bits of O must have D 0's	
 			IP - IP addr of a node
 			PK - public key of a node
-
+			global s - where 2^s is the number of committees
 			
 	"""
 	def get_IP():
 		"""
 			for each node(processor) , get IP addr
+			will return IP
 		"""
 		pass
 
@@ -32,24 +33,25 @@ class Elastico:
 	def get_PK():
 		"""
 			for each node, get public key
+			will return PK
 		"""
 		pass
 
 	
-	def search_nonce(epoch_randomness , IP, PK , D):
+	def search_nonce(epoch_randomness , IP , PK):
 		"""
-			returns hash which satisfies the difficulty challenge
+			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
 		pass
 
 
 	def get_committeeid(PoW):
 		"""
-			returns last s-bit of PoW as Identity
+			returns last s-bit of PoW as Identity : committee_id
 		"""	
 		pass
 
-	def form_committee():
+	def form_committee(committee_id):
 		"""
 			creates directory committee if not yet created otherwise informs all
 			the directory members
@@ -57,14 +59,14 @@ class Elastico:
 		pass
 
 
-	def BroadcastTo_Network():
+	def BroadcastTo_Network(network_nodes , data , type):
 		"""
 			Broadcast to the whole ntw
 		"""
 		pass
 
 	
-	def BroadcastTo_Committee(committee_id):
+	def BroadcastTo_Committee(committee_id, data , type):
 		"""
 			Broadcast to the particular committee id
 		"""	
@@ -94,7 +96,7 @@ class Elastico:
 
 	def getCommittee_members(committee_id):
 		"""
-			Returns all members which have this committee id
+			Returns all members which have this committee id : commitee_list[committee_id]
 		"""
 		pass
 
