@@ -75,7 +75,7 @@ class Elastico:
 
 	def FormDirectory_Committee():
 		"""
-			Create the first committee
+			Create the first committee: returns directory_committee is_direcotory
 		"""
 		pass
 
@@ -150,8 +150,9 @@ class Elastico:
 		pass
 
 
-	def BroadcastR():
+	def BroadcastR(Ri , network_nodes):
 		"""
+			broadcast Ri to all the network
 		"""
 		pass
 
