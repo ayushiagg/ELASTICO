@@ -43,12 +43,113 @@ class Elastico:
 		pass
 
 
-	def get_committeeid(O):
+	def get_committeeid(PoW):
 		"""
-			returns last s-bit
+			returns last s-bit of PoW as Identity
 		"""	
 		pass
 
-		
+	def form_committee():
+		"""
+			creates directory committee if not yet created otherwise informs all
+			the directory members
+		"""	
+		pass
 
+
+	def BroadcastTo_Network():
+		"""
+			Broadcast to the whole ntw
+		"""
+		pass
+
+	
+	def BroadcastTo_Committee(committee_id):
+		"""
+			Broadcast to the particular committee id
+		"""	
+		pass
+
+
+	def FormDirectory_Committee():
+		"""
+			Create the first committee
+		"""
+		pass
+
+
+	def runPBFT():
+		"""
+			Runs a Pbft instance for the intra-committee consensus
+		"""
+		pass
+
+
+	def sign(data):
+		"""
+			Sign the data i.e. signature
+		"""
+		pass
+
+
+	def getCommittee_members(committee_id):
+		"""
+			Returns all members which have this committee id
+		"""
+		pass
+
+
+	def Sendto_final(committee_id, signatures, txn_set, final_committee_id):
+		"""
+			Each committee member sends the signed value along with signatures to final committee
+		"""
+		pass
+
+
+	def union(data):
+		"""
+			Takes ordered set union of agreed values of committees
+		"""
+		pass
+
+
+	def validate_signs(signatures):
+		"""
+			validate the signatures, should be atleast c/2 + 1 signs
+		"""
+		pass
+
+
+	def Broadcast_signature(signature, signedVal):
+		"""
+			Send the signature after vaidation to complete network
+		"""
+		pass
+
+
+	def generate_randomstrings(r):
+		"""
+			Generate r-bit random strings
+		"""
+		pass
+
+
+	def getCommitment(R):
+		"""
+			generate commitment for random string R
+		"""
+		pass
+
+
+	def consistencyProtocol(set_of_Rs):
+		"""
+			Agrees on a single set of Hash values(S)
+		"""
+		pass
+
+
+	def BroadcastR():
+		"""
+		"""
+		pass
 
