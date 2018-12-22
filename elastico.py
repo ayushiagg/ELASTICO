@@ -30,7 +30,7 @@ class Elastico:
 		self.D = 20
 		self.IP = get_IP()
 		self.key = get_key()
-
+		self.s = 20
 
 	def get_IP(self):
 		"""
@@ -66,11 +66,15 @@ class Elastico:
 			nonce += 1
 
 
-	def get_committeeid(PoW):
+	def get_committeeid(self, PoW):
 		"""
 			returns last s-bit of PoW as Identity : committee_id
 		"""	
-		pass
+		bindigest = ''
+		for hashdig in PoW:
+			bindigest += "{:04b}".format(int(hashdig, 16))
+		identity = bindigest[-self.s:]
+		return int(identity, 2)
 
 
 	def form_committee(committee_id):
