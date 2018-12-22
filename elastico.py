@@ -1,4 +1,6 @@
 from hashlib import sha256
+from subprocess import check_output
+import json
 
 
 class Elastico:
@@ -24,16 +26,18 @@ class Elastico:
 	"""
 	def __init__(self):
 		self.D = 20
+		self.IP = get_IP()
 
 
-
-	def get_IP():
+	def get_IP(self):
 		"""
 			for each node(processor) , get IP addr
 			will return IP
 		"""
-		pass
-
+		ips = check_output(['hostname', '--all-ip-addresses'])
+		ips = ips.decode()
+		return ips.split(' ')[0]
+		
 
 	def get_PK():
 		"""
@@ -42,7 +46,7 @@ class Elastico:
 		"""
 		pass
  
- 
+
 	def compute_PoW(self , epoch_randomness , IP , PK):
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW
