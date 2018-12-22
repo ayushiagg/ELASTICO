@@ -32,6 +32,7 @@ class Elastico:
 		self.key = get_key()
 		self.s = 20
 
+
 	def get_IP(self):
 		"""
 			for each node(processor) , get IP addr
@@ -77,11 +78,12 @@ class Elastico:
 		return int(identity, 2)
 
 
-	def form_committee(committee_id):
+	def form_committee(PoW, committee_id):
 		"""
 			creates directory committee if not yet created otherwise informs all
 			the directory members
 		"""	
+		# ToDo : Implement verification of PoW(valid or not)
 		pass
 
 
@@ -182,3 +184,17 @@ class Elastico:
 		"""
 		pass
 
+def Run():
+	"""
+		run processors to compute PoW and form committees
+	"""
+	E = [[] for i in range(n)]
+	h = [[] for i in range(n)]
+	for i in range(n):
+		E[i] = Elastico()
+		h[i] = E[i].compute_PoW()
+		identity = E[i].get_committeeid(h[i])
+		E[i].form_committee(h[i] , identity)
+
+
+		
