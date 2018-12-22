@@ -3,6 +3,13 @@ from subprocess import check_output
 from Crypto.PublicKey import RSA
 import json
 
+global cur_directory
+cur_directory = []
+
+global committee_list
+commitee_list = dict()
+
+global network_nodes
 
 class Elastico:
 	"""
@@ -31,6 +38,7 @@ class Elastico:
 		self.IP = get_IP()
 		self.key = get_key()
 		self.s = 20
+		self.c = 3
 
 
 	def get_IP(self):
@@ -78,23 +86,44 @@ class Elastico:
 		return int(identity, 2)
 
 
-	def form_committee(PoW, committee_id):
+	def form_committee(self, PoW, committee_id):
 		"""
 			creates directory committee if not yet created otherwise informs all
 			the directory members
 		"""	
 		# ToDo : Implement verification of PoW(valid or not)
+		if len(cur_directory) < c:
+			cur_directory.append(self)
+			self.is_direcotory = True
+			# ToDo : Discuss regarding data
+			BroadcastTo_Network(self, )
+		else:
+			# ToDo : Send the above data only
+			Send_to_Directory()
 		pass
 
 
-	def BroadcastTo_Network(network_nodes , data , type):
+	def BroadcastTo_Network( data , type):
 		"""
 			Broadcast to the whole ntw
 		"""
 		pass
 
+	
+	def Send_to_Directory(data):
+		"""
+			
+		"""	
+		# Todo : Extract processor identifying information from data in identity and committee_id
+		info = ""
+		committee_id = ""
+		commitee_list[committee_id].append(info)
+		if len(commitee_list[committee_id]) >= c:
+			for i in  commitee_list[committee_id]:
+				BroadcastTo_Committee(i , commitee_list[committee_id] , type)			
+		pass
 
-	def BroadcastTo_Committee(committee_id, data , type):
+	def BroadcastTo_Committee(node, data , type):
 		"""
 			Broadcast to the particular committee id
 		"""	
@@ -178,7 +207,7 @@ class Elastico:
 		pass
 
 
-	def BroadcastR(Ri , network_nodes):
+	def BroadcastR(Ri):
 		"""
 			broadcast Ri to all the network
 		"""
