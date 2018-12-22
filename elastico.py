@@ -1,5 +1,6 @@
 from hashlib import sha256
 from subprocess import check_output
+from Crypto.PublicKey import RSA
 import json
 
 
@@ -20,13 +21,15 @@ class Elastico:
 			epoch_randomness - r-bit random string generated at the end of previous epoch
 			global D - difficulty level , leading bits of O must have D 0's	(keep w.r.t to hex)
 			IP - IP addr of a node
-			PK - public key of a node
+			key - public key and pvt key pair for a node
 			global s - where 2^s is the number of committees
 			
 	"""
+
 	def __init__(self):
 		self.D = 20
 		self.IP = get_IP()
+		self.key = get_key()
 
 
 	def get_IP(self):
@@ -37,20 +40,22 @@ class Elastico:
 		ips = check_output(['hostname', '--all-ip-addresses'])
 		ips = ips.decode()
 		return ips.split(' ')[0]
-		
 
-	def get_PK():
+
+	def get_key(self):
 		"""
 			for each node, get public key
 			will return PK
 		"""
-		pass
- 
+		key = RSA.generate(2048)
+		return key
 
-	def compute_PoW(self , epoch_randomness , IP , PK):
+
+	def compute_PoW(self , epoch_randomness , IP , key):
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
+		PK = key.publickey().exportKey().decode()
 		nonce = 0
 		while True: 
 			data =  {"IP" : IP , "PK" : PK , "epoch_randomness" : epoch_randomness , "nonce" : nonce}
@@ -67,6 +72,7 @@ class Elastico:
 		"""	
 		pass
 
+
 	def form_committee(committee_id):
 		"""
 			creates directory committee if not yet created otherwise informs all
@@ -81,7 +87,7 @@ class Elastico:
 		"""
 		pass
 
-	
+
 	def BroadcastTo_Committee(committee_id, data , type):
 		"""
 			Broadcast to the particular committee id
