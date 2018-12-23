@@ -14,7 +14,7 @@ c = 3
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 D = 5
 # r - number of bits in random string 
-r = 5 
+r = 5
 
 
 class Network:
@@ -65,7 +65,15 @@ class Network:
 		pass
 
 
-
+	def MulticastCommittee(self, commList):
+		"""
+			each node getting views of its committee members from directory members
+		"""
+		for iden in commList:
+			commMembers = commList[iden]
+			for member in commMembers:
+				# union of committe members views
+				member.committee_Members |= set(commMembers)
 
 class Elastico:
 	"""
@@ -79,6 +87,7 @@ class Elastico:
 			is_direcotory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
 			epoch_randomness - r-bit random string generated at the end of previous epoch
+			committee_Members - set of committee members in its own committee
 			IP - IP addr of a node
 			key - public key and pvt key pair for a node
 			
@@ -92,6 +101,7 @@ class Elastico:
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_list = dict()
+		self.committee_Members = set()
 		self.is_directory = False
 
 	def get_IP(self):
