@@ -23,12 +23,12 @@ r = 5
 # 		class for networking between nodes
 # 	"""
 
-def BroadcastTo_Network(data , type_):
+def BroadcastTo_Network(data, type_):
 	"""
 		Broadcast to the whole ntw
 	"""
+	# broadcast data obj as directory member to the network nodes
 	if type_ == "directoryMember":
-		# ToDo : Add to all members of network
 		for node in network_nodes:
 			if len(node.cur_directory) < c:
 				node.cur_directory.append( data )
@@ -40,7 +40,7 @@ def Send_to_Directory(data):
 	"""
 	# Todo : Extract processor identifying information from data in identity and committee_id
 
-	# Add in particular committee list of curent directory nodes the new processor
+	# Add the new processor in particular committee list of curent directory nodes
 	for node in data.cur_directory:
 		if len(node.commitee_list[data.identity]) < c:
 			node.commitee_list[data.identity].append(data)
@@ -116,11 +116,10 @@ class Elastico:
 
 	def initER(self):
 		"""
-			initialise epoch random string
+			initialise r-bit epoch random string
 		"""
 		randomnum = random.randint(0,2**r-1)
-		return ("{:0 " + str(r) +  "b}").format(randomnum)
-
+		return ("{:0 " + str(r) +  "b}").format(randomnum)		
 
 	def get_IP(self):
 		"""
@@ -184,7 +183,6 @@ class Elastico:
 		else:
 			# ToDo : Send the above data only
 			Send_to_Directory(self)
-		pass
 
 
 	def FormDirectory_Committee():
