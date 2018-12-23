@@ -11,6 +11,38 @@ commitee_list = dict()
 
 global network_nodes
 
+class Network:
+	"""
+		class for networking between nodes
+	"""
+	def BroadcastTo_Network( data , type):
+		"""
+			Broadcast to the whole ntw
+		"""
+		pass
+
+
+	def Send_to_Directory(data):
+		"""
+			Send about new nodes to directory committee members
+		"""
+		# Todo : Extract processor identifying information from data in identity and committee_id
+		info = ""
+		committee_id = ""
+		commitee_list[committee_id].append(info)
+		if len(commitee_list[committee_id]) >= c:
+			for i in  commitee_list[committee_id]:
+				BroadcastTo_Committee(i , commitee_list[committee_id] , type)
+		pass
+
+	def BroadcastTo_Committee(node, data , type):
+		"""
+			Broadcast to the particular committee id
+		"""
+		pass
+
+
+
 class Elastico:
 	"""
 		class members: 
@@ -96,37 +128,10 @@ class Elastico:
 			cur_directory.append(self)
 			self.is_direcotory = True
 			# ToDo : Discuss regarding data
-			BroadcastTo_Network(self, )
+			BroadcastTo_Network(self, "directoryMember")
 		else:
 			# ToDo : Send the above data only
 			Send_to_Directory()
-		pass
-
-
-	def BroadcastTo_Network( data , type):
-		"""
-			Broadcast to the whole ntw
-		"""
-		pass
-
-	
-	def Send_to_Directory(data):
-		"""
-			
-		"""	
-		# Todo : Extract processor identifying information from data in identity and committee_id
-		info = ""
-		committee_id = ""
-		commitee_list[committee_id].append(info)
-		if len(commitee_list[committee_id]) >= c:
-			for i in  commitee_list[committee_id]:
-				BroadcastTo_Committee(i , commitee_list[committee_id] , type)			
-		pass
-
-	def BroadcastTo_Committee(node, data , type):
-		"""
-			Broadcast to the particular committee id
-		"""	
 		pass
 
 
