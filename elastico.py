@@ -119,8 +119,7 @@ class Elastico:
 			initialise r-bit epoch random string
 		"""
 		randomnum = random.randint(0,2**r-1)
-		return ("{:0 " + str(r) +  "b}").format(randomnum)		
-
+		return ("{:0" + str(r) +  "b}").format(randomnum)
 	def get_IP(self):
 		"""
 			for each node(processor) , get IP addr
@@ -267,6 +266,15 @@ class Elastico:
 			broadcast Ri to all the network
 		"""
 		pass
+
+
+	def xor_R(set_of_Rs):
+		xor_val = 0
+		for R in set_of_Rs:
+			xor_val = xor_val ^ int(R, 2)
+
+		return ("{:0" + str(r) +  "b}").format(xor_val)
+
 
 def Run():
 	"""
