@@ -3,12 +3,19 @@ from subprocess import check_output
 from Crypto.PublicKey import RSA
 import json
 
-global committee_list
-commitee_list = dict()
-
-global network_nodes
-
+# network_nodes - All objects of nodes in the network
+global network_nodes, n, s, c, D, r
+# n : number of processors
 n = 10
+# s - where 2^s is the number of committees
+s = 20
+# c - size of committee
+c = 3
+# D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
+D = 5
+# r - number of bits in random string 
+r = 5 
+
 
 class Network:
 	"""
@@ -23,7 +30,6 @@ class Network:
 			for node in network_nodes:
 				if len(node.cur_directory) < c:
 					node.cur_directory.append( data )
-		pass
 
 
 	def Send_to_Directory(self, data):
@@ -34,8 +40,22 @@ class Network:
 
 		# Add in particular committee list of curent directory nodes the new processor
 		for node in data.cur_directory:
-			node.commitee_list[data.identity].append(data)
-		pass
+			if len(node.commitee_list[data.identity]) < c:
+				node.commitee_list[data.identity].append(data)
+
+
+		for node in data.cur_directory:
+			commList = node.commitee_list
+			flag = 0
+			for iden in commList:
+				val = commList[iden]
+				if len(val) < c:
+					flag = 1
+					break
+
+			if flag == 0:
+				# Send commList[iden] to members of commList[iden]
+				MulticastCommittee(commList)
 
 
 	def BroadcastTo_Committee(self, node, data , type_):
@@ -43,6 +63,7 @@ class Network:
 			Broadcast to the particular committee id
 		"""
 		pass
+
 
 
 
@@ -57,26 +78,21 @@ class Elastico:
 			final_committee - list of nodes in the final committee
 			is_direcotory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
-			global network_nodes - total nodes in the network
-			committee_size - number of nodes in a committee
-			global r - number of bits in random string 
 			epoch_randomness - r-bit random string generated at the end of previous epoch
-			global D - difficulty level , leading bits of O must have D 0's	(keep w.r.t to hex)
 			IP - IP addr of a node
 			key - public key and pvt key pair for a node
-			global s - where 2^s is the number of committees
+			
 			
 	"""
 
 	def __init__(self):
-		self.D = 20
-		self.IP = get_IP()
-		self.key = get_key()
-		self.s = 20
-		self.c = 3
+		self.IP = self.get_IP()
+		self.key = self.get_key()
 		self.PoW = ""
 		self.cur_directory = []
 		self.identity = ""
+		self.committee_list = dict()
+		self.is_directory = False
 
 	def get_IP(self):
 		"""
@@ -120,7 +136,7 @@ class Elastico:
 		bindigest = ''
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
-		identity = bindigest[-self.s:]
+		identity = bindigest[-s:]
 		self.identity = int(identity, 2)
 		return int(identity, 2)
 
@@ -132,7 +148,7 @@ class Elastico:
 		"""	
 		# ToDo : Implement verification of PoW(valid or not)
 		if len(self.cur_directory) < c:
-			self.is_direcotory = True
+			self.is_directory = True
 			# ToDo : Discuss regarding data
 			BroadcastTo_Network(self, "directoryMember")
 		else:
@@ -238,4 +254,3 @@ def Run():
 		E[i].form_committee(h[i] , identity)
 
 
-		
