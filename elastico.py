@@ -31,13 +31,12 @@ class Network:
 			Send about new nodes to directory committee members
 		"""
 		# Todo : Extract processor identifying information from data in identity and committee_id
-		info = ""
-		committee_id = ""
-		commitee_list[committee_id].append(info)
-		if len(commitee_list[committee_id]) >= c:
-			for i in  commitee_list[committee_id]:
-				BroadcastTo_Committee(i , commitee_list[committee_id] , type_)
+
+		# Add in particular committee list of curent directory nodes the new processor
+		for node in data.cur_directory:
+			node.commitee_list[data.identity].append(data)
 		pass
+
 
 	def BroadcastTo_Committee(self, node, data , type_):
 		"""
@@ -77,7 +76,7 @@ class Elastico:
 		self.c = 3
 		self.PoW = ""
 		self.cur_directory = []
-
+		self.identity = ""
 
 	def get_IP(self):
 		"""
@@ -122,6 +121,7 @@ class Elastico:
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
 		identity = bindigest[-self.s:]
+		self.identity = int(identity, 2)
 		return int(identity, 2)
 
 
@@ -137,7 +137,7 @@ class Elastico:
 			BroadcastTo_Network(self, "directoryMember")
 		else:
 			# ToDo : Send the above data only
-			Send_to_Directory()
+			Send_to_Directory(self, "")
 		pass
 
 
