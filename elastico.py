@@ -17,63 +17,65 @@ D = 5
 r = 5
 
 
-class Network:
+# class Network:
+# 	"""
+# 		class for networking between nodes
+# 	"""
+
+def BroadcastTo_Network(data , type_):
 	"""
-		class for networking between nodes
+		Broadcast to the whole ntw
 	"""
-	def BroadcastTo_Network(self, data , type_):
-		"""
-			Broadcast to the whole ntw
-		"""
-		if type_ == "directoryMember":
-			# ToDo : Add to all members of network
-			for node in network_nodes:
-				if len(node.cur_directory) < c:
-					node.cur_directory.append( data )
+	if type_ == "directoryMember":
+		# ToDo : Add to all members of network
+		for node in network_nodes:
+			if len(node.cur_directory) < c:
+				node.cur_directory.append( data )
 
 
-	def Send_to_Directory(self, data):
-		"""
-			Send about new nodes to directory committee members
-		"""
-		# Todo : Extract processor identifying information from data in identity and committee_id
+def Send_to_Directory(data):
+	"""
+		Send about new nodes to directory committee members
+	"""
+	# Todo : Extract processor identifying information from data in identity and committee_id
 
-		# Add in particular committee list of curent directory nodes the new processor
-		for node in data.cur_directory:
-			if len(node.commitee_list[data.identity]) < c:
-				node.commitee_list[data.identity].append(data)
-
-
-		for node in data.cur_directory:
-			commList = node.commitee_list
-			flag = 0
-			for iden in commList:
-				val = commList[iden]
-				if len(val) < c:
-					flag = 1
-					break
-
-			if flag == 0:
-				# Send commList[iden] to members of commList[iden]
-				MulticastCommittee(commList)
+	# Add in particular committee list of curent directory nodes the new processor
+	for node in data.cur_directory:
+		if len(node.commitee_list[data.identity]) < c:
+			node.commitee_list[data.identity].append(data)
 
 
-	def BroadcastTo_Committee(self, node, data , type_):
-		"""
-			Broadcast to the particular committee id
-		"""
-		pass
-
-
-	def MulticastCommittee(self, commList):
-		"""
-			each node getting views of its committee members from directory members
-		"""
+	for node in data.cur_directory:
+		commList = node.commitee_list
+		flag = 0
 		for iden in commList:
-			commMembers = commList[iden]
-			for member in commMembers:
-				# union of committe members views
-				member.committee_Members |= set(commMembers)
+			val = commList[iden]
+			if len(val) < c:
+				flag = 1
+				break
+
+		if flag == 0:
+			# Send commList[iden] to members of commList[iden]
+			MulticastCommittee(commList)
+
+
+def BroadcastTo_Committee(node, data , type_):
+	"""
+		Broadcast to the particular committee id
+	"""
+	pass
+
+
+def MulticastCommittee(commList):
+	"""
+		each node getting views of its committee members from directory members
+	"""
+	for iden in commList:
+		commMembers = commList[iden]
+		for member in commMembers:
+			# union of committe members views
+			member.committee_Members |= set(commMembers)
+
 
 class Elastico:
 	"""
@@ -101,6 +103,7 @@ class Elastico:
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_list = dict()
+		# only when it is not the member of directory committee
 		self.committee_Members = set()
 		self.is_directory = False
 
@@ -163,7 +166,7 @@ class Elastico:
 			BroadcastTo_Network(self, "directoryMember")
 		else:
 			# ToDo : Send the above data only
-			Send_to_Directory(self, "")
+			Send_to_Directory(self)
 		pass
 
 
