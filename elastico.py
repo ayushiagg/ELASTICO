@@ -2,6 +2,7 @@ from hashlib import sha256
 from subprocess import check_output
 from Crypto.PublicKey import RSA
 import json
+import random
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r
@@ -81,7 +82,7 @@ class Elastico:
 	"""
 		class members: 
 			node - single processor
-			committee_id - committee to which a processor(node) belongs to
+			identity - committee to which a processor(node) belongs to
 			txn_block - block of txns that the committee will agree on
 			commitee_list - list of nodes in all committees
 			directory_committee - list of nodes in the directory committee
@@ -90,9 +91,10 @@ class Elastico:
 			is_final - whether the node belongs to final committee or not
 			epoch_randomness - r-bit random string generated at the end of previous epoch
 			committee_Members - set of committee members in its own committee
-			IP - IP addr of a node
-			key - public key and pvt key pair for a node
-			
+			IP - IP address of a node
+			key - public key and private key pair for a node
+			cur_directory - list of directory members in view of the node
+			PoW - 256 bit hash computed by the node
 			
 	"""
 
@@ -102,10 +104,23 @@ class Elastico:
 		self.PoW = ""
 		self.cur_directory = []
 		self.identity = ""
+		# only when this node is the member of directory committee
 		self.committee_list = dict()
-		# only when it is not the member of directory committee
+		# only when this node is not the member of directory committee
 		self.committee_Members = set()
 		self.is_directory = False
+		self.is_final = False
+		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
+		self.epoch_randomness = self.initER()
+
+
+	def initER(self):
+		"""
+			initialise epoch random string
+		"""
+		randomnum = random.randint(0,2**r-1)
+		return ("{:0 " + str(r) +  "b}").format(randomnum)
+
 
 	def get_IP(self):
 		"""
@@ -126,11 +141,13 @@ class Elastico:
 		return key
 
 
-	def compute_PoW(self , epoch_randomness , IP , key):
+	def compute_PoW(self):
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
-		PK = key.publickey().exportKey().decode()
+		PK = self.key.publickey().exportKey().decode()
+		IP = self.IP
+		epoch_randomness = self.epoch_randomness
 		nonce = 0
 		while True: 
 			data =  {"IP" : IP , "PK" : PK , "epoch_randomness" : epoch_randomness , "nonce" : nonce}
