@@ -3,26 +3,30 @@ from subprocess import check_output
 from Crypto.PublicKey import RSA
 import json
 
-global cur_directory
-cur_directory = []
-
 global committee_list
 commitee_list = dict()
 
 global network_nodes
 
+n = 10
+
 class Network:
 	"""
 		class for networking between nodes
 	"""
-	def BroadcastTo_Network( data , type):
+	def BroadcastTo_Network(self, data , type_):
 		"""
 			Broadcast to the whole ntw
 		"""
+		if type_ == "directoryMember":
+			# ToDo : Add to all members of network
+			for node in network_nodes:
+				if len(node.cur_directory) < c:
+					node.cur_directory.append( data )
 		pass
 
 
-	def Send_to_Directory(data):
+	def Send_to_Directory(self, data):
 		"""
 			Send about new nodes to directory committee members
 		"""
@@ -32,10 +36,10 @@ class Network:
 		commitee_list[committee_id].append(info)
 		if len(commitee_list[committee_id]) >= c:
 			for i in  commitee_list[committee_id]:
-				BroadcastTo_Committee(i , commitee_list[committee_id] , type)
+				BroadcastTo_Committee(i , commitee_list[committee_id] , type_)
 		pass
 
-	def BroadcastTo_Committee(node, data , type):
+	def BroadcastTo_Committee(self, node, data , type_):
 		"""
 			Broadcast to the particular committee id
 		"""
@@ -71,6 +75,8 @@ class Elastico:
 		self.key = get_key()
 		self.s = 20
 		self.c = 3
+		self.PoW = ""
+		self.cur_directory = []
 
 
 	def get_IP(self):
@@ -103,6 +109,7 @@ class Elastico:
 			data_string = json.dumps(data, sort_keys = True)
 			hash_val = sha256(data_string.encode()).hexdigest()
 			if hash_val.startswith('0' * D):
+				self.PoW = hash_val
 				return hash_val
 			nonce += 1
 
@@ -124,8 +131,7 @@ class Elastico:
 			the directory members
 		"""	
 		# ToDo : Implement verification of PoW(valid or not)
-		if len(cur_directory) < c:
-			cur_directory.append(self)
+		if len(self.cur_directory) < c:
 			self.is_direcotory = True
 			# ToDo : Discuss regarding data
 			BroadcastTo_Network(self, "directoryMember")
@@ -223,6 +229,7 @@ def Run():
 		run processors to compute PoW and form committees
 	"""
 	E = [[] for i in range(n)]
+	network_nodes = E
 	h = [[] for i in range(n)]
 	for i in range(n):
 		E[i] = Elastico()
