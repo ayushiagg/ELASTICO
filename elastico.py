@@ -264,6 +264,7 @@ class Elastico:
 		"""
 			Generate r-bit random strings
 		"""
+
 		pass
 
 
@@ -271,7 +272,9 @@ class Elastico:
 		"""
 			generate commitment for random string R
 		"""
-		pass
+		commitment = SHA256.new()
+		commitment.update(R.encode())
+		return commitment.hexdigest()
 
 
 	def consistencyProtocol(set_of_Rs):
@@ -313,5 +316,4 @@ def Run():
 		h[i] = E[i].compute_PoW()
 		identity = E[i].get_committeeid(h[i])
 		E[i].form_committee(h[i] , identity)
-
 
