@@ -269,8 +269,13 @@ class Elastico:
 
 
 	def xor_R(set_of_Rs):
+		"""
+			find xor of any random c/2 + 1 r-bit strings
+		"""
+		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this
+		randomset = random.sample(set_of_Rs , c//2 + 1)
 		xor_val = 0
-		for R in set_of_Rs:
+		for R in randomset:
 			xor_val = xor_val ^ int(R, 2)
 
 		return ("{:0" + str(r) +  "b}").format(xor_val)
