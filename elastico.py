@@ -1,6 +1,8 @@
 from hashlib import sha256
 from subprocess import check_output
 from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA256
 import json
 import random
 
@@ -120,6 +122,8 @@ class Elastico:
 		"""
 		randomnum = random.randint(0,2**r-1)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
+
+
 	def get_IP(self):
 		"""
 			for each node(processor) , get IP addr
@@ -184,13 +188,6 @@ class Elastico:
 			Send_to_Directory(self)
 
 
-	def FormDirectory_Committee():
-		"""
-			Create the first committee: returns directory_committee is_direcotory
-		"""
-		pass
-
-
 	def runPBFT():
 		"""
 			Runs a Pbft instance for the intra-committee consensus
@@ -198,11 +195,18 @@ class Elastico:
 		pass
 
 
-	def sign(data):
+	def sign(self,data):
 		"""
 			Sign the data i.e. signature
 		"""
-		pass
+		# make sure that data is string or not
+		if type(data) is not str:
+			data = str(data)
+		digest = SHA256.new()
+		digest.update(data.encode())
+		signer = PKCS1_v1_5.new(self.key)
+		signature = signer.sign(digest)
+		return signature
 
 
 	def getCommittee_members(committee_id):
