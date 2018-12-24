@@ -209,6 +209,22 @@ class Elastico:
 		return signature
 
 
+	def verify_sign(self, signature, data, publickey):
+		"""
+			verify whether signature is valid or not 
+			if public key is not key object then create a key object
+		"""
+
+		if type(data) is not str:
+			data = str(data)
+		if type(publickey) is bytes:
+			publickey = RSA.importKey(publickey)
+		digest = SHA256.new()
+		digest.update(data.encode())
+		verifier = PKCS1_v1_5.new(publickey)
+		return verifier.verify(digest,signature)
+
+
 	def getCommittee_members(committee_id):
 		"""
 			Returns all members which have this committee id : commitee_list[committee_id]
