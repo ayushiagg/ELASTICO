@@ -42,3 +42,31 @@ class PBFT:
         if self.state == PBFT_STATES["None"]:
             # Do PRE-PREPARE
             pass
+
+    def verify_request(self, msg):
+        """
+            Verify the request messgar
+        """
+        pass
+
+    def Pre_Prepare(self, msg):
+        """
+            Send Pre-Prepare msgs
+        """
+        pass
+
+    def verify_pre_prepare(self, msg):
+        """
+        """
+        pass
+
+    def Prepare(self, msg):
+        """
+            Send Prepare msgs
+        """
+        pass
+
+    def verify_prepare(self, msg):
+        """
+        """
+        pass
