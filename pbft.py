@@ -11,8 +11,34 @@ class PBFT:
         within a committee.
     """
 
-    def __init__(self):
+    def __init__(self, blockChain):
         """
         """
+        self.blockChain = blockChain
+        self.node = blockChain.node
+        self.pendingBlocks = {}
+        self.prepareInfo = None
+        self.commitInfo = {}
+        self.state = PBFT_STATES["NONE"]
+        pass
 
-    pass
+    def has_block(self, block_hash):
+        if block_hash in self.pendingBlocks:
+            return True
+        else:
+            return False
+
+    def is_busy(self):
+        if self.state == PBFT_STATES["None"]:
+            return False
+        else:
+            return True
+
+    def add_block(self, block):
+        # add block hash to pending blocks
+        blockhash = block.get_hash()
+        self.pendingBlocks[blockhash] = block
+
+        if self.state == PBFT_STATES["None"]:
+            # Do PRE-PREPARE
+            pass
