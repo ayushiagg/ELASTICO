@@ -45,7 +45,9 @@ class PBFT:
 
     def verify_request(self, msg):
         """
-            Verify the request messgar
+            Verify the request message m
+            m := <c, d, t>
+            where c - client id, d - data, t - timestamp
         """
         pass
 
@@ -68,5 +70,22 @@ class PBFT:
 
     def verify_prepare(self, msg):
         """
+        """
+        pass
+
+    def Commit(self, msg):
+        """
+            Send Commit msgs
+        """
+        pass
+
+    def verify_commit(self, msg):
+        """
+        """
+        pass
+
+    def execute(self, msg):
+        """
+            Execute the request and send reply to client
         """
         pass
