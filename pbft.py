@@ -22,6 +22,16 @@ class PBFT:
         self.state = PBFT_STATES["NONE"]
         pass
 
+    def changeState(self):
+        if self.state == PBFT_STATES["NONE"]:
+            self.state = PBFT_STATES["PRE-PREPARE"]
+        elif self.state == PBFT_STATES["PRE-PREPARE"]:
+            self.state = PBFT_STATES["PREPARE"]
+        elif self.state == PBFT_STATES["PREPARE"]:
+            self.state = PBFT_STATES["COMMIT"]
+        else:
+            pass
+
     def has_block(self, block_hash):
         if block_hash in self.pendingBlocks:
             return True
@@ -87,5 +97,7 @@ class PBFT:
     def execute(self, msg):
         """
             Execute the request and send reply to client
+            < v, t, c, i, r>
+            where v = viewId, t = timestamp, c = client id, i = Peer(node) id, r = result of request
         """
         pass
