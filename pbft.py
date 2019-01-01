@@ -108,26 +108,32 @@ class PBFT:
         """
         if self.state == PBFT_STATES["NONE"]:
             # verify the pre-prepare message
-            result = self.verify_pre_prepare(msg)
+            verified = self.verify_pre_prepare(msg)
             if verified :
-                changeState()
+                self.changeState()
                 # create prepare msg
                 prepare_msg = ""
                 # send prepare msgs to all
         elif self.state == PBFT_STATES["PRE-PREPARE"]:
             # verify the prepare message
-            result = self.verify_prepare(msg)
-            if condition satisfied:
-                changeState()
-                # create prepare msg
-                commit_msg = ""
-                # send commit msgs to all
+            verified = self.verify_prepare(msg)
+            if verified:
+                # Increase prepare counts if this is not counted before
+                # Msg should have signer's info
+                if prepare_counts > PBFT_F:
+                    self.changeState()
+                    # create prepare msg
+                    commit_msg = ""
+                    # send commit msgs to all
         elif self.state == PBFT_STATES["PREPARE"]:
             # verify the commit message
-            result = self.verify_prepare(msg)
-            if condition satisfied:
-                changeState()
-                # Execute request's operation
-                execute()
-                # send reply msg to client
-                reply_msg = ""
+            verified = self.verify_prepare(msg)
+            if verified:
+                # Increase commit counts if this is not counted before
+                # Msg should have signer's info
+                if commit_counts > PBFT_F:
+                    self.changeState()
+                    # Execute request's operation
+                    execute()
+                    # send reply msg to client
+                    reply_msg = ""
