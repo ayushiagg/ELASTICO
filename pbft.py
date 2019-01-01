@@ -69,6 +69,7 @@ class PBFT:
 
     def verify_pre_prepare(self, msg):
         """
+            Verify pre-prepare msgs
         """
         pass
 
@@ -101,3 +102,32 @@ class PBFT:
             where v = viewId, t = timestamp, c = client id, i = Peer(node) id, r = result of request
         """
         pass
+
+    def process_message(self, msg):
+        """
+        """
+        if self.state == PBFT_STATES["NONE"]:
+            # verify the pre-prepare message
+            result = self.verify_pre_prepare(msg)
+            if verified :
+                changeState()
+                # create prepare msg
+                prepare_msg = ""
+                # send prepare msgs to all
+        elif self.state == PBFT_STATES["PRE-PREPARE"]:
+            # verify the prepare message
+            result = self.verify_prepare(msg)
+            if condition satisfied:
+                changeState()
+                # create prepare msg
+                commit_msg = ""
+                # send commit msgs to all
+        elif self.state == PBFT_STATES["PREPARE"]:
+            # verify the commit message
+            result = self.verify_prepare(msg)
+            if condition satisfied:
+                changeState()
+                # Execute request's operation
+                execute()
+                # send reply msg to client
+                reply_msg = ""
