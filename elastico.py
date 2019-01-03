@@ -30,6 +30,10 @@ def BroadcastTo_Network(data, type_):
 		Broadcast to the whole ntw
 	"""
 	# broadcast data obj as directory member to the network nodes
+        # comment: no if statements
+        # for each instance of Elastico, create a receive(self, msg) method
+        # this function will just call node.receive(msg)
+        # inside msg, you will need to have a message type, and message data.
 	if type_ == "directoryMember":
 		for node in network_nodes:
 			if len(node.cur_directory) < c:
@@ -120,6 +124,8 @@ class Elastico:
 		"""
 			initialise r-bit epoch random string
 		"""
+                # minor comment: this must be cryptographically secure, but this is not.
+                # might want to replace this with reads from /dev/urandom.
 		randomnum = random.randint(0,2**r-1)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -129,6 +135,8 @@ class Elastico:
 			for each node(processor) , get IP addr
 			will return IP
 		"""
+                # comment: use random strings instead of IP address.
+                # you could even have the strings be generated in the IP addr format.
 		ips = check_output(['hostname', '--all-ip-addresses'])
 		ips = ips.decode()
 		return ips.split(' ')[0]
@@ -153,6 +161,10 @@ class Elastico:
 		nonce = 0
 		while True: 
 			data =  {"IP" : IP , "PK" : PK , "epoch_randomness" : epoch_randomness , "nonce" : nonce}
+                        # minor comment: create a sha256 object by calling hashlib.sha256()
+                        # then repeatedly call sha256.update(...) with the things that need to be hashed together.
+                        # finally extract digest by calling sha256.digest()
+                        # don't convert to json and then to string
 			data_string = json.dumps(data, sort_keys = True)
 			hash_val = sha256(data_string.encode()).hexdigest()
 			if hash_val.startswith('0' * D):
