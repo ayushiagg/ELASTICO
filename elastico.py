@@ -16,7 +16,7 @@ s = 20
 # c - size of committee
 c = 3
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 5
+D = 2
 # r - number of bits in random string 
 r = 5
 
@@ -153,7 +153,7 @@ class Elastico:
 			ip += str(random_gen(8))
 			ip += "."
 		ip = ip[ : -1]
-		return ips
+		return ip
 
 	def get_key(self):
 		"""
@@ -173,14 +173,17 @@ class Elastico:
 		epoch_randomness = self.epoch_randomness
 		nonce = 0
 		while True: 
-			data =  {"IP" : IP , "PK" : PK , "epoch_randomness" : epoch_randomness , "nonce" : nonce}
                         # minor comment: create a sha256 object by calling hashlib.sha256()
                         # then repeatedly call sha256.update(...) with the things that need to be hashed together.
                         # finally extract digest by calling sha256.digest()
                         # don't convert to json and then to string
-                        # bug is possible in this, find and fix it.
-			data_string = json.dumps(data, sort_keys = True)
-			hash_val = sha256(data_string.encode()).hexdigest()
+                        # bug is possible in this, find and fix it.			
+			digest = SHA256.new()
+			digest.update(IP.encode())
+			digest.update(PK.encode())
+			digest.update(epoch_randomness.encode())
+			digest.update(str(nonce).encode())
+			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
 				self.PoW = hash_val
 				return hash_val
