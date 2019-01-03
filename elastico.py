@@ -145,10 +145,15 @@ class Elastico:
 		"""
                 # comment: use random strings instead of IP address.
                 # you could even have the strings be generated in the IP addr format.
-		ips = check_output(['hostname', '--all-ip-addresses'])
-		ips = ips.decode()
-		return ips.split(' ')[0]
-
+		# ips = check_output(['hostname', '--all-ip-addresses'])
+		# ips = ips.decode()
+		# return ips.split(' ')[0]
+		ip=""
+		for i in range(4):
+			ip += str(random_gen(8))
+			ip += "."
+		ip = ip[ : -1]
+		return ips
 
 	def get_key(self):
 		"""
