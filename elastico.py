@@ -5,6 +5,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 import json
 import random
+from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r
@@ -24,6 +25,13 @@ r = 5
 # 	"""
 # 		class for networking between nodes
 # 	"""
+
+def random_gen(size):
+	# with open("/dev/urandom", 'rb') as f:
+	# 	return int.from_bytes(f.read(4), 'big')
+	random_num = SystemRandom().getrandbits(size)
+	return random_num
+
 
 def BroadcastTo_Network(data, type_):
 	"""
@@ -126,7 +134,7 @@ class Elastico:
 		"""
                 # minor comment: this must be cryptographically secure, but this is not.
                 # might want to replace this with reads from /dev/urandom.
-		randomnum = random.randint(0,2**r-1)
+		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
 
@@ -165,6 +173,7 @@ class Elastico:
                         # then repeatedly call sha256.update(...) with the things that need to be hashed together.
                         # finally extract digest by calling sha256.digest()
                         # don't convert to json and then to string
+                        # bug is possible in this, find and fix it.
 			data_string = json.dumps(data, sort_keys = True)
 			hash_val = sha256(data_string.encode()).hexdigest()
 			if hash_val.startswith('0' * D):
