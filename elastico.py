@@ -10,13 +10,13 @@ from secrets import SystemRandom
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r
 # n : number of processors
-n = 10
+n = 60
 # s - where 2^s is the number of committees
 s = 20
 # c - size of committee
 c = 3
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 2
+D = 10
 # r - number of bits in random string 
 r = 5
 
@@ -38,14 +38,15 @@ def BroadcastTo_Network(data, type_):
 		Broadcast to the whole ntw
 	"""
 	# broadcast data obj as directory member to the network nodes
-        # comment: no if statements
-        # for each instance of Elastico, create a receive(self, msg) method
-        # this function will just call node.receive(msg)
-        # inside msg, you will need to have a message type, and message data.
-	if type_ == "directoryMember":
-		for node in network_nodes:
-			if len(node.cur_directory) < c:
-				node.cur_directory.append( data )
+		# comment: no if statements
+		# for each instance of Elastico, create a receive(self, msg) method
+		# this function will just call node.receive(msg)
+		# inside msg, you will need to have a message type, and message data.
+	msg = {"type" : type_ , "data" : data}
+	for node in network_nodes:
+		node.receive(msg)
+		# if len(node.cur_directory) < c:
+		# 	node.cur_directory.append(data)
 
 
 def Send_to_Directory(data):
@@ -132,8 +133,8 @@ class Elastico:
 		"""
 			initialise r-bit epoch random string
 		"""
-                # minor comment: this must be cryptographically secure, but this is not.
-                # might want to replace this with reads from /dev/urandom.
+				# minor comment: this must be cryptographically secure, but this is not.
+				# might want to replace this with reads from /dev/urandom.
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -143,8 +144,8 @@ class Elastico:
 			for each node(processor) , get IP addr
 			will return IP
 		"""
-                # comment: use random strings instead of IP address.
-                # you could even have the strings be generated in the IP addr format.
+				# comment: use random strings instead of IP address.
+				# you could even have the strings be generated in the IP addr format.
 		# ips = check_output(['hostname', '--all-ip-addresses'])
 		# ips = ips.decode()
 		# return ips.split(' ')[0]
@@ -173,11 +174,11 @@ class Elastico:
 		epoch_randomness = self.epoch_randomness
 		nonce = 0
 		while True: 
-                        # minor comment: create a sha256 object by calling hashlib.sha256()
-                        # then repeatedly call sha256.update(...) with the things that need to be hashed together.
-                        # finally extract digest by calling sha256.digest()
-                        # don't convert to json and then to string
-                        # bug is possible in this, find and fix it.			
+						# minor comment: create a sha256 object by calling hashlib.sha256()
+						# then repeatedly call sha256.update(...) with the things that need to be hashed together.
+						# finally extract digest by calling sha256.digest()
+						# don't convert to json and then to string
+						# bug is possible in this, find and fix it.			
 			digest = SHA256.new()
 			digest.update(IP.encode())
 			digest.update(PK.encode())
@@ -216,6 +217,14 @@ class Elastico:
 			# ToDo : Send the above data only
 			Send_to_Directory(self)
 
+
+	def receive(self, msg):
+		"""
+			method to recieve messages for a node
+		"""
+		if msg["type"] == "directoryMember":
+			if len(self.cur_directory) < c:
+				self.cur_directory.append(msg["data"])
 
 	def runPBFT():
 		"""
