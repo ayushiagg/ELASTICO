@@ -339,7 +339,7 @@ class Elastico:
 		pass
 
 
-	def xor_R(set_of_Rs):
+	def xor_R(self, set_of_Rs):
 		"""
 			find xor of any random c/2 + 1 r-bit strings
 		"""
@@ -348,8 +348,8 @@ class Elastico:
 		xor_val = 0
 		for R in randomset:
 			xor_val = xor_val ^ int(R, 2)
-
-		return ("{:0" + str(r) +  "b}").format(xor_val)
+		self.epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
 
 def Run():
