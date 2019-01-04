@@ -1,10 +1,7 @@
-from hashlib import sha256
 from subprocess import check_output
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
-import json
-import random
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
@@ -334,7 +331,7 @@ class Elastico:
 			find xor of any random c/2 + 1 r-bit strings
 		"""
 		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this
-		randomset = random.sample(set_of_Rs , c//2 + 1)
+		randomset = SystemRandom().sample(set_of_Rs , c//2 + 1)
 		xor_val = 0
 		for R in randomset:
 			xor_val = xor_val ^ int(R, 2)
