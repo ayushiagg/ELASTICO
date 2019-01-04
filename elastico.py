@@ -182,8 +182,21 @@ class Elastico:
 			bindigest += "{:04b}".format(int(hashdig, 16))
 		identity = bindigest[-s:]
 		self.committee_id = int(identity, 2)
-
 		return int(identity, 2)
+
+	def form_identity(self):
+		"""
+			identity formation for a node
+			identity consists of public key, ip, committee id
+		"""
+		if self.identity == "":
+			PK = self.key.publickey().exportKey().decode()
+			if self.committee_id == "":
+				if self.PoW == "":
+					self.compute_PoW()
+				self.get_committeeid(self.PoW)
+			self.identity = Identity(self.IP, PK, self.committee_id)
+		return self.identity
 
 
 	def form_committee(self, PoW, committee_id):
