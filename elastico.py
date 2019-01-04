@@ -64,6 +64,15 @@ def MulticastCommittee(commList):
 			# union of committe members views
 			member.committee_Members |= set(commMembers)
 
+class Identity:
+	"""
+		class for the identity of nodes
+	"""
+	def __init__(self, IP, PK, committee_id):
+		self.IP = IP
+		self.PK = PK
+		self.identity = committee_id
+
 
 class Elastico:
 	"""
@@ -91,6 +100,7 @@ class Elastico:
 		self.PoW = ""
 		self.cur_directory = []
 		self.identity = ""
+		self.committee_id = ""
 		# only when this node is the member of directory committee
 		self.committee_list = dict()
 		# only when this node is not the member of directory committee
@@ -171,7 +181,8 @@ class Elastico:
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
 		identity = bindigest[-s:]
-		self.identity = int(identity, 2)
+		self.committee_id = int(identity, 2)
+
 		return int(identity, 2)
 
 
