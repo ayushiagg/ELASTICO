@@ -44,9 +44,6 @@ def BroadcastTo_Network(data, type_):
 		node.receive(msg)
 
 
-
-
-
 def BroadcastTo_Committee(node, data , type_):
 	"""
 		Broadcast to the particular committee id
@@ -64,14 +61,23 @@ def MulticastCommittee(commList):
 			# union of committe members views
 			member.committee_Members |= set(commMembers)
 
+
 class Identity:
 	"""
 		class for the identity of nodes
 	"""
-	def __init__(self, IP, PK, committee_id):
+	def __init__(self, IP, PK, committee_id, PoW):
 		self.IP = IP
 		self.PK = PK
 		self.identity = committee_id
+		self.PoW = PoW
+
+
+	def isEqual(self, identityobj):
+		"""
+			checking two objects of Identity class are equal or not
+		"""
+		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.identity == identityobj.identity and self.PoW == identityobj.PoW
 
 
 class Elastico:
@@ -195,8 +201,17 @@ class Elastico:
 				if self.PoW == "":
 					self.compute_PoW()
 				self.get_committeeid(self.PoW)
-			self.identity = Identity(self.IP, PK, self.committee_id)
+			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW)
 		return self.identity
+
+
+	def is_OwnIdentity(self, identityobj):
+		"""
+			Checking whether the identityobj is the Elastico node's identity or not
+		"""
+		if self.identity == "":
+			self.form_identity()
+		return self.identity.isEqual(identityobj)
 
 
 	def form_committee(self, PoW, committee_id):
