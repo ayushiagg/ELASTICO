@@ -234,37 +234,38 @@ class Elastico:
 		if len(self.cur_directory) < c:
 			self.is_directory = True
 			# ToDo : Discuss regarding data
-			BroadcastTo_Network(self, "directoryMember")
+			BroadcastTo_Network(self.identity, "directoryMember")
 		else:
 			# ToDo : Send the above data only
 			Send_to_Directory()
 
 
 	def Send_to_Directory(self):
-	"""
-		Send about new nodes to directory committee members
-	"""
-	# Todo : Extract processor identifying information from data in identity and committee_id
+		"""
+			Send about new nodes to directory committee members
+		"""
+		# Todo : Extract processor identifying information from data in identity and committee_id
 
-	# Add the new processor in particular committee list of curent directory nodes
-	
-	for node in self.cur_directory:
-		if len(node.commitee_list[self.committee_id]) < c:
-			node.commitee_list[self.committee_id].append(self)
+		# Add the new processor in particular committee list of curent directory nodes
+		
+		for node in self.cur_directory:
+			if len(node.commitee_list[self.committee_id]) < c:
+				node.commitee_list[self.committee_id].append(self)
 
 
-	for node in self.cur_directory:
-		commList = node.commitee_list
-		flag = 0
-		for iden in commList:
-			val = commList[iden]
-			if len(val) < c:
-				flag = 1
-				break
+		for node in self.cur_directory:
+			commList = node.commitee_list
+			flag = 0
+			for iden in commList:
+				val = commList[iden]
+				if len(val) < c:
+					flag = 1
+					break
 
-		if flag == 0:
-			# Send commList[iden] to members of commList[iden]
-			MulticastCommittee(commList)
+			if flag == 0:
+				# Send commList[iden] to members of commList[iden]
+				MulticastCommittee(commList)
+
 
 
 	def receive(self, msg):
