@@ -23,6 +23,7 @@ r = 5
 # 		class for networking between nodes
 # 	"""
 
+
 def random_gen(size):
 	# with open("/dev/urandom", 'rb') as f:
 	# 	return int.from_bytes(f.read(4), 'big')
@@ -115,6 +116,7 @@ class Elastico:
 		self.is_final = False
 		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
 		self.epoch_randomness = self.initER()
+		self.final_committeeid = ""
 
 
 	def initER(self):
@@ -143,6 +145,7 @@ class Elastico:
 			ip += "."
 		ip = ip[ : -1]
 		return ip
+
 
 	def get_key(self):
 		"""
@@ -179,6 +182,13 @@ class Elastico:
 			nonce += 1
 
 
+	def form_finalCommittee(self):
+		if self.is_directory == True:
+			fin_num = random_gen(s)
+			self.final_committee_id = fin_num
+
+
+
 	def get_committeeid(self, PoW):
 		"""
 			returns last s-bit of PoW as Identity : committee_id
@@ -189,6 +199,7 @@ class Elastico:
 		identity = bindigest[-s:]
 		self.committee_id = int(identity, 2)
 		return int(identity, 2)
+
 
 	def form_identity(self):
 		"""
@@ -263,6 +274,7 @@ class Elastico:
 		if msg["type"] == "directoryMember":
 			if len(self.cur_directory) < c:
 				self.cur_directory.append(msg["data"])
+
 
 	def runPBFT():
 		"""

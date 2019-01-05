@@ -18,3 +18,5 @@ p = elastico.Elastico()
 s = p.get_IP()
 print(type(s))
 
+p,q = elastico.Identity('172' , 'pk1' , 1 , '1092' ) , elastico.Identity('172' , 'pk1' , 1 , '1092')
+print(p.isEqual(q))
