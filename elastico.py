@@ -26,6 +26,21 @@ identityNodeMap = dict()
 # 		class for networking between nodes
 # 	"""
 
+def consistencyProtocol():
+	"""
+		Agrees on a single set of Hash values(S)
+		presently selecting random c hash of Ris from the total set of commitments
+	"""
+	flag = True
+	commitmentSet = set()
+	for node in network_nodes:
+		if node.isFinalMember():
+			if flag and len(commitmentSet) == 0:
+				flag = False
+				commitmentSet = node.commitments
+			else:	
+				commitmentSet = commitmentSet.intersection(node.commitments)
+	return commitmentSet
 
 def random_gen(size):
 	"""
@@ -442,13 +457,6 @@ class Elastico:
 		"""
 		Hash_Ri = self.getCommitment()
 		finalBlock["hash"] = Hash_Ri
-
-
-	def consistencyProtocol(set_of_Rs):
-		"""
-			Agrees on a single set of Hash values(S)
-		"""
-		pass
 
 
 	def BroadcastR(Ri):
