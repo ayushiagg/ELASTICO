@@ -420,6 +420,14 @@ class Elastico:
 			return commitment.hexdigest()
 
 
+	def addCommitment(self, finalBlock):
+		"""
+			include H(Ri) ie. commitment in final block
+		"""
+		Hash_Ri = self.getCommitment()
+		finalBlock["hash"] = Hash_Ri
+
+
 	def consistencyProtocol(set_of_Rs):
 		"""
 			Agrees on a single set of Hash values(S)
