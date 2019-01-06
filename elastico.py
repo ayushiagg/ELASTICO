@@ -114,6 +114,7 @@ class Elastico:
 			cur_directory - list of directory members in view of the node
 			PoW - 256 bit hash computed by the node
 			Ri - r-bit random string
+			commitments = set of H(Ri) received by final committee node members
 	"""
 
 	def __init__(self):
@@ -133,6 +134,7 @@ class Elastico:
 		self.epoch_randomness = self.initER()
 		self.final_committee_id = ""
 		self.Ri = ""
+		self.commitments = set()
 
 	def initER(self):
 		"""
@@ -317,6 +319,9 @@ class Elastico:
 			commMembers = msg["data"]
 			self.committee_Members |= set(commMembers)
 
+		if msg["type"] == "hash" and self.isFinalMember():
+			self.commitments.add(msg["data"])
+
 
 	def runPBFT():
 		"""
@@ -418,6 +423,17 @@ class Elastico:
 			commitment = SHA256.new()
 			commitment.update(self.Ri.encode())
 			return commitment.hexdigest()
+
+	def sendCommitment(self):
+		"""
+			send the H(Ri) to the final committe members
+		"""		
+		if self.isFinalMember() == True:
+			Hash_Ri = self.getCommitment()
+			for nodeId in committee_Members:
+				msg = {"data" : Hash_Ri , "type" : "hash"}
+				send(nodeId , msg)
+
 
 
 	def addCommitment(self, finalBlock):
