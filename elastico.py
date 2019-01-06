@@ -57,11 +57,12 @@ def MulticastCommittee(commList):
 	"""
 		each node getting views of its committee members from directory members
 	"""
-	for iden in commList:
-		commMembers = commList[iden]
-		for member in commMembers:
+	for committee_id in commList:
+		commMembers = commList[committee_id]
+		for memberId in commMembers:
 			# union of committe members views
-			member.committee_Members |= set(commMembers)
+			msg = {"data" : commMembers , "type" : "committee members views"}
+			send(memberId, msg)
 
 def send(nodeIdentity, msg):
 	"""
@@ -257,27 +258,25 @@ class Elastico:
 
 		# Add the new processor in particular committee list of curent directory nodes
 		
-		# for node in self.cur_directory:
-		# 	if len(node.commitee_list[self.committee_id]) < c:
-		# 		node.commitee_list[self.committee_id].append(self)
-
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
 			send(nodeId, msg)
 
 
-		for node in self.cur_directory:
-			commList = node.commitee_list
-			flag = 0
-			for iden in commList:
-				val = commList[iden]
-				if len(val) < c:
-					flag = 1
-					break
+		for nodeId in self.cur_directory:
+			msg = {"data" : "" , "type" : "checkCommitteeFull"}
+			send(nodeId, msg)
+			# commList = node.commitee_list
+			# flag = 0
+			# for iden in commList:
+			# 	val = commList[iden]
+			# 	if len(val) < c:
+			# 		flag = 1
+			# 		break
 
-			if flag == 0:
-				# Send commList[iden] to members of commList[iden]
-				MulticastCommittee(commList)
+			# if flag == 0:
+			# 	# Send commList[iden] to members of commList[iden]
+			# 	MulticastCommittee(commList)
 
 
 
@@ -294,6 +293,25 @@ class Elastico:
 			identityobj = msg["data"]
 			if len(self.commitee_list[identityobj.committee_id]) < c:
 				self.commitee_list[identityobj.committee_id].append(identityobj)
+
+		if msg["type"] == "checkCommitteeFull":
+			commList = self.commitee_list
+			flag = 0
+			for iden in commList:
+				val = commList[iden]
+				if len(val) < c:
+					flag = 1
+					break
+
+			if flag == 0:
+				# Send commList[iden] to members of commList[iden]
+				MulticastCommittee(commList) 
+
+		# union of committe members views
+		if msg["type"] == "committee members views":
+			commMembers = msg["data"]
+			self.committee_Members |= set(commMembers)
+
 
 	def runPBFT():
 		"""
