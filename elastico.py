@@ -408,13 +408,16 @@ class Elastico:
 			self.Ri = ("{:0" + str(r) +  "b}").format(Ri)
 
 
-	def getCommitment(R):
+	def getCommitment(self):
 		"""
 			generate commitment for random string R
 		"""
-		commitment = SHA256.new()
-		commitment.update(R.encode())
-		return commitment.hexdigest()
+		if self.isFinalMember() == True:
+			if self.Ri == "":
+				self.generate_randomstrings()
+			commitment = SHA256.new()
+			commitment.update(self.Ri.encode())
+			return commitment.hexdigest()
 
 
 	def consistencyProtocol(set_of_Rs):
