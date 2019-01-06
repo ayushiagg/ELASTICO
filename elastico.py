@@ -63,6 +63,13 @@ def MulticastCommittee(commList):
 			# union of committe members views
 			member.committee_Members |= set(commMembers)
 
+def send(nodeIdentity, msg):
+	"""
+		send the info to the nodes based on their identity
+	"""
+	node = identityNodeMap[nodeIdentity]
+	node.receive(msg)
+
 
 class Identity:
 	"""
@@ -250,9 +257,13 @@ class Elastico:
 
 		# Add the new processor in particular committee list of curent directory nodes
 		
-		for node in self.cur_directory:
-			if len(node.commitee_list[self.committee_id]) < c:
-				node.commitee_list[self.committee_id].append(self)
+		# for node in self.cur_directory:
+		# 	if len(node.commitee_list[self.committee_id]) < c:
+		# 		node.commitee_list[self.committee_id].append(self)
+
+		for nodeId in self.cur_directory:
+			msg = {"data" : self.identity, "type" : "newNode"}
+			send(nodeId, msg)
 
 
 		for node in self.cur_directory:
@@ -278,6 +289,11 @@ class Elastico:
 			if len(self.cur_directory) < c:
 				self.cur_directory.append(msg["data"])
 
+		# new node is added to the corresponding committee list
+		if msg["type"] == "newNode" and self.is_direcotory:
+			identityobj = msg["data"]
+			if len(self.commitee_list[identityobj.committee_id]) < c:
+				self.commitee_list[identityobj.committee_id].append(identityobj)
 
 	def runPBFT():
 		"""
