@@ -5,7 +5,7 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num
 # n : number of processors
 n = 60
 # s - where 2^s is the number of committees
@@ -16,7 +16,9 @@ c = 3
 D = 10
 # r - number of bits in random string 
 r = 5
-
+# fin_num - final committee id
+fin_num = ""
+# identityNodeMap- mapping of identity object to Elastico node
 identityNodeMap = dict()
 
 # class Network:
@@ -26,6 +28,10 @@ identityNodeMap = dict()
 
 
 def random_gen(size):
+	"""
+		generates the size-bit random number
+		size denotes the number of bits
+	"""
 	# with open("/dev/urandom", 'rb') as f:
 	# 	return int.from_bytes(f.read(4), 'big')
 	random_num = SystemRandom().getrandbits(size)
@@ -107,7 +113,7 @@ class Elastico:
 			key - public key and private key pair for a node
 			cur_directory - list of directory members in view of the node
 			PoW - 256 bit hash computed by the node
-			
+			Ri - r-bit random string
 	"""
 
 	def __init__(self):
@@ -125,8 +131,8 @@ class Elastico:
 		self.is_final = False
 		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
 		self.epoch_randomness = self.initER()
-		self.final_committeeid = ""
-
+		self.final_committee_id = ""
+		self.Ri = ""
 
 	def initER(self):
 		"""
@@ -192,10 +198,9 @@ class Elastico:
 
 
 	def form_finalCommittee(self):
-		if self.is_directory == True:
+		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
 			self.final_committee_id = fin_num
-
 
 
 	def get_committeeid(self, PoW):
@@ -319,6 +324,15 @@ class Elastico:
 		"""
 		pass
 
+	def isFinalMember(self):
+		"""
+			tell whether this node is a final committee member or not
+		"""
+		if self.committee_id == fin_num:
+			self.is_final = True
+			return True
+		return False
+
 
 	def sign(self,data):
 		"""
@@ -385,12 +399,13 @@ class Elastico:
 		pass
 
 
-	def generate_randomstrings(r):
+	def generate_randomstrings(self):
 		"""
 			Generate r-bit random strings
 		"""
-
-		pass
+		if self.isFinalMember() == True:
+			Ri = random_gen(r)
+			self.Ri = ("{:0" + str(r) +  "b}").format(Ri)
 
 
 	def getCommitment(R):
