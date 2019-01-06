@@ -5,7 +5,7 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r
+global network_nodes, n, s, c, D, r, identityNodeMap
 # n : number of processors
 n = 60
 # s - where 2^s is the number of committees
@@ -17,6 +17,7 @@ D = 10
 # r - number of bits in random string 
 r = 5
 
+identityNodeMap = dict()
 
 # class Network:
 # 	"""
@@ -213,6 +214,7 @@ class Elastico:
 					self.compute_PoW()
 				self.get_committeeid(self.PoW)
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW)
+		identityNodeMap[self.Identity] = self
 		return self.identity
 
 
