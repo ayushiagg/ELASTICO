@@ -5,7 +5,7 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
 n = 60
 # s - where 2^s is the number of committees
@@ -20,6 +20,9 @@ r = 5
 fin_num = ""
 # identityNodeMap- mapping of identity object to Elastico node
 identityNodeMap = dict()
+# set of commitments S
+commitmentSet = set()
+
 
 # class Network:
 # 	"""
@@ -31,16 +34,17 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
-	flag = True
-	commitmentSet = set()
-	for node in network_nodes:
-		if node.isFinalMember():
-			if flag and len(commitmentSet) == 0:
-				flag = False
-				commitmentSet = node.commitments
-			else:	
-				commitmentSet = commitmentSet.intersection(node.commitments)
+	if len(commitmentSet) == 0:
+		flag = True
+		for node in network_nodes:
+			if node.isFinalMember():
+				if flag and len(commitmentSet) == 0:
+					flag = False
+					commitmentSet = node.commitments
+				else:	
+					commitmentSet = commitmentSet.intersection(node.commitments)
 	return commitmentSet
+
 
 def random_gen(size):
 	"""
@@ -150,6 +154,7 @@ class Elastico:
 		self.final_committee_id = ""
 		self.Ri = ""
 		self.commitments = set()
+		self.txn_block = ""
 
 	def initER(self):
 		"""
@@ -384,6 +389,16 @@ class Elastico:
 		return verifier.verify(digest,signature)
 
 
+	def BroadcastFinalTxn(self):
+		"""
+			final committee members will broadcast S(commitmentSet), along with final set of 
+			X(txn_block) to everyone in the network
+		"""
+		if self.isFinalMember():
+			S = consistencyProtocol()
+			data = {"commitmentSet" : S , "finalTxnBlock" : self.txn_block}
+			BroadcastTo_Network(data, "finalTxnBlock")		
+
 	def getCommittee_members(committee_id):
 		"""
 			Returns all members which have this committee id : commitee_list[committee_id]
@@ -430,7 +445,7 @@ class Elastico:
 
 	def getCommitment(self):
 		"""
-			generate commitment for random string R
+			generate commitment for random string Ri
 		"""
 		if self.isFinalMember() == True:
 			if self.Ri == "":
@@ -438,6 +453,7 @@ class Elastico:
 			commitment = SHA256.new()
 			commitment.update(self.Ri.encode())
 			return commitment.hexdigest()
+
 
 	def sendCommitment(self):
 		"""
@@ -448,7 +464,6 @@ class Elastico:
 			for nodeId in committee_Members:
 				msg = {"data" : Hash_Ri , "type" : "hash"}
 				send(nodeId , msg)
-
 
 
 	def addCommitment(self, finalBlock):
