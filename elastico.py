@@ -161,6 +161,7 @@ class Elastico:
 		self.commitments = set()
 		self.txn_block = ""
 		self.set_of_Rs = set()
+		self.CommitteeConsensusData = dict()
 
 	def initER(self):
 		"""
@@ -368,6 +369,23 @@ class Elastico:
 				# ToDo : to take step regarding this
 				pass
 				
+		elif msg["type"] == "getCommitteeMembers":
+			committeeid = msg["data"]
+			return self.commitee_list[committeeid]
+
+		# final committee member receives the final set of txns along with the signature from the node
+		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
+
+			data = msg["data"]
+			# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+			if self.verify_sign(data["sign"], data["txnBlock"] , data["identity"].PK):
+				identityobj = data["identity"]
+				if identityobj.committee_id not in self.CommitteeConsensusData:
+					self.CommitteeConsensusData[identityobj.committee_id] = dict()
+				# add signatures for the txn block 
+				CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
+				
+
 
 	def runPBFT():
 		"""
@@ -434,11 +452,21 @@ class Elastico:
 		pass
 
 
-	def Sendto_final(committee_id, signatures, txn_set, final_committee_id):
+	def SendtoFinal(self):
 		"""
-			Each committee member sends the signed value along with signatures to final committee
+			Each committee member sends the signed value(txn block after intra committee consensus) 
+			along with signatures to final committee
 		"""
-		pass
+		if self.final_committee_id == "":
+			self.form_finalCommittee()
+		nodeId = cur_directory[0]
+		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
+		response = send(nodeId, msg)
+		for finalId in response:
+			data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+			msg = {"data" : data, "type" : "intraCommitteeBlock" }
+			send(finalId, msg)
+		
 
 
 	def union(data):
