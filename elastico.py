@@ -7,13 +7,13 @@ from secrets import SystemRandom
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
-n = 60
+n = 48
 # s - where 2^s is the number of committees
-s = 20
+s = 4
 # c - size of committee
 c = 3
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 10
+D = 4 
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -119,10 +119,9 @@ class Elastico:
 	"""
 		class members: 
 			node - single processor
-			identity - committee to which a processor(node) belongs to
+			identity - identity consists of Public key, an IP, PoW, committee id
 			txn_block - block of txns that the committee will agree on
 			commitee_list - list of nodes in all committees
-			directory_committee - list of nodes in the directory committee
 			final_committee - list of nodes in the final committee
 			is_direcotory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
@@ -133,8 +132,10 @@ class Elastico:
 			cur_directory - list of directory members in view of the node
 			PoW - 256 bit hash computed by the node
 			Ri - r-bit random string
-			commitments = set of H(Ri) received by final committee node members
-			set_of_Rs = set of Ris obtained by the final committee
+			commitments - set of H(Ri) received by final committee node members
+			set_of_Rs - set of Ris obtained from the final committee
+			committee_id - integer value to represent the committee to which the node belongs
+			final_committee_id - committee id of final committee
 	"""
 
 	def __init__(self):
@@ -154,6 +155,7 @@ class Elastico:
 		self.epoch_randomness = self.initER()
 		self.final_committee_id = ""
 		self.Ri = ""
+		# only when this node is the member of final committee
 		self.commitments = set()
 		self.txn_block = ""
 		self.set_of_Rs = set()
@@ -188,8 +190,7 @@ class Elastico:
 
 	def get_key(self):
 		"""
-			for each node, get public key
-			will return PK
+			for each node, it will return public pvt key pair
 		"""
 		key = RSA.generate(2048)
 		return key
@@ -531,10 +532,12 @@ class Elastico:
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
 
-def Run():
+def Run(txns):
 	"""
+		each run is one epoch
 		run processors to compute PoW and form committees
 	"""
+	
 	E = [[] for i in range(n)]
 	network_nodes = E
 	h = [[] for i in range(n)]
