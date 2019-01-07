@@ -453,9 +453,19 @@ class Elastico:
 			self.Ri = ("{:0" + str(r) +  "b}").format(Ri)
 
 
+	def hexdigest(self, msg):
+		"""
+			returns the digest for a msg
+		"""
+		commitment = SHA256.new()
+		commitment.update(msg.encode())
+		return commitment.hexdigest()
+
+
 	def getCommitment(self):
 		"""
-			generate commitment for random string Ri
+			generate commitment for random string Ri. This is done by a
+			final committee member
 		"""
 		if self.isFinalMember() == True:
 			if self.Ri == "":
