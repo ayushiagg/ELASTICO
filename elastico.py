@@ -267,7 +267,7 @@ class Elastico:
 		return self.identity.isEqual(identityobj)
 
 
-	def form_committee(self, PoW, committee_id):
+	def form_committee(self):
 		"""
 			creates directory committee if not yet created otherwise informs all
 			the directory members
@@ -279,7 +279,7 @@ class Elastico:
 			BroadcastTo_Network(self.identity, "directoryMember")
 		else:
 			# ToDo : Send the above data only
-			Send_to_Directory()
+			self.Send_to_Directory()
 
 
 	def Send_to_Directory(self):
@@ -321,12 +321,12 @@ class Elastico:
 				self.cur_directory.append(msg["data"])
 
 		# new node is added to the corresponding committee list
-		if msg["type"] == "newNode" and self.is_direcotory:
+		elif msg["type"] == "newNode" and self.is_direcotory:
 			identityobj = msg["data"]
 			if len(self.commitee_list[identityobj.committee_id]) < c:
 				self.commitee_list[identityobj.committee_id].append(identityobj)
 
-		if msg["type"] == "checkCommitteeFull":
+		elif msg["type"] == "checkCommitteeFull":
 			commList = self.commitee_list
 			flag = 0
 			for iden in commList:
@@ -337,24 +337,25 @@ class Elastico:
 
 			if flag == 0:
 				# Send commList[iden] to members of commList[iden]
-				MulticastCommittee(commList) 
+				MulticastCommittee(commList)
+				self.form_finalCommittee()
 
 		# union of committe members views
-		if msg["type"] == "committee members views":
+		elif msg["type"] == "committee members views":
 			commMembers = msg["data"]
 			self.committee_Members |= set(commMembers)
 
 		# receiving H(Ri) by final committe members
-		if msg["type"] == "hash" and self.isFinalMember():
+		elif msg["type"] == "hash" and self.isFinalMember():
 			self.commitments.add(msg["data"])
 
-		if msg["type"] == "RandomStringBroadcast":
+		elif msg["type"] == "RandomStringBroadcast":
 			Ri = msg["data"]
 			HashRi = self.hexdigest(Ri)
 			if HashRi in commitmentSet:
 				self.set_of_Rs.add(msg["data"])
 
-		if msg["type"] == "finalTxnBlock":
+		elif msg["type"] == "finalTxnBlock":
 			data = msg["data"]
 			# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}			
 			sign = data["signature"]
@@ -546,6 +547,6 @@ def Run(txns):
 	for i in range(n):
 		E[i] = Elastico()
 		h[i] = E[i].compute_PoW()
-		identity = E[i].get_committeeid(h[i])
-		E[i].form_committee(h[i] , identity)
+		identity = E[i].form_identity()
+		E[i].form_committee()
 

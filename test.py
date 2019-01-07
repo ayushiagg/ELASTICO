@@ -23,3 +23,5 @@ print(fin)
 p,q = elastico.Identity('172' , 'pk1' , 1 , '1092' ) , elastico.Identity('172' , 'pk1' , 1 , '1092')
 print(p.isEqual(q))
 
+t = input()
+print(t, type(t))
