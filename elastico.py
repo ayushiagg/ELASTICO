@@ -20,7 +20,7 @@ r = 5
 fin_num = ""
 # identityNodeMap- mapping of identity object to Elastico node
 identityNodeMap = dict()
-# set of commitments S
+# commitmentSet - set of commitments S
 commitmentSet = set()
 
 
@@ -358,10 +358,12 @@ class Elastico:
 			received_commitmentSet = data["commitmentSet"]
 			identity = data["identity"]
 			PK = identity.PK
-			if verify_sign(sign, received_commitmentSet, PK):
+			finalTxnBlock = data["finalTxnBlock"]
+			finalTxnBlock_signature = data["finalTxnBlock_signature"]
+			if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 				# ToDo : to take step regarding this
-
-		pass		
+				pass
+				
 
 	def runPBFT():
 		"""
@@ -417,7 +419,7 @@ class Elastico:
 		if self.isFinalMember():
 			S = consistencyProtocol()
 			# ToDo: Add signatures on S
-			data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.txn_block}
+			data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.txn_block , "finalTxnBlock_signature" : self.sign(self.txn_block)}
 			BroadcastTo_Network(data, "finalTxnBlock")		
 
 
