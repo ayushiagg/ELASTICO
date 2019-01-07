@@ -396,8 +396,10 @@ class Elastico:
 		"""
 		if self.isFinalMember():
 			S = consistencyProtocol()
+			# ToDo: Add signatures on S
 			data = {"commitmentSet" : S , "finalTxnBlock" : self.txn_block}
 			BroadcastTo_Network(data, "finalTxnBlock")		
+
 
 	def getCommittee_members(committee_id):
 		"""
@@ -474,11 +476,13 @@ class Elastico:
 		finalBlock["hash"] = Hash_Ri
 
 
-	def BroadcastR(Ri):
+	def BroadcastR(self):
 		"""
 			broadcast Ri to all the network
 		"""
-		pass
+		if self.Ri == "":
+			self.generate_randomstrings()
+		BroadcastTo_Network(self.Ri, "RandomStringBroadcast")
 
 
 	def xor_R(self, set_of_Rs):
