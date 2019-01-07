@@ -489,7 +489,8 @@ class Elastico:
 
 	def sendCommitment(self):
 		"""
-			send the H(Ri) to the final committe members
+			send the H(Ri) to the final committe members.This is done by a
+			final committee member
 		"""		
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
