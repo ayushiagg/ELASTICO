@@ -134,6 +134,7 @@ class Elastico:
 			PoW - 256 bit hash computed by the node
 			Ri - r-bit random string
 			commitments = set of H(Ri) received by final committee node members
+			set_of_Rs = set of Ris obtained by the final committee
 	"""
 
 	def __init__(self):
@@ -155,6 +156,7 @@ class Elastico:
 		self.Ri = ""
 		self.commitments = set()
 		self.txn_block = ""
+		self.set_of_Rs = set()
 
 	def initER(self):
 		"""
@@ -342,6 +344,12 @@ class Elastico:
 		if msg["type"] == "hash" and self.isFinalMember():
 			self.commitments.add(msg["data"])
 
+		if msg["type"] == "RandomStringBroadcast":
+			Ri = msg["data"]
+			HashRi = self.hexdigest(Ri)
+			if HashRi in commitmentSet:
+				self.set_of_Rs.add(msg["data"])	
+
 
 	def runPBFT():
 		"""
@@ -485,12 +493,12 @@ class Elastico:
 		BroadcastTo_Network(self.Ri, "RandomStringBroadcast")
 
 
-	def xor_R(self, set_of_Rs):
+	def xor_R(self):
 		"""
 			find xor of any random c/2 + 1 r-bit strings
 		"""
 		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this
-		randomset = SystemRandom().sample(set_of_Rs , c//2 + 1)
+		randomset = SystemRandom().sample(self.set_of_Rs , c//2 + 1)
 		xor_val = 0
 		for R in randomset:
 			xor_val = xor_val ^ int(R, 2)
