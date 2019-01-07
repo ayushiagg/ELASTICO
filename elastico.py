@@ -61,7 +61,6 @@ def BroadcastTo_Network(data, type_):
 	"""
 		Broadcast to the whole ntw
 	"""
-	# broadcast data obj as directory member to the network nodes
 		# comment: no if statements
 		# for each instance of Elastico, create a receive(self, msg) method
 		# this function will just call node.receive(msg)
@@ -71,10 +70,12 @@ def BroadcastTo_Network(data, type_):
 		node.receive(msg)
 
 
-def BroadcastTo_Committee(node, data , type_):
+def BroadcastTo_Committee(committee_id, data , type_):
 	"""
 		Broadcast to the particular committee id
 	"""
+	msg = {"type" : type_ , "data" : data}
+
 	pass
 
 
@@ -89,13 +90,14 @@ def MulticastCommittee(commList):
 			msg = {"data" : commMembers , "type" : "committee members views"}
 			send(memberId, msg)
 
+
 def send(nodeIdentity, msg):
 	"""
 		send the info to the nodes based on their identity
 	"""
 	node = identityNodeMap[nodeIdentity]
-	node.receive(msg)
-
+	response = node.receive(msg)
+	return response
 
 class Identity:
 	"""
@@ -225,7 +227,7 @@ class Elastico:
 	def form_finalCommittee(self):
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
-			self.final_committee_id = fin_num
+		self.final_committee_id = fin_num
 
 
 	def get_committeeid(self, PoW):
@@ -243,7 +245,7 @@ class Elastico:
 	def form_identity(self):
 		"""
 			identity formation for a node
-			identity consists of public key, ip, committee id
+			identity consists of public key, ip, committee id, PoW
 		"""
 		if self.identity == "":
 			PK = self.key.publickey().exportKey().decode()
