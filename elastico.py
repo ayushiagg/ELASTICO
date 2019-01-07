@@ -349,8 +349,19 @@ class Elastico:
 			Ri = msg["data"]
 			HashRi = self.hexdigest(Ri)
 			if HashRi in commitmentSet:
-				self.set_of_Rs.add(msg["data"])	
+				self.set_of_Rs.add(msg["data"])
 
+		if msg["type"] == "finalTxnBlock":
+			data = msg["data"]
+			# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}			
+			sign = data["signature"]
+			received_commitmentSet = data["commitmentSet"]
+			identity = data["identity"]
+			PK = identity.PK
+			if verify_sign(sign, received_commitmentSet, PK):
+				# ToDo : to take step regarding this
+
+		pass		
 
 	def runPBFT():
 		"""
@@ -406,7 +417,7 @@ class Elastico:
 		if self.isFinalMember():
 			S = consistencyProtocol()
 			# ToDo: Add signatures on S
-			data = {"commitmentSet" : S , "finalTxnBlock" : self.txn_block}
+			data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.txn_block}
 			BroadcastTo_Network(data, "finalTxnBlock")		
 
 
