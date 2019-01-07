@@ -341,6 +341,7 @@ class Elastico:
 			commMembers = msg["data"]
 			self.committee_Members |= set(commMembers)
 
+		# receiving H(Ri) by final committe members
 		if msg["type"] == "hash" and self.isFinalMember():
 			self.commitments.add(msg["data"])
 
