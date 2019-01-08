@@ -386,11 +386,25 @@ class Elastico:
 				self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
 				
 
+	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
+		"""
+			final committe member verifies that the certain txnBlock is the selected one by checking it has sufficient sigantures(c/2 + 1)
+		"""
+		if self.isFinalMember():
+			if selected_txnBlock in self.CommitteeConsensusData[committeeid] and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
+				return True
+		return False	
+
+	
+	
 	def runPBFT():
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
 		pass
+
+
+
 
 	def isFinalMember(self):
 		"""
