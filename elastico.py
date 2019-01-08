@@ -138,6 +138,8 @@ class Elastico:
 			set_of_Rs - set of Ris obtained from the final committee
 			committee_id - integer value to represent the committee to which the node belongs
 			final_committee_id - committee id of final committee
+			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
+			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
 	"""
 
 	def __init__(self):
@@ -162,6 +164,8 @@ class Elastico:
 		self.txn_block = ""
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
+		self.finalBlockbyFinalCommittee = dict()
+
 
 	def initER(self):
 		"""
@@ -367,7 +371,9 @@ class Elastico:
 			finalTxnBlock_signature = data["finalTxnBlock_signature"]
 			if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 				# ToDo : to take step regarding this
-				pass
+				if finalTxnBlock not in self.finalBlockbyFinalCommittee:
+					self.finalBlockbyFinalCommittee[finalTxnBlock] = set()
+				self.finalBlockbyFinalCommittee[finalTxnBlock].add(finalTxnBlock_signature)
 				
 		elif msg["type"] == "getCommitteeMembers":
 			committeeid = msg["data"]
@@ -596,7 +602,4 @@ def Run(txns):
 	# run pbft on txns
 	# 
 	runPBFT()
-
-
-
 
