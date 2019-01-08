@@ -88,16 +88,9 @@ def MulticastCommittee(commList):
 		for memberId in commMembers:
 			# union of committe members views
 			msg = {"data" : commMembers , "type" : "committee members views"}
-			send(memberId, msg)
+			memberId.send(msg)
 
 
-def send(nodeIdentity, msg):
-	"""
-		send the info to the nodes based on their identity
-	"""
-	node = identityNodeMap[nodeIdentity]
-	response = node.receive(msg)
-	return response
 
 class Identity:
 	"""
@@ -116,6 +109,13 @@ class Identity:
 		"""
 		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.identity == identityobj.identity and self.PoW == identityobj.PoW
 
+	def send(self, msg):
+		"""
+			send the msg to node based on their identity
+		"""
+		node = identityNodeMap[self]
+		response = node.receive(msg)
+		return response
 
 class Elastico:
 	"""
@@ -294,12 +294,12 @@ class Elastico:
 		# Add the new processor in particular committee list of curent directory nodes
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
-			send(nodeId, msg)
+			nodeId.send(msg)
 
 
 		for nodeId in self.cur_directory:
 			msg = {"data" : "" , "type" : "checkCommitteeFull"}
-			send(nodeId, msg)
+			nodeId.send(msg)
 			# commList = node.commitee_list
 			# flag = 0
 			# for iden in commList:
@@ -477,11 +477,11 @@ class Elastico:
 			self.form_finalCommittee()
 		nodeId = self.cur_directory[0]
 		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
-		response = send(nodeId, msg)
+		response = nodeId.send(msg)
 		for finalId in response:
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
-			send(finalId, msg)
+			finalId.send(msg)
 		
 
 
@@ -546,7 +546,7 @@ class Elastico:
 			Hash_Ri = self.getCommitment()
 			for nodeId in committee_Members:
 				msg = {"data" : Hash_Ri , "type" : "hash"}
-				send(nodeId , msg)
+				nodeId.send(msg)
 
 
 	def addCommitment(self, finalBlock):
