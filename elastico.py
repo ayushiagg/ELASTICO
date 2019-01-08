@@ -383,9 +383,8 @@ class Elastico:
 				if identityobj.committee_id not in self.CommitteeConsensusData:
 					self.CommitteeConsensusData[identityobj.committee_id] = dict()
 				# add signatures for the txn block 
-				CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
+				self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
 				
-
 
 	def runPBFT():
 		"""
@@ -459,7 +458,7 @@ class Elastico:
 		"""
 		if self.final_committee_id == "":
 			self.form_finalCommittee()
-		nodeId = cur_directory[0]
+		nodeId = self.cur_directory[0]
 		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
 		response = send(nodeId, msg)
 		for finalId in response:
@@ -577,4 +576,13 @@ def Run(txns):
 		h[i] = E[i].compute_PoW()
 		identity = E[i].form_identity()
 		E[i].form_committee()
+	directory_member = E[0]
+	# form final committee
+	directory_member.form_finalCommittee()
+	# run pbft on txns
+	# 
+	runPBFT()
+
+
+
 
