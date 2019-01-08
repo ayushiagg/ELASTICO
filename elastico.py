@@ -122,7 +122,7 @@ class Elastico:
 		class members: 
 			node - single processor
 			identity - identity consists of Public key, an IP, PoW, committee id
-			txn_block - block of txns that the committee will agree on
+			txn_block - block of txns that the committee will agree on(intra committee consensus block)
 			commitee_list - list of nodes in all committees
 			final_committee - list of nodes in the final committee
 			is_direcotory - whether the node belongs to directory committee or not
@@ -134,7 +134,7 @@ class Elastico:
 			cur_directory - list of directory members in view of the node
 			PoW - 256 bit hash computed by the node
 			Ri - r-bit random string
-			commitments - set of H(Ri) received by final committee node members
+			commitments - set of H(Ri) received by final committee node members and H(Ri) is sent by the final committee node only
 			set_of_Rs - set of Ris obtained from the final committee
 			committee_id - integer value to represent the committee to which the node belongs
 			final_committee_id - committee id of final committee
@@ -207,6 +207,7 @@ class Elastico:
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
+		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
 		epoch_randomness = self.epoch_randomness
@@ -259,6 +260,7 @@ class Elastico:
 					self.compute_PoW()
 				self.get_committeeid(self.PoW)
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW)
+		# ToDo: Ask Sir regarding this mapping 
 		identityNodeMap[self.Identity] = self
 		return self.identity
 
@@ -280,10 +282,8 @@ class Elastico:
 		# ToDo : Implement verification of PoW(valid or not)
 		if len(self.cur_directory) < c:
 			self.is_directory = True
-			# ToDo : Discuss regarding data
 			BroadcastTo_Network(self.identity, "directoryMember")
 		else:
-			# ToDo : Send the above data only
 			self.Send_to_Directory()
 
 
@@ -291,10 +291,7 @@ class Elastico:
 		"""
 			Send about new nodes to directory committee members
 		"""
-		# Todo : Extract processor identifying information from data in identity and committee_id
-
 		# Add the new processor in particular committee list of curent directory nodes
-		
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
 			send(nodeId, msg)
@@ -482,7 +479,7 @@ class Elastico:
 		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
 		response = send(nodeId, msg)
 		for finalId in response:
-			data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			send(finalId, msg)
 		
@@ -587,14 +584,15 @@ def Run(txns):
 		each run is one epoch
 		run processors to compute PoW and form committees
 	"""
-	
+	# E - elastico nodes
 	E = [[] for i in range(n)]
 	network_nodes = E
-	h = [[] for i in range(n)]
+	# Id - identity of the nodes
+	Id = [[] for i in range(n)]
 	for i in range(n):
 		E[i] = Elastico()
-		h[i] = E[i].compute_PoW()
-		identity = E[i].form_identity()
+		E[i].compute_PoW()
+		Id[i] = E[i].form_identity()
 		E[i].form_committee()
 	directory_member = E[0]
 	# form final committee
