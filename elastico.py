@@ -236,7 +236,7 @@ class Elastico:
 		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
-		epoch_randomness = self.epoch_randomness
+		self.epoch_randomness, randomset_R = self.xor_R()
 		nonce = 0
 		while True: 
 						# minor comment: create a sha256 object by calling hashlib.sha256()
@@ -247,11 +247,11 @@ class Elastico:
 			digest = SHA256.new()
 			digest.update(IP.encode())
 			digest.update(PK.encode())
-			digest.update(epoch_randomness.encode())
+			digest.update(self.epoch_randomness.encode())
 			digest.update(str(nonce).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
-				self.PoW = hash_val
+				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 				return hash_val
 			nonce += 1
 
@@ -612,6 +612,48 @@ class Elastico:
 			xor_val = xor_val ^ int(R, 2)
 		self.epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
+
+	def verify_PoW(self, PoW, identityobj):
+		"""
+			verify the PoW of the node identityobj
+		"""
+		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
+
+		# Valid Hash has D leading '0's (in hex)
+		if not PoW["hash"].startswith('0' * D):
+			return False
+		
+		# check Digest for set of Ri strings
+		for Ri in PoW["set_of_Rs"]:
+			digest = self.hexdigest(Ri)
+			if digest not in commitmentSet:
+				return False
+
+		# reconstruct epoch randomness
+		epoch_randomness = ""
+		xor_val = 0
+		for R in PoW["set_of_Rs"]:
+			xor_val = xor_val ^ int(R, 2)
+		epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+		PK = identityobj.PK
+		IP = identityobj.IP
+		
+		# recompute PoW 
+		nonce = 0
+		while True: 
+			digest = SHA256.new()
+			digest.update(IP.encode())
+			digest.update(PK.encode())
+			digest.update(epoch_randomness.encode())
+			digest.update(str(nonce).encode())
+			hash_val = digest.hexdigest()
+			if hash_val.startswith('0' * D):
+				# Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
+				if hash_val == PoW["hash"]:
+					return True
+				return False
+			nonce += 1
+		return False
 
 
 def Run(txns):
