@@ -7,7 +7,7 @@ from secrets import SystemRandom
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
-n = 48
+n = 60
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
@@ -125,7 +125,7 @@ class Elastico:
 			txn_block - block of txns that the committee will agree on(intra committee consensus block)
 			commitee_list - list of nodes in all committees
 			final_committee - list of nodes in the final committee
-			is_direcotory - whether the node belongs to directory committee or not
+			is_directory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
 			epoch_randomness - r-bit random string generated at the end of previous epoch
 			committee_Members - set of committee members in its own committee
@@ -165,6 +165,32 @@ class Elastico:
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
+
+
+	def reset(self):
+		"""
+			reset some of the elastico class members
+		"""
+		self.IP = self.get_IP()
+		self.key = self.get_key()
+		self.PoW = ""
+		self.cur_directory = []
+		self.identity = ""
+		self.committee_id = ""
+		# only when this node is the member of directory committee
+		self.committee_list = dict()
+		# only when this node is not the member of directory committee
+		self.committee_Members = set()
+		self.is_directory = False
+		self.is_final = False
+		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
+		self.final_committee_id = ""
+		self.Ri = ""
+		# only when this node is the member of final committee
+		self.txn_block = ""
+		self.CommitteeConsensusData = dict()
+		self.finalBlockbyFinalCommittee = dict()
+		pass
 
 
 	def initER(self):
@@ -231,6 +257,10 @@ class Elastico:
 
 
 	def form_finalCommittee(self):
+		"""
+			Select a committee number as final committee id
+		"""
+		# ToDo: Ensure that the final committee has c members 
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
 		self.final_committee_id = fin_num
@@ -318,17 +348,19 @@ class Elastico:
 		"""
 			method to recieve messages for a node
 		"""
+		# new node is added in directory committee
 		if msg["type"] == "directoryMember":
 			if len(self.cur_directory) < c:
 				self.cur_directory.append(msg["data"])
 
-		# new node is added to the corresponding committee list
-		elif msg["type"] == "newNode" and self.is_direcotory:
+		# new node is added to the corresponding committee list if committee list has less than c members
+		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
 			if len(self.commitee_list[identityobj.committee_id]) < c:
 				self.commitee_list[identityobj.committee_id].append(identityobj)
 
-		elif msg["type"] == "checkCommitteeFull":
+		# if committees are formed then multicast the committee list to committee members 
+		elif msg["type"] == "checkCommitteeFull" and self.is_directory:
 			commList = self.commitee_list
 			flag = 0
 			for iden in commList:
