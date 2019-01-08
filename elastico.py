@@ -423,10 +423,12 @@ class Elastico:
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
 		"""
-			final committe member verifies that the certain txnBlock is the selected one by checking it has sufficient sigantures(c/2 + 1)
+			final committe member verifies that the certain txnBlock is the selected one by 
+			checking it has sufficient sigantures(c/2 + 1)
 		"""
 		if self.isFinalMember():
-			if selected_txnBlock in self.CommitteeConsensusData[committeeid] and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
+			if selected_txnBlock in self.CommitteeConsensusData[committeeid] \
+				and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
 				return True
 		return False	
 
@@ -488,7 +490,6 @@ class Elastico:
 		"""
 		if self.isFinalMember():
 			S = consistencyProtocol()
-			# ToDo: Add signatures on S
 			data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.txn_block , "finalTxnBlock_signature" : self.sign(self.txn_block)}
 			BroadcastTo_Network(data, "finalTxnBlock")		
 
@@ -507,8 +508,10 @@ class Elastico:
 		"""
 		if self.final_committee_id == "":
 			self.form_finalCommittee()
+		# to get final committee members, we need a directory committee node
 		nodeId = self.cur_directory[0]
 		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
+		# response has final committee members
 		response = nodeId.send(msg)
 		for finalId in response:
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
@@ -626,10 +629,7 @@ def Run(txns):
 		E[i].compute_PoW()
 		Id[i] = E[i].form_identity()
 		E[i].form_committee()
-	directory_member = E[0]
-	# form final committee
-	directory_member.form_finalCommittee()
 	# run pbft on txns
 	# 
-	runPBFT()
+	runPBFT(txns)
 
