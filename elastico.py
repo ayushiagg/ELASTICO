@@ -689,12 +689,15 @@ class Elastico:
 			if digest not in commitmentSet:
 				return False
 
+		print("viodfvugv")
 		# reconstruct epoch randomness
-		epoch_randomness = ""
-		xor_val = 0
-		for R in PoW["set_of_Rs"]:
-			xor_val = xor_val ^ int(R, 2)
-		epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+
+		epoch_randomness = identityobj.epoch_randomness
+		if len(PoW["set_of_Rs"]) > 0:
+			xor_val = 0
+			for R in PoW["set_of_Rs"]:
+				xor_val = xor_val ^ int(R, 2)
+			epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 		PK = identityobj.PK
 		IP = identityobj.IP
 		
