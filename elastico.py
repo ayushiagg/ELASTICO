@@ -5,15 +5,15 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-# global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
 n = 200
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
-c = 4
+c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 4 
+D = 1 
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -37,6 +37,7 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
+	global network_nodes
 	if len(commitmentSet) == 0:
 		flag = True
 		for node in network_nodes:
@@ -68,6 +69,7 @@ def BroadcastTo_Network(data, type_):
 		# for each instance of Elastico, create a receive(self, msg) method
 		# this function will just call node.receive(msg)
 		# inside msg, you will need to have a message type, and message data.
+	global network_nodes
 	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
 	for node in network_nodes:
@@ -90,6 +92,7 @@ def MulticastCommittee(commList):
 
 	print("---multicast committee list to committee members---")
 	input()
+	print(len(commList), commList)
 	for committee_id in commList:
 		commMembers = commList[committee_id]
 		for memberId in commMembers:
@@ -102,25 +105,27 @@ class Identity:
 	"""
 		class for the identity of nodes
 	"""
-	def __init__(self, IP, PK, committee_id, PoW, nonce):
+	def __init__(self, IP, PK, committee_id, PoW, nonce, epoch_randomness):
 		self.IP = IP
 		self.PK = PK
-		self.identity = committee_id
+		self.committee_id = committee_id
 		self.PoW = PoW
 		self.nonce = nonce
+		self.epoch_randomness = epoch_randomness
 
 
 	def isEqual(self, identityobj):
 		"""
 			checking two objects of Identity class are equal or not
 		"""
-		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.identity == identityobj.identity \
-		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce
+		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.committee_id == identityobj.committee_id \
+		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce and self.epoch_randomness == identityobj.epoch_randomness
 
 	def send(self, msg):
 		"""
 			send the msg to node based on their identity
 		"""
+		global identityNodeMap
 		print("--send to node--")
 		node = identityNodeMap[self]
 		response = node.receive(msg)
@@ -255,7 +260,7 @@ class Elastico:
 		print("---PoW computation started---")
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
-		randomset_R = ""
+		randomset_R = set()
 		if len(self.set_of_Rs) > 0: 
 			self.epoch_randomness, randomset_R = self.xor_R()
 		nonce = 0
@@ -285,6 +290,7 @@ class Elastico:
 		"""
 		# ToDo: Ensure that the final committee has c members 
 		print("---form final committee---")
+		global fin_num
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
 		self.final_committee_id = fin_num
@@ -299,7 +305,6 @@ class Elastico:
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
 		identity = bindigest[-s:]
-		self.committee_id = int(identity, 2)
 		return int(identity, 2)
 
 
@@ -309,11 +314,12 @@ class Elastico:
 			identity consists of public key, ip, committee id, PoW
 		"""
 		# export public key
+		global identityNodeMap
 		print("---form identity---")
 		PK = self.key.publickey().exportKey().decode()
 		# set the committee id acc to PoW solution
-		self.get_committeeid(self.PoW["hash"])
-		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce)
+		self.committee_id = self.get_committeeid(self.PoW["hash"])
+		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce, self.epoch_randomness)
 		identityNodeMap[self.identity] = self
 		return self.identity
 
@@ -382,15 +388,20 @@ class Elastico:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
+					print("$$$$$$$ PoW valid  $$$$$$")
 					self.cur_directory.append(identityobj)
+			else:
+		 		print("$$$$$$$ PoW not valid $$$$$$")		
 
 		# new node is added to the corresponding committee list if committee list has less than c members
 		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
+				print("$$$$$$$ PoW valid 22222 $$$$$$")
 				if len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
-
+			else:
+				print("$$$$$$$ PoW not valid 22222 $$$$$$")		
 		# if committees are formed then multicast the committee list to committee members 
 		elif msg["type"] == "checkCommitteeFull" and self.is_directory:
 			commList = self.committee_list
@@ -490,6 +501,7 @@ class Elastico:
 		"""
 			tell whether this node is a final committee member or not
 		"""
+		global fin_num
 		if self.committee_id == fin_num:
 			self.is_final = True
 			return True
@@ -719,13 +731,15 @@ def Run(txns):
 		print("---Call to compute_PoW---")
 		E[i].compute_PoW()
 
+	for i in range(2):
+		print(E[i])
+	
 	for i in range(n):	
 		print("---Call to form identity---")
 		Id.append(E[i].form_identity())
 		print("---Call to form_committee---")
 		E[i].form_committee()
 	# run pbft on txns
-	# 
 
 
 if __name__ == "__main__":
