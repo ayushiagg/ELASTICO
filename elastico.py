@@ -91,23 +91,24 @@ def MulticastCommittee(commList):
 			memberId.send(msg)
 
 
-
 class Identity:
 	"""
 		class for the identity of nodes
 	"""
-	def __init__(self, IP, PK, committee_id, PoW):
+	def __init__(self, IP, PK, committee_id, PoW, nonce):
 		self.IP = IP
 		self.PK = PK
 		self.identity = committee_id
 		self.PoW = PoW
+		self.nonce = nonce
 
 
 	def isEqual(self, identityobj):
 		"""
 			checking two objects of Identity class are equal or not
 		"""
-		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.identity == identityobj.identity and self.PoW == identityobj.PoW
+		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.identity == identityobj.identity \
+		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce
 
 	def send(self, msg):
 		"""
@@ -165,6 +166,7 @@ class Elastico:
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
+		self.nonce = ""
 
 
 	def reset(self):
@@ -252,6 +254,7 @@ class Elastico:
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
+				self.nonce = nonce
 				return hash_val
 			nonce += 1
 
@@ -289,7 +292,7 @@ class Elastico:
 				if self.PoW == "":
 					self.compute_PoW()
 				self.get_committeeid(self.PoW)
-			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW)
+			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce)
 		# ToDo: Ask Sir regarding this mapping 
 		identityNodeMap[self.Identity] = self
 		return self.identity
@@ -639,20 +642,19 @@ class Elastico:
 		IP = identityobj.IP
 		
 		# recompute PoW 
-		nonce = 0
-		while True: 
-			digest = SHA256.new()
-			digest.update(IP.encode())
-			digest.update(PK.encode())
-			digest.update(epoch_randomness.encode())
-			digest.update(str(nonce).encode())
-			hash_val = digest.hexdigest()
-			if hash_val.startswith('0' * D):
-				# Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
-				if hash_val == PoW["hash"]:
-					return True
-				return False
-			nonce += 1
+		nonce = identityobj.nonce
+		 
+		digest = SHA256.new()
+		digest.update(IP.encode())
+		digest.update(PK.encode())
+		digest.update(epoch_randomness.encode())
+		digest.update(str(nonce).encode())
+		hash_val = digest.hexdigest()
+		if hash_val.startswith('0' * D):
+			# Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
+			if hash_val == PoW["hash"]:
+				return True
+			return False
 		return False
 
 
