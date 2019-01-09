@@ -288,14 +288,11 @@ class Elastico:
 			identity formation for a node
 			identity consists of public key, ip, committee id, PoW
 		"""
-		if self.identity == "":
-			PK = self.key.publickey().exportKey().decode()
-			if self.committee_id == "":
-				if self.PoW == "":
-					self.compute_PoW()
-				self.get_committeeid(self.PoW)
-			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce)
-		# ToDo: Ask Sir regarding this mapping 
+		# export public key
+		PK = self.key.publickey().exportKey().decode()
+		# set the committee id acc to PoW solution
+		self.get_committeeid(self.PoW["hash"])
+		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce)
 		identityNodeMap[self.Identity] = self
 		return self.identity
 
@@ -397,9 +394,9 @@ class Elastico:
 
 		elif msg["type"] == "RandomStringBroadcast":
 			data = msg["data"]
-			Ri = data["Ri"]
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
+				Ri = data["Ri"]
 				HashRi = self.hexdigest(Ri)
 				if HashRi in commitmentSet:
 					self.set_of_Rs.add(Ri)
@@ -411,7 +408,6 @@ class Elastico:
 			if self.verify_PoW(identityobj):
 				sign = data["signature"]
 				received_commitmentSet = data["commitmentSet"]
-				
 				PK = identityobj.PK
 				finalTxnBlock = data["finalTxnBlock"]
 				finalTxnBlock_signature = data["finalTxnBlock_signature"]
@@ -598,7 +594,7 @@ class Elastico:
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in committee_Members:
-				data = {"data" : self.identity , "Hash_Ri"  : Hash_Ri}
+				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
 
