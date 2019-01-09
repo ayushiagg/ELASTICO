@@ -330,7 +330,7 @@ class Elastico:
 
 
 		for nodeId in self.cur_directory:
-			msg = {"data" : "" , "type" : "checkCommitteeFull"}
+			msg = {"data" : self.identity , "type" : "checkCommitteeFull"}
 			nodeId.send(msg)
 			# commList = node.commitee_list
 			# flag = 0
@@ -418,8 +418,11 @@ class Elastico:
 					self.finalBlockbyFinalCommittee[finalTxnBlock].add(finalTxnBlock_signature)
 				
 		elif msg["type"] == "getCommitteeMembers":
-			committeeid = msg["data"]
-			return self.commitee_list[committeeid]
+			data = msg["data"]
+			identityobj = data["identity"]
+			if self.verify_PoW(identityobj):
+				committeeid = data["committee_id"]
+				return self.commitee_list[committeeid]
 
 		# final committee member receives the final set of txns along with the signature from the node
 		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
@@ -524,7 +527,8 @@ class Elastico:
 			self.form_finalCommittee()
 		# to get final committee members, we need a directory committee node
 		nodeId = self.cur_directory[0]
-		msg = {"data" : self.final_committee_id , "type" : "getCommitteeMembers"}
+		data = {"committee_id" : self.final_committee_id , "identity" : self.identity}
+		msg = {"data" : data , "type" : "getCommitteeMembers"}
 		# response has final committee members
 		response = nodeId.send(msg)
 		for finalId in response:
