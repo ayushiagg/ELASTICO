@@ -5,13 +5,13 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
+# global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
-n = 60
+n = 200
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
-c = 3
+c = 4
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 D = 4 
 # r - number of bits in random string 
@@ -22,6 +22,9 @@ fin_num = ""
 identityNodeMap = dict()
 # commitmentSet - set of commitments S
 commitmentSet = set()
+
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Committee": 2, "RunAsDirectory": 3 , "InPBFT" : 4, "Consensus Sent" : 5, "Final Committee in PBFT" : 6, "Sent Final Block" : 7, "Received Final Block" : 8 }
+
 
 
 # class Network:
@@ -46,7 +49,7 @@ def consistencyProtocol():
 	return commitmentSet
 
 
-def random_gen(size):
+def random_gen(size=32):
 	"""
 		generates the size-bit random number
 		size denotes the number of bits
@@ -65,6 +68,7 @@ def BroadcastTo_Network(data, type_):
 		# for each instance of Elastico, create a receive(self, msg) method
 		# this function will just call node.receive(msg)
 		# inside msg, you will need to have a message type, and message data.
+	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
 	for node in network_nodes:
 		node.receive(msg)
@@ -83,6 +87,9 @@ def MulticastCommittee(commList):
 	"""
 		each node getting views of its committee members from directory members
 	"""
+
+	print("---multicast committee list to committee members---")
+	input()
 	for committee_id in commList:
 		commMembers = commList[committee_id]
 		for memberId in commMembers:
@@ -114,6 +121,7 @@ class Identity:
 		"""
 			send the msg to node based on their identity
 		"""
+		print("--send to node--")
 		node = identityNodeMap[self]
 		response = node.receive(msg)
 		return response
@@ -145,6 +153,7 @@ class Elastico:
 	"""
 
 	def __init__(self):
+		print("---constructor called---")
 		self.IP = self.get_IP()
 		self.key = self.get_key()
 		self.PoW = ""
@@ -168,6 +177,7 @@ class Elastico:
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.nonce = ""
+		self.state = None
 
 
 	def reset(self):
@@ -203,6 +213,7 @@ class Elastico:
 		"""
 				# minor comment: this must be cryptographically secure, but this is not.
 				# might want to replace this with reads from /dev/urandom.
+		print("---initial epoch randomness for a node---")				
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -217,6 +228,8 @@ class Elastico:
 		# ips = check_output(['hostname', '--all-ip-addresses'])
 		# ips = ips.decode()
 		# return ips.split(' ')[0]
+
+		print("---IP address---")
 		ip=""
 		for i in range(4):
 			ip += str(random_gen(8))
@@ -229,6 +242,7 @@ class Elastico:
 		"""
 			for each node, it will return public pvt key pair
 		"""
+		print("---public pvt key pair---")
 		key = RSA.generate(2048)
 		return key
 
@@ -238,9 +252,12 @@ class Elastico:
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
 		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
+		print("---PoW computation started---")
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
-		self.epoch_randomness, randomset_R = self.xor_R()
+		randomset_R = ""
+		if len(self.set_of_Rs) > 0: 
+			self.epoch_randomness, randomset_R = self.xor_R()
 		nonce = 0
 		while True: 
 						# minor comment: create a sha256 object by calling hashlib.sha256()
@@ -257,6 +274,7 @@ class Elastico:
 			if hash_val.startswith('0' * D):
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 				self.nonce = nonce
+				print("---PoW computation end---")
 				return hash_val
 			nonce += 1
 
@@ -266,6 +284,7 @@ class Elastico:
 			Select a committee number as final committee id
 		"""
 		# ToDo: Ensure that the final committee has c members 
+		print("---form final committee---")
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
 		self.final_committee_id = fin_num
@@ -275,6 +294,7 @@ class Elastico:
 		"""
 			returns last s-bit of PoW as Identity : committee_id
 		"""	
+		print("---get the committee id---")
 		bindigest = ''
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
@@ -289,11 +309,12 @@ class Elastico:
 			identity consists of public key, ip, committee id, PoW
 		"""
 		# export public key
+		print("---form identity---")
 		PK = self.key.publickey().exportKey().decode()
 		# set the committee id acc to PoW solution
 		self.get_committeeid(self.PoW["hash"])
 		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce)
-		identityNodeMap[self.Identity] = self
+		identityNodeMap[self.identity] = self
 		return self.identity
 
 
@@ -314,8 +335,10 @@ class Elastico:
 		# ToDo : Implement verification of PoW(valid or not)
 		if len(self.cur_directory) < c:
 			self.is_directory = True
+			print("---not seen c members yet---")
 			BroadcastTo_Network(self.identity, "directoryMember")
 		else:
+			print("---seen c members---")
 			self.Send_to_Directory()
 
 
@@ -324,6 +347,7 @@ class Elastico:
 			Send about new nodes to directory committee members
 		"""
 		# Add the new processor in particular committee list of curent directory nodes
+		print("---Send to directory---")
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
 			nodeId.send(msg)
@@ -351,6 +375,8 @@ class Elastico:
 			method to recieve messages for a node
 		"""
 		# new node is added in directory committee
+		print("---receive method---")
+
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
@@ -638,6 +664,7 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
+		print("---verify PoW---")
 		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 		PoW = identityobj.PoW
 		# Valid Hash has D leading '0's (in hex)
