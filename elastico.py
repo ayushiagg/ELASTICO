@@ -141,6 +141,7 @@ class Elastico:
 			final_committee_id - committee id of final committee
 			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
 			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
+			nonce - a number that each processor searches to get a  valid PoW
 	"""
 
 	def __init__(self):
@@ -192,6 +193,7 @@ class Elastico:
 		self.txn_block = ""
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
+		self.nonce = ""
 		pass
 
 
@@ -353,14 +355,18 @@ class Elastico:
 		"""
 		# new node is added in directory committee
 		if msg["type"] == "directoryMember":
-			if len(self.cur_directory) < c:
-				self.cur_directory.append(msg["data"])
+			# verify the PoW of the sender
+			identityobj = msg["data"]
+			if self.verify_PoW(identityobj):
+				if len(self.cur_directory) < c:
+					self.cur_directory.append(identityobj)
 
 		# new node is added to the corresponding committee list if committee list has less than c members
 		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
-			if len(self.commitee_list[identityobj.committee_id]) < c:
-				self.commitee_list[identityobj.committee_id].append(identityobj)
+			if self.verify_PoW(identityobj):
+				if len(self.commitee_list[identityobj.committee_id]) < c:
+					self.commitee_list[identityobj.committee_id].append(identityobj)
 
 		# if committees are formed then multicast the committee list to committee members 
 		elif msg["type"] == "checkCommitteeFull" and self.is_directory:
@@ -384,28 +390,36 @@ class Elastico:
 
 		# receiving H(Ri) by final committe members
 		elif msg["type"] == "hash" and self.isFinalMember():
-			self.commitments.add(msg["data"])
+			data = msg["data"]
+			identityobj = data["identity"]
+			if self.verify_PoW(identityobj):
+				self.commitments.add(data["Hash_Ri"])
 
 		elif msg["type"] == "RandomStringBroadcast":
-			Ri = msg["data"]
-			HashRi = self.hexdigest(Ri)
-			if HashRi in commitmentSet:
-				self.set_of_Rs.add(msg["data"])
+			data = msg["data"]
+			Ri = data["Ri"]
+			identityobj = data["identity"]
+			if self.verify_PoW(identityobj):
+				HashRi = self.hexdigest(Ri)
+				if HashRi in commitmentSet:
+					self.set_of_Rs.add(Ri)
 
 		elif msg["type"] == "finalTxnBlock":
 			data = msg["data"]
 			# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}			
-			sign = data["signature"]
-			received_commitmentSet = data["commitmentSet"]
-			identity = data["identity"]
-			PK = identity.PK
-			finalTxnBlock = data["finalTxnBlock"]
-			finalTxnBlock_signature = data["finalTxnBlock_signature"]
-			if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
-				# ToDo : to take step regarding this
-				if finalTxnBlock not in self.finalBlockbyFinalCommittee:
-					self.finalBlockbyFinalCommittee[finalTxnBlock] = set()
-				self.finalBlockbyFinalCommittee[finalTxnBlock].add(finalTxnBlock_signature)
+			identityobj = data["identity"]
+			if self.verify_PoW(identityobj):
+				sign = data["signature"]
+				received_commitmentSet = data["commitmentSet"]
+				
+				PK = identityobj.PK
+				finalTxnBlock = data["finalTxnBlock"]
+				finalTxnBlock_signature = data["finalTxnBlock_signature"]
+				if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					# ToDo : to take step regarding this
+					if finalTxnBlock not in self.finalBlockbyFinalCommittee:
+						self.finalBlockbyFinalCommittee[finalTxnBlock] = set()
+					self.finalBlockbyFinalCommittee[finalTxnBlock].add(finalTxnBlock_signature)
 				
 		elif msg["type"] == "getCommitteeMembers":
 			committeeid = msg["data"]
@@ -415,14 +429,15 @@ class Elastico:
 		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
 
 			data = msg["data"]
-			# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
-			if self.verify_sign(data["sign"], data["txnBlock"] , data["identity"].PK):
-				identityobj = data["identity"]
-				if identityobj.committee_id not in self.CommitteeConsensusData:
-					self.CommitteeConsensusData[identityobj.committee_id] = dict()
-				# add signatures for the txn block 
-				self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
-				
+			identityobj = data["identity"]
+			if self.verify_PoW(identityobj):
+				# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+				if self.verify_sign(data["sign"], data["txnBlock"] , data["identity"].PK):
+					if identityobj.committee_id not in self.CommitteeConsensusData:
+						self.CommitteeConsensusData[identityobj.committee_id] = dict()
+					# add signatures for the txn block 
+					self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
+					
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
 		"""
@@ -583,7 +598,8 @@ class Elastico:
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in committee_Members:
-				msg = {"data" : Hash_Ri , "type" : "hash"}
+				data = {"data" : self.identity , "Hash_Ri"  : Hash_Ri}
+				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
 
 
@@ -601,7 +617,8 @@ class Elastico:
 		"""
 		if self.Ri == "":
 			self.generate_randomstrings()
-		BroadcastTo_Network(self.Ri, "RandomStringBroadcast")
+		data = {"Ri" : self.Ri, "identity" : self.identity}
+		BroadcastTo_Network(data, "RandomStringBroadcast")
 
 
 	def xor_R(self):
@@ -616,12 +633,13 @@ class Elastico:
 		self.epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
-	def verify_PoW(self, PoW, identityobj):
+# verify the PoW of the sender
+	def verify_PoW(self, identityobj):
 		"""
 			verify the PoW of the node identityobj
 		"""
 		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
-
+		PoW = identityobj.PoW
 		# Valid Hash has D leading '0's (in hex)
 		if not PoW["hash"].startswith('0' * D):
 			return False
@@ -650,11 +668,9 @@ class Elastico:
 		digest.update(epoch_randomness.encode())
 		digest.update(str(nonce).encode())
 		hash_val = digest.hexdigest()
-		if hash_val.startswith('0' * D):
+		if hash_val.startswith('0' * D) and hash_val == PoW["hash"]:
 			# Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
-			if hash_val == PoW["hash"]:
-				return True
-			return False
+			return True
 		return False
 
 
