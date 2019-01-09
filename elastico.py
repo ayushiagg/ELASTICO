@@ -398,7 +398,9 @@ class Elastico:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				print("$$$$$$$ PoW valid 22222 $$$$$$")
-				if len(self.committee_list[identityobj.committee_id]) < c:
+				if identityobj.committee_id not in self.committee_list:
+					self.committee_list[identityobj.committee_id] = [identityobj]
+				elif len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
 			else:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")		
