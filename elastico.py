@@ -132,7 +132,7 @@ class Elastico:
 			node - single processor
 			identity - identity consists of Public key, an IP, PoW, committee id
 			txn_block - block of txns that the committee will agree on(intra committee consensus block)
-			commitee_list - list of nodes in all committees
+			committee_list - list of nodes in all committees
 			final_committee - list of nodes in the final committee
 			is_directory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
@@ -356,7 +356,7 @@ class Elastico:
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity , "type" : "checkCommitteeFull"}
 			nodeId.send(msg)
-			# commList = node.commitee_list
+			# commList = node.committee_list
 			# flag = 0
 			# for iden in commList:
 			# 	val = commList[iden]
@@ -388,12 +388,12 @@ class Elastico:
 		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
-				if len(self.commitee_list[identityobj.committee_id]) < c:
-					self.commitee_list[identityobj.committee_id].append(identityobj)
+				if len(self.committee_list[identityobj.committee_id]) < c:
+					self.committee_list[identityobj.committee_id].append(identityobj)
 
 		# if committees are formed then multicast the committee list to committee members 
 		elif msg["type"] == "checkCommitteeFull" and self.is_directory:
-			commList = self.commitee_list
+			commList = self.committee_list
 			flag = 0
 			for iden in commList:
 				val = commList[iden]
@@ -448,7 +448,7 @@ class Elastico:
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
 				committeeid = data["committee_id"]
-				return self.commitee_list[committeeid]
+				return self.committee_list[committeeid]
 
 		# final committee member receives the final set of txns along with the signature from the node
 		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
@@ -539,7 +539,7 @@ class Elastico:
 
 	def getCommittee_members(committee_id):
 		"""
-			Returns all members which have this committee id : commitee_list[committee_id]
+			Returns all members which have this committee id : committee_list[committee_id]
 		"""
 		pass
 
@@ -707,16 +707,30 @@ def Run(txns):
 		run processors to compute PoW and form committees
 	"""
 	# E - elastico nodes
-	E = [[] for i in range(n)]
+	global network_nodes
+	E = []
 	network_nodes = E
 	# Id - identity of the nodes
-	Id = [[] for i in range(n)]
+	Id = []
 	for i in range(n):
-		E[i] = Elastico()
+		print( "----Running for processor number----" , i + 1)
+		print("---Call to Constructor---")
+		E.append(Elastico())
+		print("---Call to compute_PoW---")
 		E[i].compute_PoW()
-		Id[i] = E[i].form_identity()
+
+	for i in range(n):	
+		print("---Call to form identity---")
+		Id.append(E[i].form_identity())
+		print("---Call to form_committee---")
 		E[i].form_committee()
 	# run pbft on txns
 	# 
-	runPBFT(txns)
 
+
+if __name__ == "__main__":
+	txns = []
+	for i in range(100):
+		random_num = random_gen(32)
+		txns.append(random_num)
+	Run(txns)	
