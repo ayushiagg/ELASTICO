@@ -157,6 +157,7 @@ class Elastico:
 			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
 			nonce - a number that each processor searches to get a  valid PoW
 			state - state in which a node is running
+			mergedBlock - list of txns of different committees after their intra committee consensus
 	"""
 
 	def __init__(self):
@@ -185,6 +186,8 @@ class Elastico:
 		self.finalBlockbyFinalCommittee = dict()
 		self.nonce = ""
 		self.state = None
+		self.mergedBlock = []
+		self.finalBlock = []
 
 
 	def reset(self):
@@ -504,6 +507,18 @@ class Elastico:
 		elif msg["type"] == "send txn set and sign to final committee":
 			if self.is_directory == False:
 				self.SendtoFinal()
+
+		elif msg["type"] == "verify and merge intra consensus data":
+			if self.isFinalMember():
+				self.verifyAndMergeConsensusData()	
+
+		elif msg["type"] == "send commitments of Ris":
+			if self.isFinalMember():
+				self.sendCommitment()
+
+		elif msg["type"] == "broadcast final set of txns to the ntw":
+			if self.isFinalMember():
+				self.BroadcastFinalTxn()		
 					
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
@@ -517,7 +532,6 @@ class Elastico:
 				return True
 		return False	
 
-	
 	
 	def runPBFT(self):
 		"""
