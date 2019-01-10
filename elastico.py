@@ -466,7 +466,6 @@ class Elastico:
 
 		# final committee member receives the final set of txns along with the signature from the node
 		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
-
 			data = msg["data"]
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
@@ -481,7 +480,8 @@ class Elastico:
 					print("txn block : ",type(data["txnBlock"]) , data["txnBlock"])
 					print("\n")
 					print("sign : ",type(data["sign"]) , data["sign"])
-
+					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
+						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
 
 		elif msg["type"] == "set_of_txns":
@@ -495,7 +495,16 @@ class Elastico:
 				return False , dict()
 			elif:
 				commList = self.committee_list
-				return True , commList			
+				return True , commList	
+
+		elif msg["type"] == "command to run pbft":
+			if self.is_directory == False:
+				self.runPBFT()
+
+		elif msg["type"] == "send txn set and sign to final committee":
+			if self.is_directory == False:
+				self.SendtoFinal()
+					
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
 		"""
@@ -514,6 +523,7 @@ class Elastico:
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
+		print("run pbft")
 		txn_set = set()
 		for txn in self.txn_block:
 			txn_set.add(txn)
@@ -595,6 +605,7 @@ class Elastico:
 		# response has final committee members
 		response = nodeId.send(msg)
 		for finalId in response:
+			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
@@ -791,16 +802,22 @@ def Run(txns):
 	print("\n")		
 	print("---set of txns added to each committee---")
 	print("\n")
-	for node in network_nodes:
-		if node.is_directory == False:
-			node.runPBFT()
+
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "command to run pbft"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
+	
 	print("\n")		
 	print("---PBFT FINISH---")
 	print("\n")
-	for node in network_nodes:
-		print(type(node.txn_block))
-		if node.is_directory == False:
-			node.SendtoFinal()
+
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "send txn set and sign to final committee"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
 
 	print("\n\n")	
 	print("########### STEP 3 Done ###########")	
