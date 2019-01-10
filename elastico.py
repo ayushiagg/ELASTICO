@@ -473,7 +473,14 @@ class Elastico:
 					if identityobj.committee_id not in self.CommitteeConsensusData:
 						self.CommitteeConsensusData[identityobj.committee_id] = dict()
 					# add signatures for the txn block 
-					self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
+					print("\n")
+					print("identityobj.committee_id : ",type(identityobj.committee_id) , identityobj.committee_id)
+					print("\n")
+					print("txn block : ",type(data["txnBlock"]) , data["txnBlock"])
+					print("\n")
+					print("sign : ",type(data["sign"]) , data["sign"])
+
+					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
 
 		elif msg["type"] == "set_of_txns":
 			# ToDo: Add verify pow step in this
@@ -774,6 +781,7 @@ def Run(txns):
 	print("---PBFT FINISH---")
 	print("\n")
 	for node in network_nodes:
+		print(type(node.txn_block))
 		if node.is_directory == False:
 			node.SendtoFinal()
 					
