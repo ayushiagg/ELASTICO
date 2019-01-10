@@ -11,7 +11,7 @@ n = 200
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
-c = 2
+c = 4
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 D = 1 
 # r - number of bits in random string 
@@ -91,7 +91,6 @@ def MulticastCommittee(commList):
 	"""
 
 	print("---multicast committee list to committee members---")
-	input()
 	print(len(commList), commList)
 	for committee_id in commList:
 		commMembers = commList[committee_id]
@@ -234,7 +233,7 @@ class Elastico:
 		# ips = ips.decode()
 		# return ips.split(' ')[0]
 
-		print("---IP address---")
+		print("---get IP address---")
 		ip=""
 		for i in range(4):
 			ip += str(random_gen(8))
@@ -247,7 +246,7 @@ class Elastico:
 		"""
 			for each node, it will return public pvt key pair
 		"""
-		print("---public pvt key pair---")
+		print("---get public pvt key pair---")
 		key = RSA.generate(2048)
 		return key
 
@@ -300,7 +299,6 @@ class Elastico:
 		"""
 			returns last s-bit of PoW as Identity : committee_id
 		"""	
-		print("---get the committee id---")
 		bindigest = ''
 		for hashdig in PoW:
 			bindigest += "{:04b}".format(int(hashdig, 16))
@@ -341,7 +339,7 @@ class Elastico:
 		# ToDo : Implement verification of PoW(valid or not)
 		if len(self.cur_directory) < c:
 			self.is_directory = True
-			print("---not seen c members yet---")
+			print("---not seen c members yet, so broadcast to ntw---")
 			BroadcastTo_Network(self.identity, "directoryMember")
 		else:
 			print("---seen c members---")
@@ -388,7 +386,7 @@ class Elastico:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
-					print("$$$$$$$ PoW valid  $$$$$$")
+					print("$$$$$$$ PoW valid $$$$$$")
 					self.cur_directory.append(identityobj)
 			else:
 		 		print("$$$$$$$ PoW not valid $$$$$$")		
@@ -470,12 +468,15 @@ class Elastico:
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
 				# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
-				if self.verify_sign(data["sign"], data["txnBlock"] , data["identity"].PK):
+				if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
 					if identityobj.committee_id not in self.CommitteeConsensusData:
 						self.CommitteeConsensusData[identityobj.committee_id] = dict()
 					# add signatures for the txn block 
 					self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
-					
+
+		elif msg["type"] == "set_of_txns":
+			data = msg["data"]
+			self.txn_block = data["txn_block"]			
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
 		"""
