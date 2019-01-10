@@ -9,19 +9,28 @@ class A:
 	def func(self):
 		c.append(self)
 
-a  = A()
-a.func()
-print (c)
-print(c[0].x)
+# a  = A()
+# a.func()
+# print (c)
+# print(c[0].x)
 
-p = elastico.Elastico()
-s = p.get_IP()
-fin = {"lol" : 1}
-p.addCommitment(fin)
-print(fin)
+# p = elastico.Elastico()
+# s = p.get_IP()
+# fin = {"lol" : 1}
+# p.addCommitment(fin)
+# print(fin)
 
-p,q = elastico.Identity('172' , 'pk1' , 1 , '1092' ) , elastico.Identity('172' , 'pk1' , 1 , '1092')
-print(p.isEqual(q))
+# p,q = elastico.Identity('172' , 'pk1' , 1 , '1092' ) , elastico.Identity('172' , 'pk1' , 1 , '1092')
+# print(p.isEqual(q))
 
-t = input()
-print(t, type(t))
+# t = input()
+# print(t, type(t))
+
+p = [[] for i in range(4)]
+q = p
+for i in range(4):
+	p[i] = A()
+	# print(p[i], q[i])
+
+# print(p,q)
+print( p==q )
