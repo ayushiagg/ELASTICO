@@ -521,16 +521,27 @@ class Elastico:
 				self.BroadcastFinalTxn()		
 					
 
-	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
+	# def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
+	# 	"""
+	# 		final committe member verifies that the certain txnBlock is the selected one by 
+	# 		checking it has sufficient sigantures(c/2 + 1)
+	# 	"""
+	# 	if self.isFinalMember():
+	# 		if selected_txnBlock in self.CommitteeConsensusData[committeeid] \
+	# 			and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
+	# 			return True
+	# 	return False	
+
+	def verifyAndMergeConsensusData(self):
 		"""
-			final committe member verifies that the certain txnBlock is the selected one by 
-			checking it has sufficient sigantures(c/2 + 1)
+			each final committee member validates that the values received from the committees are signed by 
+			atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 		"""
-		if self.isFinalMember():
-			if selected_txnBlock in self.CommitteeConsensusData[committeeid] \
-				and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
-				return True
-		return False	
+		for committeeid in range(pow(2,s)):
+			for txnBlock in self.CommitteeConsensusData[committeeid]:
+				if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
+					set_of_txns = eval(txnBlock)
+					self.mergedBlock.extend(set_of_txns)
 
 	
 	def runPBFT(self):
