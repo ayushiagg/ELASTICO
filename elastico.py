@@ -533,7 +533,9 @@ class Elastico:
 			verify whether signature is valid or not 
 			if public key is not key object then create a key object
 		"""
-
+		print("---verify_sign func---")
+		if type(publickey) is str:
+			publickey = publickey.encode()
 		if type(data) is not str:
 			data = str(data)
 		if type(publickey) is bytes:
