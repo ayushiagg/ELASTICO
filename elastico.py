@@ -603,10 +603,9 @@ class Elastico:
 			final committee members will broadcast S(commitmentSet), along with final set of 
 			X(txn_block) to everyone in the network
 		"""
-		if self.isFinalMember():
-			S = consistencyProtocol()
-			data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.txn_block , "finalTxnBlock_signature" : self.sign(self.txn_block)}
-			BroadcastTo_Network(data, "finalTxnBlock")		
+		S = consistencyProtocol()
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
+		BroadcastTo_Network(data, "finalTxnBlock")		
 
 
 	def getCommittee_members(committee_id):
