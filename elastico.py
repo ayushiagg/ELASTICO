@@ -154,10 +154,11 @@ class Elastico:
 			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
 			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
 			nonce - a number that each processor searches to get a  valid PoW
+			state - state in which a node is running
 	"""
 
 	def __init__(self):
-		print("---constructor called---")
+		print("---Constructor of elastico class---")
 		self.IP = self.get_IP()
 		self.key = self.get_key()
 		self.PoW = ""
@@ -475,6 +476,7 @@ class Elastico:
 					self.CommitteeConsensusData[identityobj.committee_id][ data["txnBlock"] ].add( data["sign"] )
 
 		elif msg["type"] == "set_of_txns":
+			# ToDo: Add verify pow step in this
 			data = msg["data"]
 			self.txn_block = data["txn_block"]			
 
@@ -491,14 +493,15 @@ class Elastico:
 
 	
 	
-	def runPBFT():
+	def runPBFT(self):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
-		pass
+		txn_set = set()
+		for txn in self.txn_block:
+			txn_set.add(txn)
 
-
-
+		self.txn_block = txn_set	
 
 	def isFinalMember(self):
 		"""
@@ -692,7 +695,6 @@ class Elastico:
 			if digest not in commitmentSet:
 				return False
 
-		print("viodfvugv")
 		# reconstruct epoch randomness
 
 		epoch_randomness = identityobj.epoch_randomness
@@ -731,24 +733,50 @@ def Run(txns):
 	# Id - identity of the nodes
 	Id = []
 	for i in range(n):
-		print( "----Running for processor number----" , i + 1)
-		print("---Call to Constructor---")
+		print( "---Running for processor number---" , i + 1)
 		E.append(Elastico())
-		print("---Call to compute_PoW---")
 		E[i].compute_PoW()
-
-	for i in range(2):
-		print(E[i])
-	
+	print("\n\n")	
+	print("########### STEP 1 Done ###########")	
+	print("-----------------------------------------------------------------------------------------------")
+	print("\n\n")
 	for i in range(n):	
-		print("---Call to form identity---")
 		Id.append(E[i].form_identity())
-		print("---Call to form_committee---")
 		E[i].form_committee()
 	# run pbft on txns
+	print("\n\n")	
+	print("########### STEP 2 Done ###########")	
+	print("-----------------------------------------------------------------------------------------------")
+	print("\n\n")
 
-
+	for node in network_nodes:
+		if node.is_directory == True:
+			commList = node.committee_list
+			k = 0
+			for iden in commList:
+				txn = txns[ k : k + 4]
+				k = k + 4
+				commMembers = commList[iden]
+				for commId in commMembers:
+					data = {"txn_block" : txn}
+					msg = {"data" : data , "type" : "set_of_txns"}
+					commId.send(msg)
+			break
+	print("\n")		
+	print("---set of txns added to each committee---")
+	print("\n")
+	for node in network_nodes:
+		if node.is_directory == False:
+			node.runPBFT()
+	print("\n")		
+	print("---PBFT FINISH---")
+	print("\n")
+	for node in network_nodes:
+		if node.is_directory == False:
+			node.SendtoFinal()
+					
 if __name__ == "__main__":
+	# txns is the list of the transactions to which the committees will agree on
 	txns = []
 	for i in range(100):
 		random_num = random_gen(32)
