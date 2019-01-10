@@ -91,7 +91,9 @@ def MulticastCommittee(commList):
 	"""
 
 	print("---multicast committee list to committee members---")
+	
 	print(len(commList), commList)
+	
 	for committee_id in commList:
 		commMembers = commList[committee_id]
 		for memberId in commMembers:
@@ -485,7 +487,15 @@ class Elastico:
 		elif msg["type"] == "set_of_txns":
 			# ToDo: Add verify pow step in this
 			data = msg["data"]
-			self.txn_block = data["txn_block"]			
+			# txn_block is a list of txns
+			self.txn_block = data["txn_block"]		
+
+		elif msg["type"] == "request committee list from directory member":
+			if self.is_directory == False:
+				return False , dict()
+			elif:
+				commList = self.committee_list
+				return True , commList			
 
 	def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
 		"""
@@ -686,7 +696,7 @@ class Elastico:
 		self.epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
-# verify the PoW of the sender
+	# verify the PoW of the sender
 	def verify_PoW(self, identityobj):
 		"""
 			verify the PoW of the node identityobj
@@ -749,6 +759,7 @@ def Run(txns):
 	print("########### STEP 1 Done ###########")	
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
+
 	for i in range(n):	
 		Id.append(E[i].form_identity())
 		E[i].form_committee()
@@ -758,10 +769,15 @@ def Run(txns):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
-	for node in network_nodes:
-		if node.is_directory == True:
-			commList = node.committee_list
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "request committee list from directory member"
+		msg = {"data" : data , "type" : type_}
+		is_directory , committee_list = node.send(msg)
+		if is_directory == True:
+			commList = committee_list
 			k = 0
+			# loop in sorted order of committee ids
 			for iden in commList:
 				txn = txns[ k : k + 4]
 				k = k + 4
@@ -771,6 +787,7 @@ def Run(txns):
 					msg = {"data" : data , "type" : "set_of_txns"}
 					commId.send(msg)
 			break
+			
 	print("\n")		
 	print("---set of txns added to each committee---")
 	print("\n")
@@ -784,6 +801,11 @@ def Run(txns):
 		print(type(node.txn_block))
 		if node.is_directory == False:
 			node.SendtoFinal()
+
+	print("\n\n")	
+	print("########### STEP 3 Done ###########")	
+	print("-----------------------------------------------------------------------------------------------")
+	print("\n\n")		
 					
 if __name__ == "__main__":
 	# txns is the list of the transactions to which the committees will agree on
@@ -792,3 +814,4 @@ if __name__ == "__main__":
 		random_num = random_gen(32)
 		txns.append(random_num)
 	Run(txns)	
+
