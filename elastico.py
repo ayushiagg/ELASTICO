@@ -385,7 +385,6 @@ class Elastico:
 			method to recieve messages for a node
 		"""
 		# new node is added in directory committee
-		print("---receive method---")
 
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
@@ -477,12 +476,6 @@ class Elastico:
 					if identityobj.committee_id not in self.CommitteeConsensusData:
 						self.CommitteeConsensusData[identityobj.committee_id] = dict()
 					# add signatures for the txn block 
-					print("\n")
-					print("identityobj.committee_id : ",type(identityobj.committee_id) , identityobj.committee_id)
-					print("\n")
-					print("txn block : ",type(data["txnBlock"]) , data["txnBlock"])
-					print("\n")
-					print("sign : ",type(data["sign"]) , data["sign"])
 					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
@@ -496,13 +489,18 @@ class Elastico:
 		elif msg["type"] == "request committee list from directory member":
 			if self.is_directory == False:
 				return False , dict()
-			elif:
+			else:
 				commList = self.committee_list
 				return True , commList	
 
 		elif msg["type"] == "command to run pbft":
 			if self.is_directory == False:
 				self.runPBFT()
+
+		elif msg["type"] == "command to run pbft by final committee":
+			if self.isFinalMember():
+				self.runPBFT()
+
 
 		elif msg["type"] == "send txn set and sign to final committee":
 			if self.is_directory == False:
@@ -552,8 +550,10 @@ class Elastico:
 		txn_set = set()
 		for txn in self.txn_block:
 			txn_set.add(txn)
-
-		self.txn_block = txn_set	
+		if self.isFinalMember():
+			self.finalBlock = txn_set
+		else:	
+			self.txn_block = txn_set	
 
 	def isFinalMember(self):
 		"""
@@ -776,6 +776,8 @@ class Elastico:
 		return False
 
 
+
+
 def Run(txns):
 	"""
 		each run is one epoch
@@ -847,7 +849,43 @@ def Run(txns):
 	print("\n\n")	
 	print("########### STEP 3 Done ###########")	
 	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")		
+	print("\n\n")
+
+	for node in Id: 
+		data = {"identity" :  node}
+		type_ = "verify and merge intra consensus data"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
+
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "command to run pbft by final committee"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)	
+
+	print("\n")		
+	print("---PBFT FINISH BY FINAL COMMITTEE---")
+	print("\n")
+	
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "send commitments of Ris"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
+
+
+	for node in Id:
+		data = {"identity" :  node}
+		type_ = "broadcast final set of txns to the ntw"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
+
+	
+	print("\n\n")	
+	print("########### STEP 4 Done ###########")	
+	print("-----------------------------------------------------------------------------------------------")
+	print("\n\n")	
+
 					
 if __name__ == "__main__":
 	# txns is the list of the transactions to which the committees will agree on
