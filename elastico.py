@@ -535,11 +535,14 @@ class Elastico:
 			each final committee member validates that the values received from the committees are signed by 
 			atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 		"""
+		print("--verify And Merge--")
 		for committeeid in range(pow(2,s)):
-			for txnBlock in self.CommitteeConsensusData[committeeid]:
-				if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
-					set_of_txns = eval(txnBlock)
-					self.mergedBlock.extend(set_of_txns)
+			if committeeid in self.CommitteeConsensusData:
+				for txnBlock in self.CommitteeConsensusData[committeeid]:
+					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
+						print(type(txnBlock) , txnBlock)
+						set_of_txns = eval(txnBlock)
+						self.mergedBlock.extend(set_of_txns)
 
 	
 	def runPBFT(self):
