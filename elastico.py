@@ -299,7 +299,15 @@ class Elastico:
 		global fin_num
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
+			finalCommList = self.committee_list[fin_num]
+			# notify the members of the final committee that they are the final committee members
+			for finalMember in finalCommList:
+				data = {"final member" : fin_num , "identity" : self.identity}
+				msg = {"data" : data , "type" : "notify final member"}
+				finalMember.send(msg)
 		self.final_committee_id = fin_num
+		
+
 
 
 	def get_committeeid(self, PoW):
@@ -524,7 +532,11 @@ class Elastico:
 
 		elif msg["type"] == "broadcast final set of txns to the ntw":
 			if self.isFinalMember():
-				self.BroadcastFinalTxn()		
+				self.BroadcastFinalTxn()
+
+		elif msg["type"] == "notify final member":
+			self.is_final = True		
+
 					
 
 	# def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
@@ -577,12 +589,7 @@ class Elastico:
 		"""
 			tell whether this node is a final committee member or not
 		"""
-		global fin_num
-		if self.committee_id == fin_num:
-			self.is_final = True
-			return True
-		return False
-
+		return self.is_final
 
 	def sign(self,data):
 		"""
