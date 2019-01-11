@@ -706,7 +706,7 @@ class Elastico:
 		"""		
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
-			for nodeId in committee_Members:
+			for nodeId in self.committee_Members:
 				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
