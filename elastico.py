@@ -189,7 +189,7 @@ class Elastico:
 		self.state = None
 		self.mergedBlock = []
 		self.finalBlock = []
-
+		self.RcommitmentSet = ""
 
 	def reset(self):
 		"""
@@ -267,7 +267,7 @@ class Elastico:
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
 		randomset_R = set()
-		if len(self.set_of_Rs) > 0: 
+		if len(self.set_of_Rs) > 0:
 			self.epoch_randomness, randomset_R = self.xor_R()
 		nonce = 0
 		while True: 
@@ -450,7 +450,7 @@ class Elastico:
 			if self.verify_PoW(identityobj):
 				Ri = data["Ri"]
 				HashRi = self.hexdigest(Ri)
-				if HashRi in commitmentSet:
+				if HashRi in self.RcommitmentSet:
 					self.set_of_Rs.add(Ri)
 
 		elif msg["type"] == "finalTxnBlock":
@@ -468,6 +468,7 @@ class Elastico:
 					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+					self.RcommitmentSet = received_commitmentSet
 				
 		elif msg["type"] == "getCommitteeMembers":
 			if self.is_directory == False:
@@ -535,7 +536,12 @@ class Elastico:
 				self.BroadcastFinalTxn()
 
 		elif msg["type"] == "notify final member":
-			self.is_final = True		
+			self.is_final = True
+
+		elif msg["type"] == "Broadcast Ri":
+			if self.isFinalMember():
+				self.BroadcastR()
+
 
 					
 
@@ -739,8 +745,8 @@ class Elastico:
 		"""
 			broadcast Ri to all the network
 		"""
-		if self.Ri == "":
-			self.generate_randomstrings()
+		# if self.Ri == "":
+		# 	self.generate_randomstrings()
 		data = {"Ri" : self.Ri, "identity" : self.identity}
 		BroadcastTo_Network(data, "RandomStringBroadcast")
 
@@ -882,14 +888,13 @@ def Run(txns):
 		data = {"identity" :  node , "committee_id" : fin_num}
 		type_ = "getCommitteeMembers"
 		msg = {"data" : data , "type" : type_}
-		is_directory , committee_list = node.send(msg)
+		is_directory , commList = node.send(msg)
 		if is_directory == True:
-			commList = committee_list
-			for commId in commList:
-				data = {"identity" :  node}
+			for commNodeId in commList:
+				data = {"identity" :  commNodeId}
 				type_ = "verify and merge intra consensus data"
 				msg = {"data" : data , "type" : type_}
-				commId.send(msg)
+				commNodeId.send(msg)
 			break
 
 	for node in Id:
@@ -903,6 +908,7 @@ def Run(txns):
 	print("\n")
 	
 	for node in Id:
+		# ToDo: try to do this only for final committee members not for whole ntw
 		data = {"identity" :  node}
 		type_ = "send commitments of Ris"
 		msg = {"data" : data , "type" : type_}
@@ -922,6 +928,12 @@ def Run(txns):
 	print("\n\n")
 
 
+	for node in Id:
+		# 
+		data = {"identity" : node}
+		type_= "Broadcast Ri"
+		msg = {"data" : data , "type" : type_}
+		node.send(msg)
 
 	print("\n\n")
 	print("########### STEP 5 Done ###########")
