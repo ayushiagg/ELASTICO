@@ -158,6 +158,7 @@ class Elastico:
 			nonce - a number that each processor searches to get a  valid PoW
 			state - state in which a node is running
 			mergedBlock - list of txns of different committees after their intra committee consensus
+			finalBlock - agreed list of txns after pbft run by final committee
 	"""
 
 	def __init__(self):
@@ -461,17 +462,21 @@ class Elastico:
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 				
 		elif msg["type"] == "getCommitteeMembers":
+			if self.is_directory == False:
+				return False , set()
 			data = msg["data"]
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
 				committeeid = data["committee_id"]
 				print("final comid :-" , committeeid)
-				return self.committee_list[committeeid]
+				return True, self.committee_list[committeeid]
 
 		# final committee member receives the final set of txns along with the signature from the node
 		elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
 			data = msg["data"]
 			identityobj = data["identity"]
+			print("txnBlock : - " , data["txnBlock"])
+			print("commid - " , identityobj.committee_id)
 			if self.verify_PoW(identityobj):
 				# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 				if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
@@ -481,6 +486,7 @@ class Elastico:
 					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+
 
 		elif msg["type"] == "set_of_txns":
 			# ToDo: Add verify pow step in this
@@ -497,11 +503,11 @@ class Elastico:
 
 		elif msg["type"] == "command to run pbft":
 			if self.is_directory == False:
-				self.runPBFT()
+				self.runPBFT(self.txn_block)
 
 		elif msg["type"] == "command to run pbft by final committee":
 			if self.isFinalMember():
-				self.runPBFT()
+				self.runPBFT(self.mergedBlock)
 
 
 		elif msg["type"] == "send txn set and sign to final committee":
@@ -539,6 +545,7 @@ class Elastico:
 		"""
 		print("--verify And Merge--")
 		for committeeid in range(pow(2,s)):
+			print("comm id : -" , committeeid)
 			if committeeid in self.CommitteeConsensusData:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
 					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
@@ -553,13 +560,13 @@ class Elastico:
 						self.mergedBlock.extend(set_of_txns)
 
 	
-	def runPBFT(self):
+	def runPBFT(self , txnBlock):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
 		# print("run pbft")
 		txn_set = set()
-		for txn in self.txn_block:
+		for txn in txnBlock:
 			txn_set.add(txn)
 		if self.isFinalMember():
 			self.finalBlock = txn_set
@@ -639,7 +646,7 @@ class Elastico:
 		data = {"committee_id" : self.final_committee_id , "identity" : self.identity}
 		msg = {"data" : data , "type" : "getCommitteeMembers"}
 		# response has final committee members
-		response = nodeId.send(msg)
+		boolval, response = nodeId.send(msg)
 		for finalId in response:
 			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
@@ -830,8 +837,8 @@ def Run(txns):
 			k = 0
 			# loop in sorted order of committee ids
 			for iden in commList:
-				txn = txns[ k : k + 4]
-				k = k + 4
+				txn = txns[ k : k + 8]
+				k = k + 8
 				commMembers = commList[iden]
 				for commId in commMembers:
 					data = {"txn_block" : txn}
@@ -911,7 +918,7 @@ def Run(txns):
 if __name__ == "__main__":
 	# txns is the list of the transactions to which the committees will agree on
 	txns = []
-	for i in range(100):
+	for i in range(200):
 		random_num = random_gen(32)
 		txns.append(random_num)
 	Run(txns)	
