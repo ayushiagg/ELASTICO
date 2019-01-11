@@ -92,7 +92,7 @@ def MulticastCommittee(commList):
 
 	print("---multicast committee list to committee members---")
 	
-	print(len(commList), commList)
+	# print(len(commList), commList)
 	
 	for committee_id in commList:
 		commMembers = commList[committee_id]
@@ -127,7 +127,7 @@ class Identity:
 			send the msg to node based on their identity
 		"""
 		global identityNodeMap
-		print("--send to node--")
+		# print("--send to node--")
 		node = identityNodeMap[self]
 		response = node.receive(msg)
 		return response
@@ -391,7 +391,7 @@ class Elastico:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
-					print("$$$$$$$ PoW valid $$$$$$")
+					# print("$$$$$$$ PoW valid $$$$$$")
 					self.cur_directory.append(identityobj)
 			else:
 		 		print("$$$$$$$ PoW not valid $$$$$$")		
@@ -400,7 +400,7 @@ class Elastico:
 		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
-				print("$$$$$$$ PoW valid 22222 $$$$$$")
+				# print("$$$$$$$ PoW valid 22222 $$$$$$")
 				if identityobj.committee_id not in self.committee_list:
 					self.committee_list[identityobj.committee_id] = [identityobj]
 				elif len(self.committee_list[identityobj.committee_id]) < c:
@@ -419,6 +419,7 @@ class Elastico:
 
 			if flag == 0:
 				# Send commList[iden] to members of commList[iden]
+				print("----------committees full----------------")
 				MulticastCommittee(commList)
 				self.form_finalCommittee()
 
@@ -464,6 +465,7 @@ class Elastico:
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
 				committeeid = data["committee_id"]
+				print("final comid :-" , committeeid)
 				return self.committee_list[committeeid]
 
 		# final committee member receives the final set of txns along with the signature from the node
@@ -541,7 +543,13 @@ class Elastico:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
 					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
 						print(type(txnBlock) , txnBlock)
-						set_of_txns = eval(txnBlock)
+						try:
+							# ToDo: Check where is empty block coming from
+							if len(txnBlock) > 0:
+								set_of_txns = eval(txnBlock)
+						except Exception as e:
+							print("excepton:" , txnBlock , "  ", len(txnBlock), " ", type(txnBlock))
+							raise e
 						self.mergedBlock.extend(set_of_txns)
 
 	
@@ -549,7 +557,7 @@ class Elastico:
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
-		print("run pbft")
+		# print("run pbft")
 		txn_set = set()
 		for txn in self.txn_block:
 			txn_set.add(txn)
@@ -739,7 +747,7 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
-		print("---verify PoW---")
+		# print("---verify PoW---")
 		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 		PoW = identityobj.PoW
 		# Valid Hash has D leading '0's (in hex)
@@ -803,6 +811,8 @@ def Run(txns):
 	for i in range(n):	
 		Id.append(E[i].form_identity())
 		E[i].form_committee()
+
+	# ToDo: check if committees are made or not by contacting to directory committee	
 	# run pbft on txns
 	print("\n\n")	
 	print("########### STEP 2 Done ###########")	
