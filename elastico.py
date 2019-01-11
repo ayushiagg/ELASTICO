@@ -7,11 +7,11 @@ from secrets import SystemRandom
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
-n = 200
+n = 100
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
-c = 4
+c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 D = 1 
 # r - number of bits in random string 
@@ -37,7 +37,7 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
-	global network_nodes
+	global network_nodes, commitmentSet
 	if len(commitmentSet) == 0:
 		flag = True
 		for node in network_nodes:
@@ -456,9 +456,9 @@ class Elastico:
 				finalTxnBlock_signature = data["finalTxnBlock_signature"]
 				if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 					# ToDo : to take step regarding this
-					if finalTxnBlock not in self.finalBlockbyFinalCommittee:
-						self.finalBlockbyFinalCommittee[finalTxnBlock] = set()
-					self.finalBlockbyFinalCommittee[finalTxnBlock].add(finalTxnBlock_signature)
+					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
+						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
+					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 				
 		elif msg["type"] == "getCommitteeMembers":
 			data = msg["data"]
@@ -596,7 +596,7 @@ class Elastico:
 			verify whether signature is valid or not 
 			if public key is not key object then create a key object
 		"""
-		print("---verify_sign func---")
+		# print("---verify_sign func---")
 		if type(publickey) is str:
 			publickey = publickey.encode()
 		if type(data) is not str:
@@ -616,6 +616,7 @@ class Elastico:
 		"""
 		S = consistencyProtocol()
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
+		print("finalblock-" , self.finalBlock)
 		BroadcastTo_Network(data, "finalTxnBlock")		
 
 
@@ -896,7 +897,15 @@ def Run(txns):
 	print("\n\n")	
 	print("########### STEP 4 Done ###########")	
 	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")	
+	print("\n\n")
+
+
+
+	print("\n\n")
+	print("########### STEP 5 Done ###########")
+	print("-----------------------------------------------------------------------------------------------")
+	print("\n\n")
+
 
 					
 if __name__ == "__main__":
