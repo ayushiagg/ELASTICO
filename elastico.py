@@ -871,11 +871,19 @@ def Run(txns):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
-	for node in Id: 
-		data = {"identity" :  node}
-		type_ = "verify and merge intra consensus data"
+	for node in Id:
+		data = {"identity" :  node , "committee_id" : fin_num}
+		type_ = "getCommitteeMembers"
 		msg = {"data" : data , "type" : type_}
-		node.send(msg)
+		is_directory , committee_list = node.send(msg)
+		if is_directory == True:
+			commList = committee_list
+			for commId in commList:
+				data = {"identity" :  node}
+				type_ = "verify and merge intra consensus data"
+				msg = {"data" : data , "type" : type_}
+				commId.send(msg)
+			break
 
 	for node in Id:
 		data = {"identity" :  node}
