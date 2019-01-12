@@ -7,7 +7,7 @@ from secrets import SystemRandom
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
 # n : number of processors
-n = 100
+n = 150
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
@@ -100,6 +100,7 @@ def MulticastCommittee(commList):
 			# union of committe members views
 			msg = {"data" : commMembers , "type" : "committee members views"}
 			memberId.send(msg)
+			# input()
 
 
 class Identity:
@@ -185,8 +186,8 @@ class Elastico:
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
-		self.nonce = ""
-		self.state = None
+		self.nonce = 0
+		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = []
 		self.RcommitmentSet = ""
@@ -214,7 +215,7 @@ class Elastico:
 		self.txn_block = ""
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
-		self.nonce = ""
+		self.nonce = 0
 		pass
 
 
@@ -263,31 +264,29 @@ class Elastico:
 			returns hash which satisfies the difficulty challenge(D) : PoW
 		"""
 		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
-		print("---PoW computation started---")
+		# print("---PoW computation started---")
 		PK = self.key.publickey().exportKey().decode()
 		IP = self.IP
 		randomset_R = set()
 		if len(self.set_of_Rs) > 0:
 			self.epoch_randomness, randomset_R = self.xor_R()
-		nonce = 0
-		while True: 
 						# minor comment: create a sha256 object by calling hashlib.sha256()
 						# then repeatedly call sha256.update(...) with the things that need to be hashed together.
 						# finally extract digest by calling sha256.digest()
 						# don't convert to json and then to string
-						# bug is possible in this, find and fix it.			
-			digest = SHA256.new()
-			digest.update(IP.encode())
-			digest.update(PK.encode())
-			digest.update(self.epoch_randomness.encode())
-			digest.update(str(nonce).encode())
-			hash_val = digest.hexdigest()
-			if hash_val.startswith('0' * D):
-				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
-				self.nonce = nonce
-				print("---PoW computation end---")
-				return hash_val
-			nonce += 1
+						# bug is possible in this, find and fix it.
+		digest = SHA256.new()
+		digest.update(IP.encode())
+		digest.update(PK.encode())
+		digest.update(self.epoch_randomness.encode())
+		digest.update(str(self.nonce).encode())
+		hash_val = digest.hexdigest()
+		if hash_val.startswith('0' * D):
+			self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
+			print("---PoW computation end---")
+			self.state = ELASTICO_STATES["PoW Computed"]
+			return hash_val
+		self.nonce += 1
 
 
 	def form_finalCommittee(self):
@@ -403,7 +402,7 @@ class Elastico:
 					# print("$$$$$$$ PoW valid $$$$$$")
 					self.cur_directory.append(identityobj)
 			else:
-		 		print("$$$$$$$ PoW not valid $$$$$$")		
+		 		print("$$$$$$$ PoW not valid $$$$$$")
 
 		# new node is added to the corresponding committee list if committee list has less than c members
 		elif msg["type"] == "newNode" and self.is_directory:
@@ -823,20 +822,30 @@ def Run(txns):
 	for i in range(n):
 		print( "---Running for processor number---" , i + 1)
 		E.append(Elastico())
-		E[i].compute_PoW()
-	print("\n\n")	
-	print("########### STEP 1 Done ###########")	
+
+	while True:
+		flag = False
+		for i in range(n):
+			if E[i].state == ELASTICO_STATES["NONE"]:
+				E[i].compute_PoW()
+				flag = True
+		if flag == False:
+			break
+	input()
+	print("\n\n")
+	print("########### STEP 1 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
-	for i in range(n):	
+	for i in range(n):
 		Id.append(E[i].form_identity())
 		E[i].form_committee()
 
 	# ToDo: check if committees are made or not by contacting to directory committee	
 	# run pbft on txns
-	print("\n\n")	
-	print("########### STEP 2 Done ###########")	
+	input()
+	print("\n\n")
+	print("########### STEP 2 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
