@@ -265,28 +265,29 @@ class Elastico:
 		"""
 		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
 		# print("---PoW computation started---")
-		PK = self.key.publickey().exportKey().decode()
-		IP = self.IP
-		randomset_R = set()
-		if len(self.set_of_Rs) > 0:
-			self.epoch_randomness, randomset_R = self.xor_R()
-						# minor comment: create a sha256 object by calling hashlib.sha256()
-						# then repeatedly call sha256.update(...) with the things that need to be hashed together.
-						# finally extract digest by calling sha256.digest()
-						# don't convert to json and then to string
-						# bug is possible in this, find and fix it.
-		digest = SHA256.new()
-		digest.update(IP.encode())
-		digest.update(PK.encode())
-		digest.update(self.epoch_randomness.encode())
-		digest.update(str(self.nonce).encode())
-		hash_val = digest.hexdigest()
-		if hash_val.startswith('0' * D):
-			self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
-			print("---PoW computation end---")
-			self.state = ELASTICO_STATES["PoW Computed"]
-			return hash_val
-		self.nonce += 1
+		if self.state == ELASTICO_STATES["NONE"]:
+			PK = self.key.publickey().exportKey().decode()
+			IP = self.IP
+			randomset_R = set()
+			if len(self.set_of_Rs) > 0:
+				self.epoch_randomness, randomset_R = self.xor_R()
+							# minor comment: create a sha256 object by calling hashlib.sha256()
+							# then repeatedly call sha256.update(...) with the things that need to be hashed together.
+							# finally extract digest by calling sha256.digest()
+							# don't convert to json and then to string
+							# bug is possible in this, find and fix it.
+			digest = SHA256.new()
+			digest.update(IP.encode())
+			digest.update(PK.encode())
+			digest.update(self.epoch_randomness.encode())
+			digest.update(str(self.nonce).encode())
+			hash_val = digest.hexdigest()
+			if hash_val.startswith('0' * D):
+				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
+				print("---PoW computation end---")
+				self.state = ELASTICO_STATES["PoW Computed"]
+				return hash_val
+			self.nonce += 1
 
 
 	def form_finalCommittee(self):
@@ -326,6 +327,7 @@ class Elastico:
 			identity consists of public key, ip, committee id, PoW
 		"""
 		# export public key
+
 		global identityNodeMap
 		print("---form identity---")
 		PK = self.key.publickey().exportKey().decode()
@@ -355,9 +357,11 @@ class Elastico:
 			self.is_directory = True
 			print("---not seen c members yet, so broadcast to ntw---")
 			BroadcastTo_Network(self.identity, "directoryMember")
+			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
 			print("---seen c members---")
 			self.Send_to_Directory()
+			self.state = ELASTICO_STATES["Formed Committee"]	
 
 
 	def Send_to_Directory(self):
@@ -435,6 +439,7 @@ class Elastico:
 		elif msg["type"] == "committee members views":
 			commMembers = msg["data"]
 			self.committee_Members |= set(commMembers)
+			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
 
 		# receiving H(Ri) by final committe members
 		elif msg["type"] == "hash" and self.isFinalMember():
@@ -541,20 +546,7 @@ class Elastico:
 			if self.isFinalMember():
 				self.BroadcastR()
 
-
-					
-
-	# def checkSufficient_Signatures(self, committeeid, selected_txnBlock):
-	# 	"""
-	# 		final committe member verifies that the certain txnBlock is the selected one by 
-	# 		checking it has sufficient sigantures(c/2 + 1)
-	# 	"""
-	# 	if self.isFinalMember():
-	# 		if selected_txnBlock in self.CommitteeConsensusData[committeeid] \
-	# 			and len(self.CommitteeConsensusData[committeeid][selected_txnBlock]) >= c//2 + 1:
-	# 			return True
-	# 	return False	
-
+ 
 	def verifyAndMergeConsensusData(self):
 		"""
 			each final committee member validates that the values received from the committees are signed by 
@@ -681,12 +673,6 @@ class Elastico:
 		pass
 
 
-	def Broadcast_signature(signature, signedVal):
-		"""
-			Send the signature after vaidation to complete network
-		"""
-		pass
-
 
 	def generate_randomstrings(self):
 		"""
@@ -734,6 +720,7 @@ class Elastico:
 
 	def addCommitment(self, finalBlock):
 		"""
+			ToDo: Check where to use this
 			include H(Ri) ie. commitment in final block
 		"""
 		Hash_Ri = self.getCommitment()
@@ -811,17 +798,17 @@ class Elastico:
 def Run(txns):
 	"""
 		each run is one epoch
-		run processors to compute PoW and form committees
 	"""
 	# E - elastico nodes
 	global network_nodes
 	E = []
 	network_nodes = E
 	# Id - identity of the nodes
-	Id = []
 	for i in range(n):
 		print( "---Running for processor number---" , i + 1)
 		E.append(Elastico())
+
+	Id = [[] for i in range(n)]
 
 	while True:
 		flag = False
@@ -829,6 +816,9 @@ def Run(txns):
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
 				flag = True
+			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
+				Id[i] = E[i].form_identity()
+				E[i].form_committee()
 		if flag == False:
 			break
 	input()
@@ -868,7 +858,7 @@ def Run(txns):
 					commId.send(msg)
 			break
 			
-	print("\n")		
+	print("\n")
 	print("---set of txns added to each committee---")
 	print("\n")
 
@@ -878,7 +868,7 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
 	
-	print("\n")		
+	print("\n")
 	print("---PBFT FINISH---")
 	print("\n")
 
@@ -888,7 +878,7 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
 
-	print("\n\n")	
+	print("\n\n")
 	print("########### STEP 3 Done ###########")	
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
@@ -912,7 +902,7 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)	
 
-	print("\n")		
+	print("\n")
 	print("---PBFT FINISH BY FINAL COMMITTEE---")
 	print("\n")
 	
@@ -930,8 +920,8 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
 
-	
-	print("\n\n")	
+
+	print("\n\n")
 	print("########### STEP 4 Done ###########")	
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
@@ -950,12 +940,12 @@ def Run(txns):
 	print("\n\n")
 
 
-					
 if __name__ == "__main__":
 	# txns is the list of the transactions to which the committees will agree on
 	txns = []
 	for i in range(200):
 		random_num = random_gen(32)
 		txns.append(random_num)
+	# Run an epoch
 	Run(txns)	
 
