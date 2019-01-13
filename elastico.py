@@ -377,22 +377,23 @@ class Elastico:
 			nodeId.send(msg)
 
 
-		for nodeId in self.cur_directory:
-			msg = {"data" : self.identity , "type" : "checkCommitteeFull"}
-			nodeId.send(msg)
-			# commList = node.committee_list
-			# flag = 0
-			# for iden in commList:
-			# 	val = commList[iden]
-			# 	if len(val) < c:
-			# 		flag = 1
-			# 		break
+	def checkCommitteeFull(self):
+		"""
+			directory member checks whether the committees are full or not
+		"""
+		commList = self.committee_list
+		flag = 0
+		for iden in commList:
+			val = commList[iden]
+			if len(val) < c:
+				flag = 1
+				break
 
-			# if flag == 0:
-			# 	# Send commList[iden] to members of commList[iden]
-			# 	MulticastCommittee(commList)
-
-
+		if flag == 0:
+			# Send commList[iden] to members of commList[iden]
+			print("----------committees full----------------")
+			MulticastCommittee(commList)
+			self.form_finalCommittee()
 
 	def receive(self, msg):
 		"""
@@ -419,23 +420,11 @@ class Elastico:
 					self.committee_list[identityobj.committee_id] = [identityobj]
 				elif len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
+				self.checkCommitteeFull()	
 			else:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")		
 		# if committees are formed then multicast the committee list to committee members 
-		elif msg["type"] == "checkCommitteeFull" and self.is_directory:
-			commList = self.committee_list
-			flag = 0
-			for iden in commList:
-				val = commList[iden]
-				if len(val) < c:
-					flag = 1
-					break
-
-			if flag == 0:
-				# Send commList[iden] to members of commList[iden]
-				print("----------committees full----------------")
-				MulticastCommittee(commList)
-				self.form_finalCommittee()
+		
 
 		# union of committe members views
 		elif msg["type"] == "committee members views":
@@ -817,11 +806,11 @@ def Run(txns):
 	global network_nodes
 	E = []
 	network_nodes = E
-	# Id - identity of the nodes
 	for i in range(n):
 		print( "---Running for processor number---" , i + 1)
 		E.append(Elastico())
-
+	
+	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
 
 	while True:
