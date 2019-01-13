@@ -5,7 +5,7 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger
 # n : number of processors
 n = 150
 # s - where 2^s is the number of committees
@@ -22,6 +22,8 @@ fin_num = ""
 identityNodeMap = dict()
 # commitmentSet - set of commitments S
 commitmentSet = set()
+# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
+ledger = []
 
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Committee": 2, "RunAsDirectory": 3 , "InPBFT" : 4, "Consensus Sent" : 5, "Final Committee in PBFT" : 6, "Sent Final Block" : 7, "Received Final Block" : 8 }
 
@@ -546,6 +548,15 @@ class Elastico:
 			if self.isFinalMember():
 				self.BroadcastR()
 
+				
+		elif msg["type"] == "append to ledger":
+			if self.is_directory == False and len(self.committee_Members) == c:
+				response = []
+				for txnBlock in self.finalBlockbyFinalCommittee:
+					if len(self.finalBlockbyFinalCommittee[txnBlock]) > c//2:
+						response.append(txnBlock)
+				return response		
+
  
 	def verifyAndMergeConsensusData(self):
 		"""
@@ -792,6 +803,9 @@ class Elastico:
 			return True
 		return False
 
+	def appendToLedger(self):
+		"""
+		"""
 
 
 
@@ -826,10 +840,6 @@ def Run(txns):
 	print("########### STEP 1 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
-
-	for i in range(n):
-		Id.append(E[i].form_identity())
-		E[i].form_committee()
 
 	# ToDo: check if committees are made or not by contacting to directory committee	
 	# run pbft on txns
@@ -933,6 +943,14 @@ def Run(txns):
 		type_= "Broadcast Ri"
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
+
+	for node in Id:
+		data = {"identity" : node}
+		msg = {"data" : data, "type" :  "append to ledger"}
+		response = node.send(msg)
+		print(response)
+		input()
+
 
 	print("\n\n")
 	print("########### STEP 5 Done ###########")
