@@ -65,7 +65,7 @@ def random_gen(size=32):
 
 def BroadcastTo_Network(data, type_):
 	"""
-		Broadcast to the whole ntw
+		Broadcast data to the whole ntw
 	"""
 		# comment: no if statements
 		# for each instance of Elastico, create a receive(self, msg) method
@@ -263,13 +263,14 @@ class Elastico:
 
 	def compute_PoW(self):
 		"""
-			returns hash which satisfies the difficulty challenge(D) : PoW
+			returns hash which satisfies the difficulty challenge(D) : PoW["hash"]
 		"""
-		# ToDo: Add c/2 + 1 random strings used to generate the epoch randomness and send along with the PoW 
 		# print("---PoW computation started---")
 		if self.state == ELASTICO_STATES["NONE"]:
 			PK = self.key.publickey().exportKey().decode()
 			IP = self.IP
+			# If it is the first epoch , randomset_R will be an empty set .
+			# otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
 				self.epoch_randomness, randomset_R = self.xor_R()
@@ -314,7 +315,7 @@ class Elastico:
 
 	def get_committeeid(self, PoW):
 		"""
-			returns last s-bit of PoW as Identity : committee_id
+			returns last s-bit of PoW["hash"] as Identity : committee_id
 		"""	
 		bindigest = ''
 		for hashdig in PoW:
@@ -326,16 +327,16 @@ class Elastico:
 	def form_identity(self):
 		"""
 			identity formation for a node
-			identity consists of public key, ip, committee id, PoW
+			identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
 		"""
-		# export public key
-
 		global identityNodeMap
 		print("---form identity---")
+		# export public key
 		PK = self.key.publickey().exportKey().decode()
 		# set the committee id acc to PoW solution
 		self.committee_id = self.get_committeeid(self.PoW["hash"])
 		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce, self.epoch_randomness)
+		# mapped identity object to the elastico object
 		identityNodeMap[self.identity] = self
 		return self.identity
 
@@ -354,7 +355,6 @@ class Elastico:
 			creates directory committee if not yet created otherwise informs all
 			the directory members
 		"""	
-		# ToDo : Implement verification of PoW(valid or not)
 		if len(self.cur_directory) < c:
 			self.is_directory = True
 			print("---not seen c members yet, so broadcast to ntw---")
@@ -739,7 +739,7 @@ class Elastico:
 
 	def xor_R(self):
 		"""
-			find xor of any random c/2 + 1 r-bit strings
+			find xor of any random c/2 + 1 r-bit strings to set the epoch randomness
 		"""
 		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this
 		randomset = SystemRandom().sample(self.set_of_Rs , c//2 + 1)
@@ -802,10 +802,10 @@ def Run(txns):
 	"""
 		each run is one epoch
 	"""
-	# E - elastico nodes
 	global network_nodes
 	E = []
 	network_nodes = E
+	# E is the list of elastico objects
 	for i in range(n):
 		print( "---Running for processor number---" , i + 1)
 		E.append(Elastico())
