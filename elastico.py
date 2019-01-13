@@ -813,15 +813,19 @@ def Run(txns):
 	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
 
+	objIndexes = set(range(n))
 	while True:
 		flag = False
-		for i in range(n):
+		for i in objIndexes.copy():
+			# if the state is NONE, then each node has to compute its PoW
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
 				flag = True
+			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
 			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
 				E[i].form_committee()
+				objIndexes.remove(i)
 		if flag == False:
 			break
 	input()
