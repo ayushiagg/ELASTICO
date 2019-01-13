@@ -25,7 +25,7 @@ commitmentSet = set()
 # ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
 ledger = []
 
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Committee": 2, "RunAsDirectory": 3 , "InPBFT" : 4, "Consensus Sent" : 5, "Final Committee in PBFT" : 6, "Sent Final Block" : 7, "Received Final Block" : 8 }
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 , "InPBFT" : 5, "Consensus Sent" : 6, "Final Committee in PBFT" : 7, "Sent Final Block" : 8, "Received Final Block" : 9 }
 
 
 
@@ -71,11 +71,11 @@ def BroadcastTo_Network(data, type_):
 		# for each instance of Elastico, create a receive(self, msg) method
 		# this function will just call node.receive(msg)
 		# inside msg, you will need to have a message type, and message data.
-	global network_nodes
+	global identityNodeMap
 	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
-	for node in network_nodes:
-		node.receive(msg)
+	for nodeId in identityNodeMap:
+		nodeId.send(msg)
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -338,6 +338,7 @@ class Elastico:
 		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce, self.epoch_randomness)
 		# mapped identity object to the elastico object
 		identityNodeMap[self.identity] = self
+		self.state = ELASTICO_STATES["Formed Identity"]
 		return self.identity
 
 
@@ -370,7 +371,7 @@ class Elastico:
 		"""
 			Send about new nodes to directory committee members
 		"""
-		# Add the new processor in particular committee list of curent directory nodes
+		# Add the new processor in particular committee list of directory committee nodes
 		print("---Send to directory---")
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
@@ -397,16 +398,14 @@ class Elastico:
 
 	def receive(self, msg):
 		"""
-			method to recieve messages for a node
+			method to recieve messages for a node as per the type of a msg
 		"""
-		# new node is added in directory committee
-
+		# new node is added in directory committee if not yet formed
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
-					# print("$$$$$$$ PoW valid $$$$$$")
 					self.cur_directory.append(identityobj)
 			else:
 		 		print("$$$$$$$ PoW not valid $$$$$$")
@@ -415,16 +414,14 @@ class Elastico:
 		elif msg["type"] == "newNode" and self.is_directory:
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
-				# print("$$$$$$$ PoW valid 22222 $$$$$$")
 				if identityobj.committee_id not in self.committee_list:
 					self.committee_list[identityobj.committee_id] = [identityobj]
 				elif len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
-				self.checkCommitteeFull()	
+					# Once each committee contains at least c identities each, directory members multicast the committee list to each committee member
+					self.checkCommitteeFull()	
 			else:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")		
-		# if committees are formed then multicast the committee list to committee members 
-		
 
 		# union of committe members views
 		elif msg["type"] == "committee members views":
@@ -754,7 +751,6 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
-		# print("---verify PoW---")
 		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 		PoW = identityobj.PoW
 		# Valid Hash has D leading '0's (in hex)
@@ -824,7 +820,6 @@ def Run(txns):
 			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
 			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
-				E[i].form_committee()
 				objIndexes.remove(i)
 		if flag == False:
 			break
@@ -833,6 +828,9 @@ def Run(txns):
 	print("########### STEP 1 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
+
+	for i in range(n):
+		E[i].form_committee()
 
 	# ToDo: check if committees are made or not by contacting to directory committee	
 	# run pbft on txns
