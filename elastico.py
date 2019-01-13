@@ -74,8 +74,8 @@ def BroadcastTo_Network(data, type_):
 	global identityNodeMap
 	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
-	for nodeId in identityNodeMap:
-		nodeId.send(msg)
+	for node in network_nodes:
+		node.receive(msg)
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -809,10 +809,10 @@ def Run(txns):
 	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
 
-	objIndexes = set(range(n))
+	objIndex = set(range(n))
 	while True:
 		flag = False
-		for i in objIndexes.copy():
+		for i in objIndex.copy():
 			# if the state is NONE, then each node has to compute its PoW
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
@@ -820,7 +820,8 @@ def Run(txns):
 			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
 			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
-				objIndexes.remove(i)
+				E[i].form_committee()
+				objIndex.remove(i)
 		if flag == False:
 			break
 	input()
@@ -828,9 +829,6 @@ def Run(txns):
 	print("########### STEP 1 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
-
-	for i in range(n):
-		E[i].form_committee()
 
 	# ToDo: check if committees are made or not by contacting to directory committee	
 	# run pbft on txns
