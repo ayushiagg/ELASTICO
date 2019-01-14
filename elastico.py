@@ -387,12 +387,16 @@ class Elastico:
 		"""
 		commList = self.committee_list
 		flag = 0
-		for iden in commList:
-			val = commList[iden]
-			if len(val) < c:
+		# for iden in commList:
+		# 	val = commList[iden]
+		# 	if len(val) < c:
+		# 		flag = 1
+		# 		break
+
+		for iden in range(pow(2,s)):
+			if iden not in commList or len(commList[iden]) < c:
 				flag = 1
 				break
-
 		if flag == 0:
 			# Send commList[iden] to members of commList[iden]
 			print("----------committees full----------------")
