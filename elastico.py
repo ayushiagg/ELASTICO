@@ -5,7 +5,7 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
 # n : number of processors
 n = 150
 # s - where 2^s is the number of committees
@@ -24,6 +24,8 @@ identityNodeMap = dict()
 commitmentSet = set()
 # ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
 ledger = []
+# NtwParticipatingNodes - list of nodes those are the part of some committee
+NtwParticipatingNodes = []
 
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 , "InPBFT" : 5, "Consensus Sent" : 6, "Final Committee in PBFT" : 7, "Sent Final Block" : 8, "Received Final Block" : 9 }
 
@@ -116,6 +118,7 @@ class Identity:
 		self.PoW = PoW
 		self.nonce = nonce
 		self.epoch_randomness = epoch_randomness
+		self.partOfNtw = False
 
 
 	def isEqual(self, identityobj):
@@ -625,7 +628,10 @@ class Elastico:
 		S = consistencyProtocol()
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
 		print("finalblock-" , self.finalBlock)
-		BroadcastTo_Network(data, "finalTxnBlock")		
+		msg = {"data" : data , "type" : "finalTxnBlock"}
+		for nodeId in NtwParticipatingNodes:
+			nodeId.send(msg)
+		# BroadcastTo_Network(data, "finalTxnBlock")		
 
 
 	def getCommittee_members(committee_id):
@@ -731,7 +737,10 @@ class Elastico:
 		# if self.Ri == "":
 		# 	self.generate_randomstrings()
 		data = {"Ri" : self.Ri, "identity" : self.identity}
-		BroadcastTo_Network(data, "RandomStringBroadcast")
+		msg = {"data" : data , "type" : "RandomStringBroadcast"}
+		for nodeId in NtwParticipatingNodes:
+			nodeId.send(msg)
+		# BroadcastTo_Network(data, "RandomStringBroadcast")
 
 
 	def xor_R(self):
@@ -852,6 +861,9 @@ def Run(txns):
 				k = k + 8
 				commMembers = commList[iden]
 				for commId in commMembers:
+					# partOfNtw is set to true when the nodes are participating in the ntw(part of any committee)
+					commId.partOfNtw = True
+					NtwParticipatingNodes.append(commId)
 					data = {"txn_block" : txn}
 					msg = {"data" : data , "type" : "set_of_txns"}
 					commId.send(msg)
@@ -861,7 +873,8 @@ def Run(txns):
 	print("---set of txns added to each committee---")
 	print("\n")
 
-	for node in Id:
+	# ToDo: To run the real pbft implementation
+	for node in NtwParticipatingNodes:
 		data = {"identity" :  node}
 		type_ = "command to run pbft"
 		msg = {"data" : data , "type" : type_}
@@ -871,7 +884,7 @@ def Run(txns):
 	print("---PBFT FINISH---")
 	print("\n")
 
-	for node in Id:
+	for node in NtwParticipatingNodes:
 		data = {"identity" :  node}
 		type_ = "send txn set and sign to final committee"
 		msg = {"data" : data , "type" : type_}
