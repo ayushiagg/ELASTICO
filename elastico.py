@@ -950,13 +950,20 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
 
-	for node in Id:
+	finalSet = set()
+	for node in NtwParticipatingNodes:
 		data = {"identity" : node}
 		msg = {"data" : data, "type" :  "append to ledger"}
 		response = node.send(msg)
+		finalSet.add(response)
 		print(response)
-		input()
+		# input()
 
+	for block in finalSet:
+		fin_block = eval(block)
+		ledger.append(fin_block)
+
+	print("ledger block" , ledger)	
 
 	print("\n\n")
 	print("########### STEP 5 Done ###########")
