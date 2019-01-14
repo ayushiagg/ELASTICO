@@ -73,9 +73,11 @@ def BroadcastTo_Network(data, type_):
 		# for each instance of Elastico, create a receive(self, msg) method
 		# this function will just call node.receive(msg)
 		# inside msg, you will need to have a message type, and message data.
+
 	global identityNodeMap
 	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
+	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
 		node.receive(msg)
 
@@ -365,6 +367,7 @@ class Elastico:
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
+			# input()
 			print("---seen c members---")
 			self.Send_to_Directory()
 			self.state = ELASTICO_STATES["Formed Committee"]	
@@ -426,9 +429,9 @@ class Elastico:
 				elif len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
 					# Once each committee contains at least c identities each, directory members multicast the committee list to each committee member
-					self.checkCommitteeFull()	
+					self.checkCommitteeFull()
 			else:
-				print("$$$$$$$ PoW not valid 22222 $$$$$$")		
+				print("$$$$$$$ PoW not valid 22222 $$$$$$")
 
 		# union of committe members views
 		elif msg["type"] == "committee members views":
@@ -485,6 +488,7 @@ class Elastico:
 			identityobj = data["identity"]
 			print("txnBlock : - " , data["txnBlock"])
 			print("commid - " , identityobj.committee_id)
+			# input("this txn block received from committee id")
 			if self.verify_PoW(identityobj):
 				# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 				if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
@@ -563,6 +567,7 @@ class Elastico:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
 					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
 						print(type(txnBlock) , txnBlock)
+						# input()
 						try:
 							# ToDo: Check where is empty block coming from
 							if len(txnBlock) > 0:
