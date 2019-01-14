@@ -835,27 +835,28 @@ def Run(txns):
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
 				flag = True
-			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
+			# if the PoW computed for a node, then each processor will be assigned to a committee 
+			# based on its identity
 			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
 				E[i].form_committee()
 				objIndex.remove(i)
 		if flag == False:
 			break
-	input()
 	print("\n\n")
 	print("########### STEP 1 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")
-
-	# ToDo: check if committees are made or not by contacting to directory committee	
-	# run pbft on txns
-	input()
-	print("\n\n")
 	print("########### STEP 2 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
+	# input()
 
+	# ToDo: We are communicating Id, some Identity objects may not be the part of the network. So, fix this.
+	# NtwParticipatingNodes - list of nodes those are the part of some committee
+	global NtwParticipatingNodes
+
+	# finalMembers - list of identity objects of the final committee members
+	finalMembers = []
 	for node in Id:
 		data = {"identity" :  node}
 		type_ = "request committee list from directory member"
@@ -865,6 +866,9 @@ def Run(txns):
 			commList = committee_list
 			k = 0
 			# loop in sorted order of committee ids
+			finalMembers = commList[fin_num]
+			print("finalMembers - " , finalMembers)
+			# input("See the final Members")
 			for iden in commList:
 				txn = txns[ k : k + 8]
 				k = k + 8
@@ -904,20 +908,25 @@ def Run(txns):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
-	for node in Id:
-		data = {"identity" :  node , "committee_id" : fin_num}
-		type_ = "getCommitteeMembers"
+	# for node in Id:
+	# 	data = {"identity" :  node , "committee_id" : fin_num}
+	# 	type_ = "getCommitteeMembers"
+	# 	msg = {"data" : data , "type" : type_}
+	# 	is_directory , commList = node.send(msg)
+	# 	if is_directory == True:
+	# 		for commNodeId in commList:
+	# 			data = {"identity" :  commNodeId}
+	# 			type_ = "verify and merge intra consensus data"
+	# 			msg = {"data" : data , "type" : type_}
+	# 			commNodeId.send(msg)
+	# 		break
+	for finalNode in finalMembers:
+		data = {"identity" :  finalNode}
+		type_ = "verify and merge intra consensus data"
 		msg = {"data" : data , "type" : type_}
-		is_directory , commList = node.send(msg)
-		if is_directory == True:
-			for commNodeId in commList:
-				data = {"identity" :  commNodeId}
-				type_ = "verify and merge intra consensus data"
-				msg = {"data" : data , "type" : type_}
-				commNodeId.send(msg)
-			break
+		finalNode.send(msg)
 
-	for node in Id:
+	for node in finalMembers:
 		data = {"identity" :  node}
 		type_ = "command to run pbft by final committee"
 		msg = {"data" : data , "type" : type_}
@@ -927,7 +936,7 @@ def Run(txns):
 	print("---PBFT FINISH BY FINAL COMMITTEE---")
 	print("\n")
 	
-	for node in Id:
+	for node in finalMembers:
 		# ToDo: try to do this only for final committee members not for whole ntw
 		data = {"identity" :  node}
 		type_ = "send commitments of Ris"
@@ -935,7 +944,7 @@ def Run(txns):
 		node.send(msg)
 
 
-	for node in Id:
+	for node in finalMembers:
 		data = {"identity" :  node}
 		type_ = "broadcast final set of txns to the ntw"
 		msg = {"data" : data , "type" : type_}
@@ -948,8 +957,8 @@ def Run(txns):
 	print("\n\n")
 
 
-	for node in Id:
-		# 
+	for node in finalMembers:
+		# each final committee member broadcasts the random string Ri to everyone on the ntw
 		data = {"identity" : node}
 		type_= "Broadcast Ri"
 		msg = {"data" : data , "type" : type_}
