@@ -964,19 +964,24 @@ def Run(txns):
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
 
-	finalSet = set()
+	finalSet = []
 	for node in NtwParticipatingNodes:
 		data = {"identity" : node}
 		msg = {"data" : data, "type" :  "append to ledger"}
 		response = node.send(msg)
-		finalSet.add(response)
-		print(response)
+		# print("response" , type(response) , " ", response , " type of eval" , type(eval(response)))
+		finalSet.append(response)
+		# print(response)
 		# input()
 
-	for block in finalSet:
-		fin_block = eval(block)
-		ledger.append(fin_block)
+	epochBlock = set()
+	for blocklist in finalSet:
+		for block in blocklist:
+			fin_block = eval(block)
+			epochBlock |= fin_block
 
+	
+	ledger.append(epochBlock)
 	print("ledger block" , ledger)	
 
 	print("\n\n")
