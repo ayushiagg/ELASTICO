@@ -859,7 +859,9 @@ def Run(epochTxn):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 	# input()
-
+	if fin_num == "":
+		print("committees are not formed")
+		exit()
 	# ToDo: We are communicating Id, some Identity objects may not be the part of the network. So, fix this.
 	# NtwParticipatingNodes - list of nodes those are the part of some committee
 	global NtwParticipatingNodes
