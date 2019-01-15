@@ -650,9 +650,9 @@ class Elastico:
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
 		print("finalblock-" , self.finalBlock)
 		msg = {"data" : data , "type" : "finalTxnBlock"}
-		for nodeId in NtwParticipatingNodes:
-			nodeId.send(msg)
-		# BroadcastTo_Network(data, "finalTxnBlock")		
+		# for nodeId in NtwParticipatingNodes:
+		# 	nodeId.send(msg)
+		BroadcastTo_Network(data, "finalTxnBlock")		
 
 
 	def getCommittee_members(committee_id):
@@ -760,9 +760,9 @@ class Elastico:
 		# 	self.generate_randomstrings()
 		data = {"Ri" : self.Ri, "identity" : self.identity}
 		msg = {"data" : data , "type" : "RandomStringBroadcast"}
-		for nodeId in NtwParticipatingNodes:
-			nodeId.send(msg)
-		# BroadcastTo_Network(data, "RandomStringBroadcast")
+		# for nodeId in NtwParticipatingNodes:
+		# 	nodeId.send(msg)
+		BroadcastTo_Network(data, "RandomStringBroadcast")
 
 
 	def xor_R(self):
