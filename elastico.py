@@ -825,21 +825,28 @@ class Elastico:
 
 
 
-def Run(txns):
+def Run(epochTxn):
 	"""
-		each run is one epoch
+		runs for one epoch
 	"""
-	global network_nodes
+	global network_nodes, fin_num, identityNodeMap
 	E = []
-	network_nodes = E
-	# E is the list of elastico objects
-	for i in range(n):
-		print( "---Running for processor number---" , i + 1)
-		E.append(Elastico())
-	
+	if len(network_nodes) == 0:
+		network_nodes = E
+		# E is the list of elastico objects
+		for i in range(n):
+			print( "---Running for processor number---" , i + 1)
+			E.append(Elastico())
+	else:
+		E = network_nodes
+		for i in range(n):
+			print( "---Running for processor number---" , i + 1)
+			E[i].reset() 	
 	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
-
+	fin_num = ""
+	identityNodeMap = dict()
+	# commitmentSet = set()
 	objIndex = set(range(n))
 	while True:
 		flag = False
@@ -882,7 +889,7 @@ def Run(txns):
 			print("finalMembers - " , finalMembers)
 			# input("See the final Members")
 			for iden in commList:
-				txn = txns[ k : k + 8]
+				txn = epochTxn[ k : k + 8]
 				k = k + 8
 				commMembers = commList[iden]
 				for commMemberId in commMembers:
@@ -1005,11 +1012,16 @@ def Run(txns):
 
 
 if __name__ == "__main__":
-	# txns is the list of the transactions to which the committees will agree on
-	txns = []
-	for i in range(200):
-		random_num = random_gen(32)
-		txns.append(random_num)
-	# Run an epoch
-	Run(txns)	
+	# epochTxns - dictionary that maps the epoch number to the list of transactions
+	epochTxns = dict()
+	for i in range(5):
+		# txns is the list of the transactions in one epoch to which the committees will agree on
+		txns = []
+		for j in range(200):
+			random_num = random_gen(32)
+			txns.append(random_num)
+		epochTxns[i] = txns
+	for epoch in epochTxns:
+		print("epoch number :-" , epoch + 1 , "started")
+		Run(epochTxns[epoch])
 
