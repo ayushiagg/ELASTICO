@@ -41,6 +41,7 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
+	# ToDo : Re-check before meeting!
 	global network_nodes, commitmentSet
 	if len(commitmentSet) == 0:
 		flag = True
@@ -128,7 +129,7 @@ class Identity:
 			checking two objects of Identity class are equal or not
 		"""
 		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.committee_id == identityobj.committee_id \
-		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce and self.epoch_randomness == identityobj.epoch_randomness
+		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw
 
 	def send(self, msg):
 		"""
@@ -429,7 +430,8 @@ class Elastico:
 				elif len(self.committee_list[identityobj.committee_id]) < c:
 					self.committee_list[identityobj.committee_id].append(identityobj)
 					# Once each committee contains at least c identities each, directory members multicast the committee list to each committee member
-					self.checkCommitteeFull()
+					if len(self.committee_list[identityobj.committee_id]) == c:
+						self.checkCommitteeFull()
 			else:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")
 
