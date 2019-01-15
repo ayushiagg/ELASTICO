@@ -222,11 +222,15 @@ class Elastico:
 		self.final_committee_id = ""
 		self.Ri = ""
 		# only when this node is the member of final committee
+		self.commitments = set()
 		self.txn_block = ""
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.nonce = 0
-		pass
+		self.state = ELASTICO_STATES["NONE"]
+		self.mergedBlock = []
+		self.finalBlock = []
+		# self.RcommitmentSet = ""
 
 
 	def initER(self):
