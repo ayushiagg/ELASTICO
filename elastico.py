@@ -791,7 +791,7 @@ class Elastico:
 		# check Digest for set of Ri strings
 		for Ri in PoW["set_of_Rs"]:
 			digest = self.hexdigest(Ri)
-			if digest not in commitmentSet:
+			if digest not in self.RcommitmentSet:
 				return False
 
 		# reconstruct epoch randomness
