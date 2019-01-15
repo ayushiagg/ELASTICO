@@ -26,7 +26,9 @@ commitmentSet = set()
 ledger = []
 # NtwParticipatingNodes - list of nodes those are the part of some committee
 NtwParticipatingNodes = []
-
+# network_nodes - list of all nodes 
+network_nodes = []
+# ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 , "InPBFT" : 5, "Consensus Sent" : 6, "Final Committee in PBFT" : 7, "Sent Final Block" : 8, "Received Final Block" : 9 }
 
 
@@ -860,6 +862,7 @@ def Run(txns):
 	# ToDo: We are communicating Id, some Identity objects may not be the part of the network. So, fix this.
 	# NtwParticipatingNodes - list of nodes those are the part of some committee
 	global NtwParticipatingNodes
+	NtwParticipatingNodes = []
 
 	# finalMembers - list of identity objects of the final committee members
 	finalMembers = []
@@ -990,7 +993,7 @@ def Run(txns):
 	
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)	
-
+	input()
 	print("\n\n")
 	print("########### STEP 5 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
