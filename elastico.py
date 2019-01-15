@@ -515,11 +515,11 @@ class Elastico:
 
 		elif msg["type"] == "command to run pbft":
 			if self.is_directory == False:
-				self.runPBFT(self.txn_block)
+				self.runPBFT(self.txn_block, msg["data"]["instance"])
 
 		elif msg["type"] == "command to run pbft by final committee":
 			if self.isFinalMember():
-				self.runPBFT(self.mergedBlock)
+				self.runPBFT(self.mergedBlock, msg["data"]["instance"])
 
 
 		elif msg["type"] == "send txn set and sign to final committee":
@@ -581,7 +581,7 @@ class Elastico:
 		input("Check merged block above!")
 
 	
-	def runPBFT(self , txnBlock):
+	def runPBFT(self , txnBlock, instance):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
@@ -590,9 +590,9 @@ class Elastico:
 		txn_set = set()
 		for txn in txnBlock:
 			txn_set.add(txn)
-		if self.isFinalMember():
+		if instance == "final committee consensus":
 			self.finalBlock = txn_set
-		else:	
+		elif instance == "intra committee consensus":
 			self.txn_block = txn_set	
 
 	def isFinalMember(self):
@@ -900,7 +900,7 @@ def Run(epochTxn):
 
 	# ToDo: To run the real pbft implementation
 	for node in NtwParticipatingNodes:
-		data = {"identity" :  node}
+		data = {"identity" :  node , "instance" : "intra committee consensus"}
 		type_ = "command to run pbft"
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
@@ -939,10 +939,10 @@ def Run(epochTxn):
 		finalNode.send(msg)
 
 	for node in finalMembers:
-		data = {"identity" :  node}
+		data = {"identity" :  node,  "instance" : "final committee consensus"}
 		type_ = "command to run pbft by final committee"
 		msg = {"data" : data , "type" : type_}
-		node.send(msg)	
+		node.send(msg)
 
 	print("\n")
 	print("---PBFT FINISH BY FINAL COMMITTEE---")
@@ -1015,4 +1015,5 @@ if __name__ == "__main__":
 	for epoch in epochTxns:
 		print("epoch number :-" , epoch + 1 , "started")
 		Run(epochTxns[epoch])
+
 
