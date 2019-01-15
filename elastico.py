@@ -109,7 +109,6 @@ def MulticastCommittee(commList):
 			# union of committe members views
 			msg = {"data" : commMembers , "type" : "committee members views"}
 			memberId.send(msg)
-			# input()
 
 
 class Identity:
@@ -230,7 +229,6 @@ class Elastico:
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = []
-		# self.RcommitmentSet = ""
 
 
 	def initER(self):
@@ -397,12 +395,6 @@ class Elastico:
 		"""
 		commList = self.committee_list
 		flag = 0
-		# for iden in commList:
-		# 	val = commList[iden]
-		# 	if len(val) < c:
-		# 		flag = 1
-		# 		break
-
 		for iden in range(pow(2,s)):
 			if iden not in commList or len(commList[iden]) < c:
 				flag = 1
@@ -846,7 +838,7 @@ def Run(epochTxn):
 	Id = [[] for i in range(n)]
 	fin_num = ""
 	identityNodeMap = dict()
-	# commitmentSet = set()
+	commitmentSet = set()
 	objIndex = set(range(n))
 	while True:
 		flag = False
@@ -856,16 +848,14 @@ def Run(epochTxn):
 				E[i].compute_PoW()
 				flag = True
 			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
-			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
+			if E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
 				E[i].form_committee()
 				objIndex.remove(i)
 		if flag == False:
 			break
 	print("\n\n")
-	print("########### STEP 1 Done ###########")
-	print("-----------------------------------------------------------------------------------------------")
-	print("########### STEP 2 Done ###########")
+	print("########### STEP 1 AND 2 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 	# input()
@@ -877,6 +867,7 @@ def Run(epochTxn):
 
 	# finalMembers - list of identity objects of the final committee members
 	finalMembers = []
+	# Ask sir regarding views
 	for node in Id:
 		data = {"identity" :  node}
 		type_ = "request committee list from directory member"
@@ -925,7 +916,7 @@ def Run(epochTxn):
 		node.send(msg)
 
 	print("\n\n")
-	print("########### STEP 3 Done ###########")	
+	print("########### STEP 3 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
@@ -973,7 +964,7 @@ def Run(epochTxn):
 
 
 	print("\n\n")
-	print("########### STEP 4 Done ###########")	
+	print("########### STEP 4 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
@@ -1003,7 +994,7 @@ def Run(epochTxn):
 
 	
 	ledger.append(epochBlock)
-	print("ledger block" , ledger)	
+	print("ledger block" , ledger)
 	input()
 	print("\n\n")
 	print("########### STEP 5 Done ###########")
