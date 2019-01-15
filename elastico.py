@@ -472,6 +472,7 @@ class Elastico:
 					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+					# ToDo : Check this, It is overwritten here
 					self.RcommitmentSet = received_commitmentSet
 				
 		elif msg["type"] == "getCommitteeMembers":
@@ -490,7 +491,6 @@ class Elastico:
 			identityobj = data["identity"]
 			print("txnBlock : - " , data["txnBlock"])
 			print("commid - " , identityobj.committee_id)
-			# input("this txn block received from committee id")
 			if self.verify_PoW(identityobj):
 				# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 				if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
@@ -513,7 +513,7 @@ class Elastico:
 				return False , dict()
 			else:
 				commList = self.committee_list
-				return True , commList	
+				return True , commList
 
 		elif msg["type"] == "command to run pbft":
 			if self.is_directory == False:
@@ -541,6 +541,7 @@ class Elastico:
 				self.BroadcastFinalTxn()
 
 		elif msg["type"] == "notify final member":
+			# ToDo:verify the data 
 			self.is_final = True
 
 		elif msg["type"] == "Broadcast Ri":
@@ -552,7 +553,7 @@ class Elastico:
 			if self.is_directory == False and len(self.committee_Members) == c:
 				response = []
 				for txnBlock in self.finalBlockbyFinalCommittee:
-					if len(self.finalBlockbyFinalCommittee[txnBlock]) > c//2:
+					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						response.append(txnBlock)
 				return response		
 
@@ -578,12 +579,15 @@ class Elastico:
 							print("excepton:" , txnBlock , "  ", len(txnBlock), " ", type(txnBlock))
 							raise e
 						self.mergedBlock.extend(set_of_txns)
+		print(self.mergedBlock)
+		input("Check merged block above!")
 
 	
 	def runPBFT(self , txnBlock):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
+		# ToDo : Final committee presently doesnt participate in intracommittee consensus, fix this
 		# print("run pbft")
 		txn_set = set()
 		for txn in txnBlock:
@@ -659,6 +663,7 @@ class Elastico:
 		"""
 		if self.final_committee_id == "":
 			self.form_finalCommittee()
+		# ToDo : Any better way? Think!
 		# to get final committee members, we need a directory committee node
 		nodeId = self.cur_directory[0]
 		data = {"committee_id" : self.final_committee_id , "identity" : self.identity}
@@ -837,8 +842,7 @@ def Run(txns):
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
 				flag = True
-			# if the PoW computed for a node, then each processor will be assigned to a committee 
-			# based on its identity
+			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
 			elif E[i].state == ELASTICO_STATES["PoW Computed"]:
 				Id[i] = E[i].form_identity()
 				E[i].form_committee()
@@ -863,9 +867,8 @@ def Run(txns):
 		data = {"identity" :  node}
 		type_ = "request committee list from directory member"
 		msg = {"data" : data , "type" : type_}
-		is_directory , committee_list = node.send(msg)
+		is_directory , commList = node.send(msg)
 		if is_directory == True:
-			commList = committee_list
 			k = 0
 			# loop in sorted order of committee ids
 			finalMembers = commList[fin_num]
@@ -875,15 +878,17 @@ def Run(txns):
 				txn = txns[ k : k + 8]
 				k = k + 8
 				commMembers = commList[iden]
-				for commId in commMembers:
+				for commMemberId in commMembers:
 					# partOfNtw is set to true when the nodes are participating in the ntw(part of any committee)
-					commId.partOfNtw = True
-					NtwParticipatingNodes.append(commId)
+					commMemberId.partOfNtw = True
+					NtwParticipatingNodes.append(commMemberId)
 					data = {"txn_block" : txn}
 					msg = {"data" : data , "type" : "set_of_txns"}
-					commId.send(msg)
+					commMemberId.send(msg)
 			break
-			
+
+	print("No. of NtwParticipatingNodes : ", len(NtwParticipatingNodes))
+
 	print("\n")
 	print("---set of txns added to each committee---")
 	print("\n")
