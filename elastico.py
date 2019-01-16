@@ -296,6 +296,7 @@ class Elastico:
 			digest.update(str(self.nonce).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
+				# ToDo: Put the nonce here in Pow
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 				print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
@@ -310,6 +311,7 @@ class Elastico:
 		# ToDo: Ensure that the final committee has c members 
 		print("---form final committee---")
 		global fin_num
+		# ToDo: set final committee as fixed committee id say 0
 		if self.is_directory == True and fin_num == "":
 			fin_num = random_gen(s)
 			finalCommList = self.committee_list[fin_num]
@@ -404,6 +406,7 @@ class Elastico:
 			print("----------committees full----------------")
 			MulticastCommittee(commList)
 			self.form_finalCommittee()
+			# ToDo: transition of state to committee full 
 
 	def receive(self, msg):
 		"""
@@ -413,6 +416,7 @@ class Elastico:
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
+			# ToDo: remove the two ifs
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
 					self.cur_directory.append(identityobj)
@@ -844,6 +848,7 @@ def Run(epochTxn):
 		flag = False
 		for i in objIndex.copy():
 			# if the state is NONE, then each node has to compute its PoW
+			# ToDo : A node should check its state and do the next step! Fix the below things
 			if E[i].state == ELASTICO_STATES["NONE"]:
 				E[i].compute_PoW()
 				flag = True
@@ -859,6 +864,7 @@ def Run(epochTxn):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 	# input()
+	# ToDo: broadcast the final committee list at time of committee full
 	if fin_num == "":
 		print("committees are not formed")
 		exit()
@@ -894,6 +900,7 @@ def Run(epochTxn):
 					commMemberId.send(msg)
 			break
 
+	# ToDo:  send txns to everybody
 	print("No. of NtwParticipatingNodes : ", len(NtwParticipatingNodes))
 
 	print("\n")
@@ -1019,3 +1026,13 @@ if __name__ == "__main__":
 		Run(epochTxns[epoch])
 
 
+# Todo: send the txns to everybody and only the ones who are in the committee will use them. 
+# directory member will send the txns to the committees
+# simple check that each committee executing same set of txns (sharding working correctly)
+# some baby steps towards consensus...
+# communicate within each other in committee that this is my shard and check whether shards to committee are same or not
+# each node will run thread...locks(global lock)
+# receive data structures is accessed thru lock
+# execute and receive lock
+# make all nodes run using tcp ip(send and receive thru tcp ip, execute one step and receive)
+# wdout pow , invalid pow, boolean flag in your node good and bad...POW maciousness can be detected
