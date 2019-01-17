@@ -17,7 +17,7 @@ D = 1
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
-fin_num = ""
+fin_num = 0
 # identityNodeMap- mapping of identity object to Elastico node
 identityNodeMap = dict()
 # commitmentSet - set of commitments S
@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 , "InPBFT" : 5, "Consensus Sent" : 6, "Final Committee in PBFT" : 7, "Sent Final Block" : 8, "Received Final Block" : 9 }
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Committee full" : 5 , "InPBFT" : 6, "Consensus Sent" : 7, "Final Committee in PBFT" : 8, "Sent Final Block" : 9, "Received Final Block" : 10 }
 
 
 
@@ -115,12 +115,11 @@ class Identity:
 	"""
 		class for the identity of nodes
 	"""
-	def __init__(self, IP, PK, committee_id, PoW, nonce, epoch_randomness):
+	def __init__(self, IP, PK, committee_id, PoW, epoch_randomness):
 		self.IP = IP
 		self.PK = PK
 		self.committee_id = committee_id
 		self.PoW = PoW
-		self.nonce = nonce
 		self.epoch_randomness = epoch_randomness
 		self.partOfNtw = False
 
@@ -130,7 +129,7 @@ class Identity:
 			checking two objects of Identity class are equal or not
 		"""
 		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.committee_id == identityobj.committee_id \
-		and self.PoW == identityobj.PoW and self.nonce == identityobj.nonce and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw
+		and self.PoW == identityobj.PoW and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw
 
 	def send(self, msg):
 		"""
@@ -175,7 +174,7 @@ class Elastico:
 		print("---Constructor of elastico class---")
 		self.IP = self.get_IP()
 		self.key = self.get_key()
-		self.PoW = ""
+		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
@@ -195,7 +194,6 @@ class Elastico:
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
-		self.nonce = 0
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = []
@@ -207,7 +205,7 @@ class Elastico:
 		"""
 		self.IP = self.get_IP()
 		self.key = self.get_key()
-		self.PoW = ""
+		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
@@ -225,7 +223,6 @@ class Elastico:
 		self.txn_block = ""
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
-		self.nonce = 0
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = []
@@ -293,15 +290,16 @@ class Elastico:
 			digest.update(IP.encode())
 			digest.update(PK.encode())
 			digest.update(self.epoch_randomness.encode())
-			digest.update(str(self.nonce).encode())
+			digest.update(str(self.PoW["nonce"]).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
 				# ToDo: Put the nonce here in Pow
-				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
+				nonce = self.PoW["nonce"]
+				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
 				print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
 				return hash_val
-			self.nonce += 1
+			self.PoW["nonce"] += 1
 
 
 	def form_finalCommittee(self):
@@ -347,7 +345,7 @@ class Elastico:
 		PK = self.key.publickey().exportKey().decode()
 		# set the committee id acc to PoW solution
 		self.committee_id = self.get_committeeid(self.PoW["hash"])
-		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.nonce, self.epoch_randomness)
+		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness)
 		# mapped identity object to the elastico object
 		identityNodeMap[self.identity] = self
 		self.state = ELASTICO_STATES["Formed Identity"]
@@ -802,7 +800,7 @@ class Elastico:
 		IP = identityobj.IP
 		
 		# recompute PoW 
-		nonce = identityobj.nonce
+		nonce = PoW["nonce"]
 		 
 		digest = SHA256.new()
 		digest.update(IP.encode())
@@ -821,11 +819,13 @@ class Elastico:
 
 
 
+
+
 def Run(epochTxn):
 	"""
 		runs for one epoch
 	"""
-	global network_nodes, fin_num, identityNodeMap
+	global network_nodes, identityNodeMap
 	E = []
 	if len(network_nodes) == 0:
 		network_nodes = E
