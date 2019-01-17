@@ -662,16 +662,9 @@ class Elastico:
 			Each committee member sends the signed value(txn block after intra committee consensus) 
 			along with signatures to final committee
 		"""
-		if self.final_committee_id == "":
-			self.notify_finalCommittee()
 		# ToDo : Any better way? Think!
 		# to get final committee members, we need a directory committee node
-		nodeId = self.cur_directory[0]
-		data = {"committee_id" : self.final_committee_id , "identity" : self.identity}
-		msg = {"data" : data , "type" : "getCommitteeMembers"}
-		# response has final committee members
-		boolval, response = nodeId.send(msg)
-		for finalId in response:
+		for finalId in finalCommitteeMembers:
 			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
