@@ -304,22 +304,18 @@ class Elastico:
 			self.PoW["nonce"] += 1
 
 
-	def form_finalCommittee(self):
+	def notify_finalCommittee(self):
 		"""
-			Select a committee number as final committee id
+			notify the members of the final committee
 		"""
 		# ToDo: Ensure that the final committee has c members 
-		print("---form final committee---")
-		global fin_num
-		# ToDo: set final committee as fixed committee id say 0
-		if self.is_directory == True and fin_num == "":
-			fin_num = random_gen(s)
-			finalCommList = self.committee_list[fin_num]
+		
+		finalCommList = self.committee_list[fin_num]
 			# notify the members of the final committee that they are the final committee members
-			for finalMember in finalCommList:
-				data = {"final member" : fin_num , "identity" : self.identity}
-				msg = {"data" : data , "type" : "notify final member"}
-				finalMember.send(msg)
+		for finalMember in finalCommList:
+			data = {"final member" : fin_num , "identity" : self.identity}
+			msg = {"data" : data , "type" : "notify final member"}
+			finalMember.send(msg)
 		self.final_committee_id = fin_num
 		
 
@@ -405,7 +401,7 @@ class Elastico:
 			# Send commList[iden] to members of commList[iden]
 			print("----------committees full----------------")
 			MulticastCommittee(commList)
-			self.form_finalCommittee()
+			self.notify_finalCommittee()
 			# ToDo: transition of state to committee full 
 
 	def receive(self, msg):
@@ -667,7 +663,7 @@ class Elastico:
 			along with signatures to final committee
 		"""
 		if self.final_committee_id == "":
-			self.form_finalCommittee()
+			self.notify_finalCommittee()
 		# ToDo : Any better way? Think!
 		# to get final committee members, we need a directory committee node
 		nodeId = self.cur_directory[0]
@@ -864,18 +860,11 @@ def Run(epochTxn):
 	print("########### STEP 1 AND 2 Done ###########")
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
-	# input()
-	# ToDo: broadcast the final committee list at time of committee full
-	if fin_num == "":
-		print("committees are not formed")
-		exit()
 	# ToDo: We are communicating Id, some Identity objects may not be the part of the network. So, fix this.
 	# NtwParticipatingNodes - list of nodes those are the part of some committee
 	global NtwParticipatingNodes
 	NtwParticipatingNodes = []
 
-	# finalMembers - list of identity objects of the final committee members
-	finalMembers = []
 	# Ask sir regarding views
 	for node in Id:
 		data = {"identity" :  node}
@@ -885,9 +874,6 @@ def Run(epochTxn):
 		if is_directory == True:
 			k = 0
 			# loop in sorted order of committee ids
-			finalMembers = commList[fin_num]
-			print("finalMembers - " , finalMembers)
-			# input("See the final Members")
 			for iden in commList:
 				txn = epochTxn[ k : k + 8]
 				k = k + 8
