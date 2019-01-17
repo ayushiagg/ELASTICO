@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Committee full" : 5 , "InPBFT" : 6, "Consensus Sent" : 7, "Final Committee in PBFT" : 8, "Sent Final Block" : 9, "Received Final Block" : 10 }
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Committee full" : 5 , "InPBFT" : 6, "Consensus Sent" : 7, "Final Committee in PBFT" : 8, "Sent Final Block" : 9, "Received Final Block" : 10}
 
 
 
@@ -307,13 +307,9 @@ class Elastico:
 		
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
-			data = {"final member" : fin_num , "identity" : self.identity}
+			data = {"identity" : self.identity}
 			msg = {"data" : data , "type" : "notify final member"}
 			finalMember.send(msg)
-		self.final_committee_id = fin_num
-		
-
-
 
 	def get_committeeid(self, PoW):
 		"""
