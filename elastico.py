@@ -362,8 +362,17 @@ class Elastico:
 		else:
 			# input()
 			print("---seen c members---")
+			# track previous state before adding in committee
+			prevState = self.state
+			
 			self.Send_to_Directory()
-			self.state = ELASTICO_STATES["Formed Committee"]	
+			# ToDo : check state assignment order
+			if prevState == ELASTICO_STATES["Formed Identity"]:			
+				self.state = ELASTICO_STATES["Formed Committee"]
+
+			if prevState == ELASTICO_STATES["Formed Identity"]:
+				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
+				pass
 
 
 	def Send_to_Directory(self):
@@ -375,6 +384,7 @@ class Elastico:
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
 			nodeId.send(msg)
+
 
 
 	def checkCommitteeFull(self):
@@ -429,6 +439,7 @@ class Elastico:
 			finalMembers  = msg["data"]["final Committee members"]
 			self.committee_Members |= set(commMembers)
 			self.finalCommitteeMembers |= set(finalMembers)
+			self.state  = ELASTICO_STATES["Committee full"]
 			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
 
 		# receiving H(Ri) by final committe members
@@ -651,9 +662,7 @@ class Elastico:
 			Each committee member sends the signed value(txn block after intra committee consensus) 
 			along with signatures to final committee
 		"""
-		# ToDo : Any better way? Think!
-		# to get final committee members, we need a directory committee node
-		for finalId in finalCommitteeMembers:
+		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
@@ -800,6 +809,26 @@ class Elastico:
 		"""
 		"""
 
+	def execute(self):
+		"""
+			executing the functions based on the running state
+		"""
+		if self.state == ELASTICO_STATES["NONE"]:
+			self.compute_PoW()
+		elif self.state == ELASTICO_STATES["PoW Computed"]:
+			self.form_identity()
+		elif self.state == ELASTICO_STATES["Formed Identity"]:	
+			self.form_committee()
+		elif self.is_directory == True:
+
+		elif self.state == ELASTICO_STATES["Received Final Block"]:
+			self.reset()
+
+
+				
+			
+
+				
 
 def Run(epochTxn):
 	"""
