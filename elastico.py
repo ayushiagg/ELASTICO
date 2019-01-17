@@ -102,12 +102,13 @@ def MulticastCommittee(commList):
 	print("---multicast committee list to committee members---")
 	
 	# print(len(commList), commList)
-	
+	finalCommitteeMembers = commList[fin_num]
 	for committee_id in commList:
 		commMembers = commList[committee_id]
 		for memberId in commMembers:
 			# union of committe members views
-			msg = {"data" : commMembers , "type" : "committee members views"}
+			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers}
+			msg = {"data" : data , "type" : "committee members views"}
 			memberId.send(msg)
 
 
@@ -198,6 +199,7 @@ class Elastico:
 		self.mergedBlock = []
 		self.finalBlock = []
 		self.RcommitmentSet = ""
+		self.finalCommitteeMembers = set()
 
 	def reset(self):
 		"""
@@ -226,7 +228,7 @@ class Elastico:
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = []
-
+		self.finalCommitteeMembers = set()
 
 	def initER(self):
 		"""
@@ -437,8 +439,11 @@ class Elastico:
 
 		# union of committe members views
 		elif msg["type"] == "committee members views":
-			commMembers = msg["data"]
+			# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers}
+			commMembers = msg["data"]["committee members"]
+			finalMembers  = msg["data"]["final Committee members"]
 			self.committee_Members |= set(commMembers)
+			self.finalCommitteeMembers |= set(finalMembers)
 			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
 
 		# receiving H(Ri) by final committe members
@@ -818,9 +823,6 @@ class Elastico:
 		"""
 
 
-
-
-
 def Run(epochTxn):
 	"""
 		runs for one epoch
@@ -840,7 +842,6 @@ def Run(epochTxn):
 			E[i].reset() 	
 	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
-	fin_num = ""
 	identityNodeMap = dict()
 	commitmentSet = set()
 	objIndex = set(range(n))
