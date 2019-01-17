@@ -146,7 +146,7 @@ class Elastico:
 	"""
 		class members: 
 			node - single processor
-			identity - identity consists of Public key, an IP, PoW, committee id
+			identity - identity consists of Public key, an IP, PoW, committee id, epoch randomness
 			txn_block - block of txns that the committee will agree on(intra committee consensus block)
 			committee_list - list of nodes in all committees
 			final_committee - list of nodes in the final committee
@@ -157,7 +157,7 @@ class Elastico:
 			IP - IP address of a node
 			key - public key and private key pair for a node
 			cur_directory - list of directory members in view of the node
-			PoW - 256 bit hash computed by the node
+			PoW - dict containing 256 bit hash computed by the node, set of Rs needed for epoch randomness, and a nonce
 			Ri - r-bit random string
 			commitments - set of H(Ri) received by final committee node members and H(Ri) is sent by the final committee node only
 			set_of_Rs - set of Ris obtained from the final committee
@@ -165,10 +165,11 @@ class Elastico:
 			final_committee_id - committee id of final committee
 			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
 			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
-			nonce - a number that each processor searches to get a  valid PoW
 			state - state in which a node is running
 			mergedBlock - list of txns of different committees after their intra committee consensus
 			finalBlock - agreed list of txns after pbft run by final committee
+			RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol
+			finalCommitteeMembers - members of the final committee received from the directory committee
 	"""
 
 	def __init__(self):
@@ -185,9 +186,7 @@ class Elastico:
 		self.committee_Members = set()
 		self.is_directory = False
 		self.is_final = False
-		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
 		self.epoch_randomness = self.initER()
-		self.final_committee_id = ""
 		self.Ri = ""
 		# only when this node is the member of final committee
 		self.commitments = set()
@@ -217,8 +216,6 @@ class Elastico:
 		self.committee_Members = set()
 		self.is_directory = False
 		self.is_final = False
-		# ToDo : Correctly setup epoch Randomness from step 5 of the protocol
-		self.final_committee_id = ""
 		self.Ri = ""
 		# only when this node is the member of final committee
 		self.commitments = set()
@@ -246,8 +243,6 @@ class Elastico:
 			for each node(processor) , get IP addr
 			will return IP
 		"""
-				# comment: use random strings instead of IP address.
-				# you could even have the strings be generated in the IP addr format.
 		# ips = check_output(['hostname', '--all-ip-addresses'])
 		# ips = ips.decode()
 		# return ips.split(' ')[0]
@@ -306,12 +301,11 @@ class Elastico:
 
 	def notify_finalCommittee(self):
 		"""
-			notify the members of the final committee
+			notify the members of the final committee that they are the final committee members
 		"""
 		# ToDo: Ensure that the final committee has c members 
 		
 		finalCommList = self.committee_list[fin_num]
-			# notify the members of the final committee that they are the final committee members
 		for finalMember in finalCommList:
 			data = {"final member" : fin_num , "identity" : self.identity}
 			msg = {"data" : data , "type" : "notify final member"}
@@ -413,8 +407,7 @@ class Elastico:
 			# verify the PoW of the sender
 			identityobj = msg["data"]
 			# ToDo: remove the two ifs
-			if self.verify_PoW(identityobj):
-				if len(self.cur_directory) < c:
+			if self.verify_PoW(identityobj) and len(self.cur_directory) < c:
 					self.cur_directory.append(identityobj)
 			else:
 		 		print("$$$$$$$ PoW not valid $$$$$$")
@@ -542,8 +535,8 @@ class Elastico:
 				self.BroadcastFinalTxn()
 
 		elif msg["type"] == "notify final member":
-			# ToDo:verify the data 
-			self.is_final = True
+			if self.verify_PoW(msg["data"]["identity"]):
+				self.is_final = True
 
 		elif msg["type"] == "Broadcast Ri":
 			if self.isFinalMember():
