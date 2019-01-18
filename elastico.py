@@ -94,7 +94,7 @@ def BroadcastTo_Committee(committee_id, data , type_):
 	pass
 
 
-def MulticastCommittee(commList):
+def MulticastCommittee(commList, identityobj, txns):
 	"""
 		each node getting views of its committee members from directory members
 	"""
@@ -102,16 +102,15 @@ def MulticastCommittee(commList):
 	print("---multicast committee list to committee members---")
 	
 	# print(len(commList), commList)
-	if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
-		finalCommitteeMembers = commList[fin_num]
-		for committee_id in commList:
-			commMembers = commList[committee_id]
-			for memberId in commMembers:
-				# union of committe members views
-				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
-				msg = {"data" : data , "type" : "committee members views"}
-				memberId.send(msg)
-		self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
+	finalCommitteeMembers = commList[fin_num]
+	for committee_id in commList:
+		commMembers = commList[committee_id]
+		for memberId in commMembers:
+			# union of committe members views
+			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
+			msg = {"data" : data , "type" : "committee members views"}
+			memberId.send(msg)
+		
 
 
 class Identity:
@@ -407,9 +406,14 @@ class Elastico:
 		if flag == 0:
 			# Send commList[iden] to members of commList[iden]
 			print("----------committees full----------------")
-			MulticastCommittee(commList)
-			self.notify_finalCommittee()
-			# ToDo: transition of state to committee full 
+			if self.state == ELASTICO_STATES["RunAsDirectory"]:
+				# directory member has not yet received the epochTxn
+				pass
+			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
+				MulticastCommittee(commList, self.identity, self.txns)
+				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
+				self.notify_finalCommittee()
+				# ToDo: transition of state to committee full 
 
 	def receive(self, msg):
 		"""
@@ -848,7 +852,6 @@ class Elastico:
 			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 		elif self.state == ELASTICO_STATES["Committee full"]:
 			# Now The node should go for Intra committee consensus
-			
 			pass
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
