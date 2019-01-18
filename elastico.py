@@ -102,14 +102,15 @@ def MulticastCommittee(commList):
 	print("---multicast committee list to committee members---")
 	
 	# print(len(commList), commList)
-	finalCommitteeMembers = commList[fin_num]
-	for committee_id in commList:
-		commMembers = commList[committee_id]
-		for memberId in commMembers:
-			# union of committe members views
-			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
-			msg = {"data" : data , "type" : "committee members views"}
-			memberId.send(msg)
+	if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
+		finalCommitteeMembers = commList[fin_num]
+		for committee_id in commList:
+			commMembers = commList[committee_id]
+			for memberId in commMembers:
+				# union of committe members views
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
+				msg = {"data" : data , "type" : "committee members views"}
+				memberId.send(msg)
 
 
 class Identity:
@@ -191,7 +192,7 @@ class Elastico:
 		self.Ri = ""
 		# only when this node is the member of final committee
 		self.commitments = set()
-		self.txn_block = ""
+		self.txn_block = set()
 		self.set_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
@@ -222,7 +223,7 @@ class Elastico:
 		self.Ri = ""
 		# only when this node is the member of final committee
 		self.commitments = set()
-		self.txn_block = ""
+		self.txn_block = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
@@ -442,6 +443,7 @@ class Elastico:
 			# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
 			commMembers = msg["data"]["committee members"]
 			finalMembers  = msg["data"]["final Committee members"]
+			self.txn_block |= set(msg["data"]["txns"])
 			self.committee_Members |= set(commMembers)
 			self.finalCommitteeMembers |= set(finalMembers)
 			self.state  = ELASTICO_STATES["Receiving Committee Members"]
@@ -513,11 +515,11 @@ class Elastico:
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
 
 
-		elif msg["type"] == "set_of_txns":
-			# ToDo: Add verify pow step in this
-			data = msg["data"]
-			# txn_block is a list of txns
-			self.txn_block = data["txn_block"]		
+		# elif msg["type"] == "set_of_txns":
+		# 	# ToDo: Add verify pow step in this
+		# 	data = msg["data"]
+		# 	# txn_block is a list of txns
+		# 	self.txn_block = data["txn_block"]		
 
 		elif msg["type"] == "request committee list from directory member":
 			if self.is_directory == False:
