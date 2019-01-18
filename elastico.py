@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13}
 
 
 
@@ -614,7 +614,8 @@ class Elastico:
 		if instance == "final committee consensus":
 			self.finalBlock = txn_set
 		elif instance == "intra committee consensus":
-			self.txn_block = txn_set	
+			self.txn_block = txn_set
+			self.state = ELASTICO_STATES["PBFT Finished"]	
 
 	def isFinalMember(self):
 		"""
@@ -853,7 +854,9 @@ class Elastico:
 			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 		elif self.state == ELASTICO_STATES["Committee full"]:
 			# Now The node should go for Intra committee consensus
-			pass
+			if self.is_directory == False:
+				self.runPBFT(self.txn_block, "intra committee consensus")
+
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
 			pass	
