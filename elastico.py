@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12}
 
 
 
@@ -107,7 +107,7 @@ def MulticastCommittee(commList):
 		commMembers = commList[committee_id]
 		for memberId in commMembers:
 			# union of committe members views
-			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers}
+			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
 			msg = {"data" : data , "type" : "committee members views"}
 			memberId.send(msg)
 
@@ -170,6 +170,7 @@ class Elastico:
 			finalBlock - agreed list of txns after pbft run by final committee
 			RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol
 			finalCommitteeMembers - members of the final committee received from the directory committee
+			txn- transactions stored by the directory members
 	"""
 
 	def __init__(self):
@@ -199,6 +200,8 @@ class Elastico:
 		self.finalBlock = []
 		self.RcommitmentSet = ""
 		self.finalCommitteeMembers = set()
+		# only when this is the member of the directory committee
+		self.txn = dict()
 
 	def reset(self):
 		"""
@@ -226,6 +229,8 @@ class Elastico:
 		self.mergedBlock = []
 		self.finalBlock = []
 		self.finalCommitteeMembers = set()
+		# only when this is the member of the directory committee
+		self.txn = dict()
 
 	def initER(self):
 		"""
@@ -433,8 +438,8 @@ class Elastico:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")
 
 		# union of committe members views
-		elif msg["type"] == "committee members views":
-			# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers}
+		elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]):
+			# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
 			commMembers = msg["data"]["committee members"]
 			finalMembers  = msg["data"]["final Committee members"]
 			self.committee_Members |= set(commMembers)
@@ -814,7 +819,7 @@ class Elastico:
 		"""
 		"""
 
-	def execute(self):
+	def execute(self, epochTxn):
 		"""
 			executing the functions based on the running state
 		"""
@@ -824,13 +829,27 @@ class Elastico:
 			self.form_identity()
 		elif self.state == ELASTICO_STATES["Formed Identity"]:
 			self.form_committee()
-		elif self.is_directory:
-			pass
+		elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
+			# Receive txns from client
+			k = 0
+			num = len(epochTxn) // pow(2,s) 
+			# loop in sorted order of committee ids
+			for iden in pow(2,s):
+				if iden == pow(2,s)-1:
+					self.txn[iden] = epochTxn[ k : ]
+				else:		
+					self.txn[iden] = epochTxn[ k : k + num]
+				k = k + num
+			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 		elif self.state == ELASTICO_STATES["Committee full"]:
 			# Now The node should go for Intra committee consensus
 			pass
+		elif self.state == ELASTICO_STATES["Formed Committee"]:
+			# These Nodes are not part of network
+			pass	
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
+		elif 	
 
 
 				
