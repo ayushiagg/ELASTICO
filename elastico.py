@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16}
 
 
 
@@ -606,6 +606,7 @@ class Elastico:
 							print("excepton:" , txnBlock , "  ", len(txnBlock), " ", type(txnBlock))
 							raise e
 						self.mergedBlock.extend(set_of_txns)
+		self.state = ELASTICO_STATES["Merged Consensus Data"]
 		print(self.mergedBlock)
 		input("Check merged block above!")
 
@@ -621,6 +622,7 @@ class Elastico:
 			txn_set.add(txn)
 		if instance == "final committee consensus":
 			self.finalBlock = txn_set
+			self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
 			self.state = ELASTICO_STATES["PBFT Finished"]	
@@ -880,8 +882,15 @@ class Elastico:
 			if flag == False:
 				self.state = ELASTICO_STATES["Final PBFT Start"]
 				self.verifyAndMergeConsensusData()
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
+			self.runPBFT(self.mergedBlock, "final committee consensus")
+			# if self.isFinalMember():
+			# 	self.runPBFT(self.mergedBlock, msg["data"]["instance"])
+					
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
+
+			
 
 
 				
