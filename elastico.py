@@ -871,8 +871,6 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
 			pass	
-		elif self.state == ELASTICO_STATES["PBFT Finished"]:
-			self.SendtoFinal()
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished"]:
 			flag = False
 			for commId in self.ConsensusMsgCount:
@@ -882,6 +880,10 @@ class Elastico:
 			if flag == False:
 				self.state = ELASTICO_STATES["Final PBFT Start"]
 				self.verifyAndMergeConsensusData()
+			else self.SendtoFinal()	
+
+		elif self.state == ELASTICO_STATES["PBFT Finished"]:
+			self.SendtoFinal()
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 			self.runPBFT(self.mergedBlock, "final committee consensus")
 			# if self.isFinalMember():
@@ -890,13 +892,7 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
 
-			
 
-
-				
-			
-
-				
 
 def Run(epochTxn):
 	"""
