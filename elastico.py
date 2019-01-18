@@ -369,7 +369,7 @@ class Elastico:
 			# ToDo : check state assignment order
 			if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				msg = {"data" : self.identity ,"type" : "Committee full"}
-				BroadcastTo_Network(msg["data"] , msg["type"])				
+				BroadcastTo_Network(msg["data"] , msg["type"])
 			else: 
 				self.state = ELASTICO_STATES["Formed Committee"]
 				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
@@ -441,6 +441,11 @@ class Elastico:
 			self.finalCommitteeMembers |= set(finalMembers)
 			self.state  = ELASTICO_STATES["Receiving Committee Members"]
 			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
+
+
+		elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
+			if self.state == ELASTICO_STATES["Receivig Committee Members"]:
+				self.state = ELASTICO_STATES["Committee full"]
 
 		# receiving H(Ri) by final committe members
 		elif msg["type"] == "hash" and self.isFinalMember():
@@ -817,10 +822,13 @@ class Elastico:
 			self.compute_PoW()
 		elif self.state == ELASTICO_STATES["PoW Computed"]:
 			self.form_identity()
-		elif self.state == ELASTICO_STATES["Formed Identity"]:	
+		elif self.state == ELASTICO_STATES["Formed Identity"]:
 			self.form_committee()
-		elif self.is_directory == True:
-
+		elif self.is_directory:
+			pass
+		elif self.state == ELASTICO_STATES["Committee full"]:
+			# Now The node should go for Intra committee consensus
+			pass
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
 
@@ -999,7 +1007,7 @@ def Run(epochTxn):
 			fin_block = eval(block)
 			epochBlock |= fin_block
 
-	
+
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
 	input()
