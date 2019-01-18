@@ -757,6 +757,7 @@ class Elastico:
 				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
+				
 
 
 	def addCommitment(self, finalBlock):
@@ -871,7 +872,10 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
 			pass	
-		elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished"]:
+		elif self.state == ELASTICO_STATES["PBFT Finished"]:
+			self.SendtoFinal()
+		
+		elif self.isFinalMember() and self.state ==ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 			flag = False
 			for commId in self.ConsensusMsgCount:
 				if len(self.ConsensusMsgCount[commId]) <= c//2:
@@ -1025,7 +1029,6 @@ def Run(epochTxn):
 		type_ = "send commitments of Ris"
 		msg = {"data" : data , "type" : type_}
 		node.send(msg)
-
 
 	for node in finalMembers:
 		data = {"identity" :  node}
