@@ -333,17 +333,18 @@ class Elastico:
 			identity formation for a node
 			identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
 		"""
-		global identityNodeMap
-		print("---form identity---")
-		# export public key
-		PK = self.key.publickey().exportKey().decode()
-		# set the committee id acc to PoW solution
-		self.committee_id = self.get_committeeid(self.PoW["hash"])
-		self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness)
-		# mapped identity object to the elastico object
-		identityNodeMap[self.identity] = self
-		self.state = ELASTICO_STATES["Formed Identity"]
-		return self.identity
+		if self.state == ELASTICO_STATES["PoW Computed"]:
+			global identityNodeMap
+			print("---form identity---")
+			# export public key
+			PK = self.key.publickey().exportKey().decode()
+			# set the committee id acc to PoW solution
+			self.committee_id = self.get_committeeid(self.PoW["hash"])
+			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness)
+			# mapped identity object to the elastico object
+			identityNodeMap[self.identity] = self
+			self.state = ELASTICO_STATES["Formed Identity"]
+			return self.identity
 
 
 	def is_OwnIdentity(self, identityobj):
@@ -423,8 +424,8 @@ class Elastico:
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
-			# ToDo: remove the two ifs
-			if self.verify_PoW(identityobj) and len(self.cur_directory) < c:
+			if self.verify_PoW(identityobj):
+				if len(self.cur_directory) < c:
 					self.cur_directory.append(identityobj)
 			else:
 		 		print("$$$$$$$ PoW not valid $$$$$$")
