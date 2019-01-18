@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14}
 
 
 
@@ -172,6 +172,7 @@ class Elastico:
 			RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol
 			finalCommitteeMembers - members of the final committee received from the directory committee
 			txn- transactions stored by the directory members
+			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
 	"""
 
 	def __init__(self):
@@ -201,6 +202,8 @@ class Elastico:
 		self.finalBlock = []
 		self.RcommitmentSet = ""
 		self.finalCommitteeMembers = set()
+		# only when this node is the member of final committee
+		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
 
@@ -230,8 +233,11 @@ class Elastico:
 		self.mergedBlock = []
 		self.finalBlock = []
 		self.finalCommitteeMembers = set()
+		# only when this node is the member of final committee
+		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
+
 
 	def initER(self):
 		"""
@@ -519,6 +525,8 @@ class Elastico:
 					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+					self.ConsensusMsgCount[identityobj.committee_id] += 1
+
 
 
 		# elif msg["type"] == "set_of_txns":
@@ -862,9 +870,16 @@ class Elastico:
 			# These Nodes are not part of network
 			pass	
 		elif self.state == ELASTICO_STATES["PBFT Finished"]:
-			self.SendtoFinal() 
-		
-
+			self.SendtoFinal()
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished"]:
+			flag = False
+			for commId in self.ConsensusMsgCount:
+				if len(self.ConsensusMsgCount[commId]) <= c//2:
+					flag = True
+					break
+			if flag == False:
+				self.state = ELASTICO_STATES["Final PBFT Start"]
+				self.verifyAndMergeConsensusData()
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
 
