@@ -526,15 +526,6 @@ class Elastico:
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
 					self.ConsensusMsgCount[identityobj.committee_id] += 1
-
-
-
-		# elif msg["type"] == "set_of_txns":
-		# 	# ToDo: Add verify pow step in this
-		# 	data = msg["data"]
-		# 	# txn_block is a list of txns
-		# 	self.txn_block = data["txn_block"]		
-
 		elif msg["type"] == "request committee list from directory member":
 			if self.is_directory == False:
 				return False , dict()
@@ -615,8 +606,6 @@ class Elastico:
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
-		# ToDo : Final committee presently doesnt participate in intracommittee consensus, fix this
-		# print("run pbft")
 		txn_set = set()
 		for txn in txnBlock:
 			txn_set.add(txn)
@@ -894,9 +883,6 @@ class Elastico:
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
-
-							
-
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
 
@@ -918,7 +904,7 @@ def Run(epochTxn):
 		E = network_nodes
 		for i in range(n):
 			print( "---Running for processor number---" , i + 1)
-			E[i].reset() 	
+			E[i].reset()
 	# Id - identity of the nodes
 	Id = [[] for i in range(n)]
 	identityNodeMap = dict()
@@ -999,18 +985,6 @@ def Run(epochTxn):
 	print("-----------------------------------------------------------------------------------------------")
 	print("\n\n")
 
-	# for node in Id:
-	# 	data = {"identity" :  node , "committee_id" : fin_num}
-	# 	type_ = "getCommitteeMembers"
-	# 	msg = {"data" : data , "type" : type_}
-	# 	is_directory , commList = node.send(msg)
-	# 	if is_directory == True:
-	# 		for commNodeId in commList:
-	# 			data = {"identity" :  commNodeId}
-	# 			type_ = "verify and merge intra consensus data"
-	# 			msg = {"data" : data , "type" : type_}
-	# 			commNodeId.send(msg)
-	# 		break
 	for finalNode in finalMembers:
 		data = {"identity" :  finalNode}
 		type_ = "verify and merge intra consensus data"
