@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlock Sent" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17}
 
 
 
@@ -676,8 +676,8 @@ class Elastico:
 		msg = {"data" : data , "type" : "finalTxnBlock"}
 		# for nodeId in NtwParticipatingNodes:
 		# 	nodeId.send(msg)
-		BroadcastTo_Network(data, "finalTxnBlock")		
-
+		BroadcastTo_Network(data, "finalTxnBlock")	
+		self.state = ELASTICO_STATES["FinalBlock Sent"]
 
 	def getCommittee_members(committee_id):
 		"""
@@ -757,7 +757,7 @@ class Elastico:
 				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
-				
+			self.state = ELASTICO_STATES["CommitmentSentToFinal"]
 
 
 	def addCommitment(self, finalBlock):
@@ -884,15 +884,19 @@ class Elastico:
 			if flag == False:
 				self.state = ELASTICO_STATES["Final PBFT Start"]
 				self.verifyAndMergeConsensusData()
-			else self.SendtoFinal()	
-
-		elif self.state == ELASTICO_STATES["PBFT Finished"]:
-			self.SendtoFinal()
+			
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 			self.runPBFT(self.mergedBlock, "final committee consensus")
-			# if self.isFinalMember():
-			# 	self.runPBFT(self.mergedBlock, msg["data"]["instance"])
-					
+
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished-FinalCommittee"]:
+			self.sendCommitment()
+
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
+			if len(self.commitments) >= c//2 + 1:
+				self.BroadcastFinalTxn()
+
+							
+
 		elif self.state == ELASTICO_STATES["Received Final Block"]:
 			self.reset()
 
