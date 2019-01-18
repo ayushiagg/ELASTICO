@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Committee full" : 5 , "InPBFT" : 6, "Consensus Sent" : 7, "Final Committee in PBFT" : 8, "Sent Final Block" : 9, "Received Final Block" : 10}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11}
 
 
 
@@ -367,12 +367,12 @@ class Elastico:
 			
 			self.Send_to_Directory()
 			# ToDo : check state assignment order
-			if prevState == ELASTICO_STATES["Formed Identity"]:			
+			if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
+				msg = {"data" : self.identity ,"type" : "Committee full"}
+				BroadcastTo_Network(msg["data"] , msg["type"])				
+			else: 
 				self.state = ELASTICO_STATES["Formed Committee"]
-
-			if prevState == ELASTICO_STATES["Formed Identity"]:
 				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
-				pass
 
 
 	def Send_to_Directory(self):
@@ -439,7 +439,7 @@ class Elastico:
 			finalMembers  = msg["data"]["final Committee members"]
 			self.committee_Members |= set(commMembers)
 			self.finalCommitteeMembers |= set(finalMembers)
-			self.state  = ELASTICO_STATES["Committee full"]
+			self.state  = ELASTICO_STATES["Receiving Committee Members"]
 			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
 
 		# receiving H(Ri) by final committe members
