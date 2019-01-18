@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "InPBFT" : 7, "Consensus Sent" : 8, "Final Committee in PBFT" : 9, "Sent Final Block" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13}
 
 
 
@@ -111,6 +111,7 @@ def MulticastCommittee(commList):
 				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
 				msg = {"data" : data , "type" : "committee members views"}
 				memberId.send(msg)
+		self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 
 
 class Identity:
@@ -820,6 +821,8 @@ class Elastico:
 	def appendToLedger(self):
 		"""
 		"""
+		pass
+
 
 	def execute(self, epochTxn):
 		"""
@@ -845,6 +848,7 @@ class Elastico:
 			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 		elif self.state == ELASTICO_STATES["Committee full"]:
 			# Now The node should go for Intra committee consensus
+			
 			pass
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
