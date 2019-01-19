@@ -953,14 +953,3 @@ if __name__ == "__main__":
 		print("epoch number :-" , epoch + 1 , "started")
 		Run(epochTxns[epoch])
 
-
-# Todo: send the txns to everybody and only the ones who are in the committee will use them. 
-# directory member will send the txns to the committees
-# simple check that each committee executing same set of txns (sharding working correctly)
-# some baby steps towards consensus...
-# communicate within each other in committee that this is my shard and check whether shards to committee are same or not
-# each node will run thread...locks(global lock)
-# receive data structures is accessed thru lock
-# execute and receive lock
-# make all nodes run using tcp ip(send and receive thru tcp ip, execute one step and receive)
-# wdout pow , invalid pow, boolean flag in your node good and bad...POW maciousness can be detected
