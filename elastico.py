@@ -45,6 +45,13 @@ def consistencyProtocol():
 	"""
 	# ToDo : Re-check before meeting!
 	global network_nodes, commitmentSet
+
+	for node in network_nodes:
+		if node.isFinalMember():
+			if len(node.commitments) <= c//2:
+				return False, "insufficientCommitments"
+
+	# ToDo: Discuss with sir about intersection.
 	if len(commitmentSet) == 0:
 		flag = True
 		for node in network_nodes:
@@ -54,7 +61,7 @@ def consistencyProtocol():
 					commitmentSet = node.commitments
 				else:	
 					commitmentSet = commitmentSet.intersection(node.commitments)
-	return commitmentSet
+	return True,commitmentSet
 
 
 def random_gen(size=32):
@@ -664,7 +671,9 @@ class Elastico:
 			final committee members will broadcast S(commitmentSet), along with final set of 
 			X(txn_block) to everyone in the network
 		"""
-		S = consistencyProtocol()
+		boolVal , S = consistencyProtocol()
+		if boolVal == False:
+			return S
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
 		print("finalblock-" , self.finalBlock)
 		msg = {"data" : data , "type" : "finalTxnBlock"}
@@ -889,6 +898,7 @@ class Elastico:
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
+
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSent"]:
 			self.BroadcastR()
 					
