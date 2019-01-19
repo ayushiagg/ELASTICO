@@ -377,7 +377,6 @@ class Elastico:
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
-			# input()
 			print("---seen c members---")
 			# track previous state before adding in committee
 			prevState = self.state
@@ -688,8 +687,9 @@ class Elastico:
 		msg = {"data" : data , "type" : "finalTxnBlock"}
 		# for nodeId in NtwParticipatingNodes:
 		# 	nodeId.send(msg)
-		BroadcastTo_Network(data, "finalTxnBlock")	
-		self.state = ELASTICO_STATES["FinalBlockSent"]
+		BroadcastTo_Network(data, "finalTxnBlock")
+		if self.state != ELASTICO_STATES["FinalBlockReceived"]:
+			self.state = ELASTICO_STATES["FinalBlockSent"]
 
 	def getCommittee_members(committee_id):
 		"""
@@ -708,7 +708,7 @@ class Elastico:
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
-			self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
+		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
 
 
 
