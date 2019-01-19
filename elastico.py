@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlock Sent" : 10, "Received Final Block" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18}
 
 
 
@@ -666,7 +666,7 @@ class Elastico:
 		# for nodeId in NtwParticipatingNodes:
 		# 	nodeId.send(msg)
 		BroadcastTo_Network(data, "finalTxnBlock")	
-		self.state = ELASTICO_STATES["FinalBlock Sent"]
+		self.state = ELASTICO_STATES["FinalBlockSent"]
 
 	def getCommittee_members(committee_id):
 		"""
@@ -769,6 +769,7 @@ class Elastico:
 		# for nodeId in NtwParticipatingNodes:
 		# 	nodeId.send(msg)
 		BroadcastTo_Network(data, "RandomStringBroadcast")
+		self.state = ELASTICO_STATES["BroadcastedR"]
 
 
 	def xor_R(self):
