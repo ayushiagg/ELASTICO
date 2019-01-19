@@ -29,7 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
 
 # class Network:
 # 	"""
@@ -46,6 +46,7 @@ def consistencyProtocol():
 	for node in network_nodes:
 		if node.isFinalMember():
 			if len(node.commitments) <= c//2:
+				input("insufficientCommitments")
 				return False, "insufficientCommitments"
 
 	# ToDo: Discuss with sir about intersection.
@@ -485,7 +486,7 @@ class Elastico:
 				HashRi = self.hexdigest(Ri)
 				if HashRi in self.RcommitmentSet:
 					self.set_of_Rs.add(Ri)
-					if len(self.set_of_Rs) > c//2:
+					if len(self.set_of_Rs) >= c//2 + 1:
 						self.state = ELASTICO_STATES["ReceivedR"]
 
 		elif msg["type"] == "finalTxnBlock":
@@ -504,8 +505,16 @@ class Elastico:
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 					# ToDo : Check this, It is overwritten here
+					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
+						self.state = ELASTICO_STATES["FinalBlockReceived"]
 					self.RcommitmentSet = received_commitmentSet
-					self.state = ELASTICO_STATES["FinalBlockReceived"]
+
+				else:
+					print("Signature invalid")
+					input()
+			else:
+				print("PoW not valid")
+				input()
 
 		elif msg["type"] == "getCommitteeMembers":
 			if self.is_directory == False:
@@ -779,8 +788,8 @@ class Elastico:
 		msg = {"data" : data , "type" : "RandomStringBroadcast"}
 		# for nodeId in NtwParticipatingNodes:
 		# 	nodeId.send(msg)
-		BroadcastTo_Network(data, "RandomStringBroadcast")
 		self.state = ELASTICO_STATES["BroadcastedR"]
+		BroadcastTo_Network(data, "RandomStringBroadcast")
 
 
 	def xor_R(self):
@@ -847,6 +856,7 @@ class Elastico:
 		"""
 			executing the functions based on the running state
 		"""
+		print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
 		if self.state == ELASTICO_STATES["NONE"]:
 			self.compute_PoW()
 		elif self.state == ELASTICO_STATES["PoW Computed"]:
@@ -879,7 +889,7 @@ class Elastico:
 		elif self.isFinalMember() and self.state ==ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 			flag = False
 			for commId in self.ConsensusMsgCount:
-				if len(self.ConsensusMsgCount[commId]) <= c//2:
+				if self.ConsensusMsgCount[commId] <= c//2:
 					flag = True
 					break
 			if flag == False:
@@ -897,15 +907,23 @@ class Elastico:
 				self.BroadcastFinalTxn()
 
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False:
+			# input("welcome")
 			response = []
 			for txnBlock in self.finalBlockbyFinalCommittee:
 				if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 					response.append(txnBlock)
-			return response	
-
-
-		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSent"]:
+				else:
+					print("less block signs : ", len(self.finalBlockbyFinalCommittee[txnBlock]))
+			if len(response) > 0:
+				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
+				return response	
+		
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			self.BroadcastR()
+		
+		elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
+			# input("welcome all")
+			pass
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
 			self.reset()
