@@ -206,6 +206,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
+		self.finalBlockCount = 0
 
 	def reset(self):
 		"""
@@ -237,7 +238,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-
+		self.finalBlockCount = 0
 
 	def initER(self):
 		"""
@@ -481,6 +482,8 @@ class Elastico:
 				HashRi = self.hexdigest(Ri)
 				if HashRi in self.RcommitmentSet:
 					self.set_of_Rs.add(Ri)
+					if len(self.set_of_Rs) > c//2:
+						self.state = ELASTICO_STATES["ReceivedR"]
 
 		elif msg["type"] == "finalTxnBlock":
 			data = msg["data"]
@@ -499,7 +502,9 @@ class Elastico:
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 					# ToDo : Check this, It is overwritten here
 					self.RcommitmentSet = received_commitmentSet
-				
+					self.state = ELASTICO_STATES["FinalBlockReceived"]
+					self.finalBlockCount += 1
+
 		elif msg["type"] == "getCommitteeMembers":
 			if self.is_directory == False:
 				return False , set()
@@ -884,9 +889,11 @@ class Elastico:
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
-		elif self.state == ELASTICO_STATES["Received Final Block"]:
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSent"]:
+			self.BroadcastR()
+					
+		elif self.state == ELASTICO_STATES["ReceivedR"] and self.finalBlockCount >= c//2 + 1:
 			self.reset()
-
 
 
 def Run(epochTxn):
