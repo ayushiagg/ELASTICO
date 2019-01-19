@@ -593,6 +593,9 @@ class Elastico:
 						response.append(txnBlock)
 				return response		
 
+		elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"]):
+			# reset the elastico node
+			self.reset()
 
 	def verifyAndMergeConsensusData(self):
 		"""
@@ -926,7 +929,8 @@ class Elastico:
 			pass
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
-			self.reset()
+			# self.reset()
+			return "reset"
 
 
 def Run(epochTxn):
@@ -945,17 +949,30 @@ def Run(epochTxn):
 		E = network_nodes
 
 	epochBlock = set()
-	while len(epochBlock) == 0:
+
+	while True:
+		resetcount = 0
 		for node in network_nodes:
 			response = []
 			response = node.execute(epochTxn)
-			if response != None and len(response) != 0:
+			if response == "reset":
+				resetcount += 1
+				pass
+			elif response != None and len(response) != 0:
 				for txnBlock in response:
+					print(txnBlock)
+					input("ayushiiiiiiiii")
 					epochBlock |= eval(txnBlock)
+				ledger.append(epochBlock)
+		if resetcount == n:
+			# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
+			for node in network_nodes:
+				msg = {"type": "reset-all", "data" : node.identity}
+				node.identity.send(msg)
+			break
 
-	ledger.append(epochBlock)
 	print("ledger block" , ledger)
-
+	input("ledger updated!!")
 
 if __name__ == "__main__":
 	# epochTxns - dictionary that maps the epoch number to the list of transactions
