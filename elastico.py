@@ -29,9 +29,7 @@ NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18}
-
-
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19}
 
 # class Network:
 # 	"""
@@ -43,7 +41,6 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
-	# ToDo : Re-check before meeting!
 	global network_nodes, commitmentSet
 
 	for node in network_nodes:
@@ -117,7 +114,7 @@ def MulticastCommittee(commList, identityobj, txns):
 			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
 			msg = {"data" : data , "type" : "committee members views"}
 			memberId.send(msg)
-		
+
 
 
 class Identity:
@@ -251,7 +248,7 @@ class Elastico:
 		"""
 				# minor comment: this must be cryptographically secure, but this is not.
 				# might want to replace this with reads from /dev/urandom.
-		print("---initial epoch randomness for a node---")				
+		print("---initial epoch randomness for a node---")
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -428,6 +425,7 @@ class Elastico:
 				self.notify_finalCommittee()
 				# ToDo: transition of state to committee full 
 
+
 	def receive(self, msg):
 		"""
 			method to recieve messages for a node as per the type of a msg
@@ -492,7 +490,7 @@ class Elastico:
 
 		elif msg["type"] == "finalTxnBlock":
 			data = msg["data"]
-			# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}			
+			# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}
 			identityobj = data["identity"]
 			if self.verify_PoW(identityobj):
 				sign = data["signature"]
@@ -575,7 +573,6 @@ class Elastico:
 			if self.isFinalMember():
 				self.BroadcastR()
 
-				
 		elif msg["type"] == "append to ledger":
 			if self.is_directory == False and len(self.committee_Members) == c:
 				response = []
@@ -584,7 +581,7 @@ class Elastico:
 						response.append(txnBlock)
 				return response		
 
- 
+
 	def verifyAndMergeConsensusData(self):
 		"""
 			each final committee member validates that the values received from the committees are signed by 
@@ -610,7 +607,7 @@ class Elastico:
 		print(self.mergedBlock)
 		input("Check merged block above!")
 
-	
+
 	def runPBFT(self , txnBlock, instance):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
@@ -623,7 +620,7 @@ class Elastico:
 			self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
-			self.state = ELASTICO_STATES["PBFT Finished"]	
+			self.state = ELASTICO_STATES["PBFT Finished"]
 
 	def isFinalMember(self):
 		"""
@@ -688,7 +685,7 @@ class Elastico:
 
 	def SendtoFinal(self):
 		"""
-			Each committee member sends the signed value(txn block after intra committee consensus) 
+			Each committee member sends the signed value(txn block after intra committee consensus)
 			along with signatures to final committee
 		"""
 		for finalId in self.finalCommitteeMembers:
@@ -697,7 +694,7 @@ class Elastico:
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 			self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
-		
+
 
 
 	def union(data):
@@ -858,10 +855,10 @@ class Elastico:
 			k = 0
 			num = len(epochTxn) // pow(2,s) 
 			# loop in sorted order of committee ids
-			for iden in pow(2,s):
+			for iden in range(pow(2,s)):
 				if iden == pow(2,s)-1:
 					self.txn[iden] = epochTxn[ k : ]
-				else:		
+				else:
 					self.txn[iden] = epochTxn[ k : k + num]
 				k = k + num
 			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
@@ -929,8 +926,9 @@ def Run(epochTxn):
 	epochBlock = set()
 	while len(epochBlock) == 0:
 		for node in network_nodes:
-			response = node.execute()
-			if len(response) != 0:
+			response = []
+			response = node.execute(epochTxn)
+			if response != None and len(response) != 0:
 				for txnBlock in response:
 					epochBlock |= eval(txnBlock)
 
