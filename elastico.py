@@ -213,7 +213,6 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.finalBlockCount = 0
 
 	def reset(self):
 		"""
@@ -245,7 +244,6 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.finalBlockCount = 0
 
 	def initER(self):
 		"""
@@ -425,7 +423,7 @@ class Elastico:
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
-				MulticastCommittee(commList, self.identity, self.txns)
+				MulticastCommittee(commList, self.identity, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 				self.notify_finalCommittee()
 				# ToDo: transition of state to committee full 
@@ -510,7 +508,6 @@ class Elastico:
 					# ToDo : Check this, It is overwritten here
 					self.RcommitmentSet = received_commitmentSet
 					self.state = ELASTICO_STATES["FinalBlockReceived"]
-					self.finalBlockCount += 1
 
 		elif msg["type"] == "getCommitteeMembers":
 			if self.is_directory == False:
@@ -857,7 +854,7 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["Formed Identity"]:
 			self.form_committee()
 		elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
-			# Receive txns from client
+			# Receive txns from client for an epoch
 			k = 0
 			num = len(epochTxn) // pow(2,s) 
 			# loop in sorted order of committee ids
@@ -899,10 +896,18 @@ class Elastico:
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
 
+		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False:
+			response = []
+			for txnBlock in self.finalBlockbyFinalCommittee:
+				if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
+					response.append(txnBlock)
+			return response	
+
+
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSent"]:
 			self.BroadcastR()
 					
-		elif self.state == ELASTICO_STATES["ReceivedR"] and self.finalBlockCount >= c//2 + 1:
+		elif self.state == ELASTICO_STATES["ReceivedR"]:
 			self.reset()
 
 
@@ -910,7 +915,7 @@ def Run(epochTxn):
 	"""
 		runs for one epoch
 	"""
-	global network_nodes, identityNodeMap
+	global network_nodes,ledger
 	E = []
 	if len(network_nodes) == 0:
 		network_nodes = E
@@ -920,156 +925,17 @@ def Run(epochTxn):
 			E.append(Elastico())
 	else:
 		E = network_nodes
-		for i in range(n):
-			print( "---Running for processor number---" , i + 1)
-			E[i].reset()
-	# Id - identity of the nodes
-	Id = [[] for i in range(n)]
-	identityNodeMap = dict()
-	commitmentSet = set()
-	objIndex = set(range(n))
-	while True:
-		flag = False
-		for i in objIndex.copy():
-			# if the state is NONE, then each node has to compute its PoW
-			# ToDo : A node should check its state and do the next step! Fix the below things
-			if E[i].state == ELASTICO_STATES["NONE"]:
-				E[i].compute_PoW()
-				flag = True
-			# if the PoW computed for a node, then each processor will be assigned to a committee based on its identity
-			if E[i].state == ELASTICO_STATES["PoW Computed"]:
-				Id[i] = E[i].form_identity()
-				E[i].form_committee()
-				objIndex.remove(i)
-		if flag == False:
-			break
-	print("\n\n")
-	print("########### STEP 1 AND 2 Done ###########")
-	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")
-	# ToDo: We are communicating Id, some Identity objects may not be the part of the network. So, fix this.
-	# NtwParticipatingNodes - list of nodes those are the part of some committee
-	global NtwParticipatingNodes
-	NtwParticipatingNodes = []
-
-	# Ask sir regarding views
-	for node in Id:
-		data = {"identity" :  node}
-		type_ = "request committee list from directory member"
-		msg = {"data" : data , "type" : type_}
-		is_directory , commList = node.send(msg)
-		if is_directory == True:
-			k = 0
-			# loop in sorted order of committee ids
-			for iden in commList:
-				txn = epochTxn[ k : k + 8]
-				k = k + 8
-				commMembers = commList[iden]
-				for commMemberId in commMembers:
-					# partOfNtw is set to true when the nodes are participating in the ntw(part of any committee)
-					commMemberId.partOfNtw = True
-					NtwParticipatingNodes.append(commMemberId)
-					data = {"txn_block" : txn}
-					msg = {"data" : data , "type" : "set_of_txns"}
-					commMemberId.send(msg)
-			break
-
-	# ToDo:  send txns to everybody
-	print("No. of NtwParticipatingNodes : ", len(NtwParticipatingNodes))
-
-	print("\n")
-	print("---set of txns added to each committee---")
-	print("\n")
-
-	# ToDo: To run the real pbft implementation
-	for node in NtwParticipatingNodes:
-		data = {"identity" :  node , "instance" : "intra committee consensus"}
-		type_ = "command to run pbft"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-	
-	print("\n")
-	print("---PBFT FINISH---")
-	print("\n")
-
-	for node in NtwParticipatingNodes:
-		data = {"identity" :  node}
-		type_ = "send txn set and sign to final committee"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-
-	print("\n\n")
-	print("########### STEP 3 Done ###########")
-	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")
-
-	for finalNode in finalMembers:
-		data = {"identity" :  finalNode}
-		type_ = "verify and merge intra consensus data"
-		msg = {"data" : data , "type" : type_}
-		finalNode.send(msg)
-
-	for node in finalMembers:
-		data = {"identity" :  node,  "instance" : "final committee consensus"}
-		type_ = "command to run pbft by final committee"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-
-	print("\n")
-	print("---PBFT FINISH BY FINAL COMMITTEE---")
-	print("\n")
-	
-	for node in finalMembers:
-		# ToDo: try to do this only for final committee members not for whole ntw
-		data = {"identity" :  node}
-		type_ = "send commitments of Ris"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-
-	for node in finalMembers:
-		data = {"identity" :  node}
-		type_ = "broadcast final set of txns to the ntw"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-
-
-	print("\n\n")
-	print("########### STEP 4 Done ###########")
-	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")
-
-
-	for node in finalMembers:
-		# each final committee member broadcasts the random string Ri to everyone on the ntw
-		data = {"identity" : node}
-		type_= "Broadcast Ri"
-		msg = {"data" : data , "type" : type_}
-		node.send(msg)
-
-	finalSet = []
-	for node in NtwParticipatingNodes:
-		data = {"identity" : node}
-		msg = {"data" : data, "type" :  "append to ledger"}
-		response = node.send(msg)
-		# print("response" , type(response) , " ", response , " type of eval" , type(eval(response)))
-		finalSet.append(response)
-		# print(response)
-		# input()
 
 	epochBlock = set()
-	for blocklist in finalSet:
-		for block in blocklist:
-			fin_block = eval(block)
-			epochBlock |= fin_block
-
+	while len(epochBlock) == 0:
+		for node in network_nodes:
+			response = node.execute()
+			if len(response) != 0:
+				for txnBlock in response:
+					epochBlock |= eval(txnBlock)
 
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
-	input()
-	print("\n\n")
-	print("########### STEP 5 Done ###########")
-	print("-----------------------------------------------------------------------------------------------")
-	print("\n\n")
 
 
 if __name__ == "__main__":
