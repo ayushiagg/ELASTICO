@@ -467,7 +467,7 @@ class Elastico:
 
 
 		elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
-			if self.state == ELASTICO_STATES["Receivig Committee Members"]:
+			if self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				self.state = ELASTICO_STATES["Committee full"]
 
 		# receiving H(Ri) by final committe members
@@ -532,7 +532,10 @@ class Elastico:
 					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
-					self.ConsensusMsgCount[identityobj.committee_id] += 1
+					if identityobj.committee_id not in self.ConsensusMsgCount:
+						self.ConsensusMsgCount[identityobj.committee_id	] = 1
+					else:	
+						self.ConsensusMsgCount[identityobj.committee_id] += 1
 		elif msg["type"] == "request committee list from directory member":
 			if self.is_directory == False:
 				return False , dict()
