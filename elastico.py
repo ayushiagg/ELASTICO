@@ -889,7 +889,7 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["PBFT Finished"]:
 			self.SendtoFinal()
 		
-		elif self.isFinalMember() and self.state ==ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
+		elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 			flag = False
 			for commId in self.ConsensusMsgCount:
 				if self.ConsensusMsgCount[commId] <= c//2:
@@ -961,14 +961,18 @@ def Run(epochTxn):
 			elif response != None and len(response) != 0:
 				for txnBlock in response:
 					print(txnBlock)
-					input("ayushiiiiiiiii")
+					# input("ayushiiiiiiiii")
 					epochBlock |= eval(txnBlock)
 				ledger.append(epochBlock)
 		if resetcount == n:
 			# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
 			for node in network_nodes:
 				msg = {"type": "reset-all", "data" : node.identity}
-				node.identity.send(msg)
+				if isinstance(node.identity, Identity):
+					node.identity.send(msg)
+				else:
+					print("illegal call")
+					node.reset()
 			break
 
 	print("ledger block" , ledger)
