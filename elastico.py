@@ -380,6 +380,7 @@ class Elastico:
 		if len(self.cur_directory) < c:
 			self.is_directory = True
 			print("---not seen c members yet, so broadcast to ntw---")
+			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
@@ -423,6 +424,8 @@ class Elastico:
 			# Send commList[iden] to members of commList[iden]
 			print("----------committees full----------------")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
+				print("directory member has not yet received the epochTxn")
+				input()
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
@@ -505,11 +508,9 @@ class Elastico:
 				finalTxnBlock = data["finalTxnBlock"]
 				finalTxnBlock_signature = data["finalTxnBlock_signature"]
 				if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
-					# ToDo : to take step regarding this
 					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
-					# ToDo : Check this, It is overwritten here
 					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
 						# for final members, their state is updated only when they have also sent the finalblock
 						if self.isFinalMember():
@@ -559,6 +560,7 @@ class Elastico:
 						self.ConsensusMsgCount[identityobj.committee_id	] = 1
 					else:	
 						self.ConsensusMsgCount[identityobj.committee_id] += 1
+
 		elif msg["type"] == "request committee list from directory member":
 			if self.is_directory == False:
 				return False , dict()
@@ -836,6 +838,7 @@ class Elastico:
 		for Ri in PoW["set_of_Rs"]:
 			digest = self.hexdigest(Ri)
 			if digest not in self.RcommitmentSet:
+				print("pow failed due to RcommitmentSet")
 				return False
 
 		# reconstruct epoch randomness
@@ -896,21 +899,23 @@ class Elastico:
 			# Now The node should go for Intra committee consensus
 			if self.is_directory == False:
 				self.runPBFT(self.txn_block, "intra committee consensus")
+			else:
+				print("directory member state changed to Committee full(unwanted state)")
+				input()	
 
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
-			pass	
+			pass
 		elif self.state == ELASTICO_STATES["PBFT Finished"]:
 			self.SendtoFinal()
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 			flag = False
-			for commId in self.ConsensusMsgCount:
-				if self.ConsensusMsgCount[commId] <= c//2:
+			for commId in range(pow(2,s)):
+				if commId not in self.ConsensusMsgCount or self.ConsensusMsgCount[commId] <= c//2:
 					flag = True
 					break
 			if flag == False:
-				self.state = ELASTICO_STATES["Final PBFT Start"]
 				self.verifyAndMergeConsensusData()
 			
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
@@ -979,7 +984,6 @@ def Run(epochTxn):
 					print(txnBlock)
 					# input("ayushiiiiiiiii")
 					epochBlock |= eval(txnBlock)
-				ledger.append(epochBlock)
 		if resetcount == n:
 			# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
 			for node in network_nodes:
@@ -991,6 +995,7 @@ def Run(epochTxn):
 					node.reset()
 			break
 
+	ledger.append(epochBlock)
 	print("ledger block" , ledger)
 	input("ledger updated!!")
 
@@ -1007,4 +1012,5 @@ if __name__ == "__main__":
 	for epoch in epochTxns:
 		print("epoch number :-" , epoch + 1 , "started")
 		Run(epochTxns[epoch])
+
 
