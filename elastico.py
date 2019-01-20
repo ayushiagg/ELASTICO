@@ -144,21 +144,21 @@ class Identity:
 		"""
 			send the msg to node based on their identity
 		"""
-		# Create a socket object
-		socketconn = socket.socket()
+		# # Create a socket object
+		# socketconn = socket.socket()
 
-		# Define the port on which you want to connect
-		ip, port = self.IP, self.port
+		# # Define the port on which you want to connect
+		# ip, port = self.IP, self.port
 
-		# connect to the server on local computer
-		socketconn.connect(('127.0.0.1', port))
+		# # connect to the server on local computer
+		# socketconn.connect(('127.0.0.1', port))
 
-		serialized_data = json.dumps(data)
-		encoded_data = serialized_data.encode()
-		socketconn.send(encoded_data)
+		# serialized_data = json.dumps(data)
+		# encoded_data = serialized_data.encode()
+		# socketconn.send(encoded_data)
 
-		# close the connection
-		socketconn.close()
+		# # close the connection
+		# socketconn.close()
 
 		global identityNodeMap
 		# print("--send to node--")
@@ -1003,9 +1003,9 @@ def Run(epochTxn):
 	while True:
 		resetcount = 0
 		for node in network_nodes:
-			node.lock.acquire()
+			# node.lock.acquire()
 			response = node.execute(epochTxn)
-			node.lock.release()
+			# node.lock.release()
 			if response == "reset":
 				resetcount += 1
 				pass
