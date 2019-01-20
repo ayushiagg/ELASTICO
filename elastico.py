@@ -959,23 +959,19 @@ def Run(epochTxn):
 	"""
 		runs for one epoch
 	"""
-	global network_nodes,ledger
-	E = []
+	global network_nodes, ledger, commitmentSet
 	if len(network_nodes) == 0:
-		network_nodes = E
 		# E is the list of elastico objects
 		for i in range(n):
 			print( "---Running for processor number---" , i + 1)
-			E.append(Elastico())
-	else:
-		E = network_nodes
+			network_nodes.append(Elastico())
 
 	epochBlock = set()
+	commitmentSet = set()
 
 	while True:
 		resetcount = 0
 		for node in network_nodes:
-			response = []
 			response = node.execute(epochTxn)
 			if response == "reset":
 				resetcount += 1
