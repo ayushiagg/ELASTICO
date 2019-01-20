@@ -3,6 +3,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
+import socket
+import json
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
@@ -142,6 +144,22 @@ class Identity:
 		"""
 			send the msg to node based on their identity
 		"""
+		# Create a socket object
+		socketconn = socket.socket()
+
+		# Define the port on which you want to connect
+		ip, port = self.IP, self.port
+
+		# connect to the server on local computer
+		socketconn.connect(('127.0.0.1', port))
+
+		serialized_data = json.dumps(data)
+		encoded_data = serialized_data.encode()
+		socketconn.send(encoded_data)
+
+		# close the connection
+		socketconn.close()
+
 		global identityNodeMap
 		# print("--send to node--")
 		node = identityNodeMap[self]
