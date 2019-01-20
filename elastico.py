@@ -3,7 +3,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
-import socket
+import socket, threading
 import json
 
 # network_nodes - All objects of nodes in the network
@@ -163,7 +163,9 @@ class Identity:
 		global identityNodeMap
 		# print("--send to node--")
 		node = identityNodeMap[self]
+		node.lock.acquire()
 		response = node.receive(msg)
+		node.lock.release()
 		return response
 
 class Elastico:
@@ -205,6 +207,7 @@ class Elastico:
 		self.IP = self.get_IP()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
+		self.lock = threading.Lock()
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
@@ -1000,7 +1003,9 @@ def Run(epochTxn):
 	while True:
 		resetcount = 0
 		for node in network_nodes:
+			node.lock.acquire()
 			response = node.execute(epochTxn)
+			node.lock.release()
 			if response == "reset":
 				resetcount += 1
 				pass
