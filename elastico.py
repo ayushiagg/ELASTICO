@@ -200,6 +200,7 @@ class Elastico:
 		self.commitments = set()
 		self.txn_block = set()
 		self.set_of_Rs = set()
+		self.newset_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
@@ -232,6 +233,8 @@ class Elastico:
 		# only when this node is the member of final committee
 		self.commitments = set()
 		self.txn_block = set()
+		self.set_of_Rs = self.newset_of_Rs
+		self.newset_of_Rs = set()
 		self.CommitteeConsensusData = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
@@ -483,9 +486,9 @@ class Elastico:
 			if self.verify_PoW(identityobj):
 				Ri = data["Ri"]
 				HashRi = self.hexdigest(Ri)
-				if HashRi in self.RcommitmentSet:
-					self.set_of_Rs.add(Ri)
-					if len(self.set_of_Rs) >= c//2 + 1:
+				if HashRi in self.newRcommitmentSet:
+					self.newset_of_Rs.add(Ri)
+					if len(self.newset_of_Rs) >= c//2 + 1:
 						self.state = ELASTICO_STATES["ReceivedR"]
 
 		elif msg["type"] == "finalTxnBlock":
