@@ -8,6 +8,7 @@ import json
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
+global epochBlock
 # n : number of processors
 n = 150
 # s - where 2^s is the number of committees
@@ -993,8 +994,13 @@ def executeSteps(node, epochTxn):
 	while True:
 		response = node.execute(epochTxn)
 		if response == "reset":
-			resetcount += 1
-			pass
+			msg = {"type": "reset-all", "data" : node.identity}
+			if isinstance(node.identity, Identity):
+				node.identity.send(msg)
+			else:
+				print("illegal call")
+				node.reset()
+			break	
 		elif response != None and len(response) != 0:
 			for txnBlock in response:
 				print(txnBlock)
@@ -1015,29 +1021,38 @@ def Run(epochTxn):
 	epochBlock = set()
 	commitmentSet = set()
 
-	while True:
-		resetcount = 0
-		for node in network_nodes:
-			# node.lock.acquire()
-			response = node.execute(epochTxn)
-			# node.lock.release()
-			if response == "reset":
-				resetcount += 1
-				pass
-			elif response != None and len(response) != 0:
-				for txnBlock in response:
-					print(txnBlock)
-					epochBlock |= eval(txnBlock)
-		if resetcount == n:
-			# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
-			for node in network_nodes:
-				msg = {"type": "reset-all", "data" : node.identity}
-				if isinstance(node.identity, Identity):
-					node.identity.send(msg)
-				else:
-					print("illegal call")
-					node.reset()
-			break
+
+	for nodeIndex in range(n):
+		t = threading.Thread(target= executeSteps, args=(network_nodes[nodeIndex], epochTxn))
+		t.start()
+		print("thread number" , nodeIndex , "started")
+		t.join()
+			
+	# while True:
+	# 	resetcount = 0
+	# 	for node in network_nodes:
+	# 		# node.lock.acquire()
+	# 		response = node.execute(epochTxn)
+	# 		# node.lock.release()
+	# 		if response == "reset":
+	# 			resetcount += 1
+	# 			pass
+	# 		elif response != None and len(response) != 0:
+	# 			for txnBlock in response:
+	# 				print(txnBlock)
+	# 				epochBlock |= eval(txnBlock)
+	# 	if resetcount == n:
+	# 		# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
+	# 		for node in network_nodes:
+	# 			msg = {"type": "reset-all", "data" : node.identity}
+	# 			if isinstance(node.identity, Identity):
+	# 				node.identity.send(msg)
+	# 			else:
+	# 				print("illegal call")
+	# 				node.reset()
+	# 		break
+
+
 
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
