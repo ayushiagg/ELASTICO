@@ -205,7 +205,7 @@ class Elastico:
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
-		self.finalBlock = []
+		self.finalBlock = {"sent" : False, "finalBlock" : [] }
 		self.RcommitmentSet = ""
 		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
@@ -645,7 +645,7 @@ class Elastico:
 		for txn in txnBlock:
 			txn_set.add(txn)
 		if instance == "final committee consensus":
-			self.finalBlock = txn_set
+			self.finalBlock["finalBlock"] = txn_set
 			self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
@@ -697,11 +697,10 @@ class Elastico:
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock , "finalTxnBlock_signature" : self.sign(self.finalBlock)}
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		print("finalblock-" , self.finalBlock)
-		msg = {"data" : data , "type" : "finalTxnBlock"}
-		# for nodeId in NtwParticipatingNodes:
-		# 	nodeId.send(msg)
+		# final Block sent to ntw
+		self.finalBlock["sent"] = True
 		BroadcastTo_Network(data, "finalTxnBlock")
 		if self.state != ELASTICO_STATES["FinalBlockReceived"]:
 			self.state = ELASTICO_STATES["FinalBlockSent"]
