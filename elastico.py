@@ -207,6 +207,7 @@ class Elastico:
 		self.mergedBlock = []
 		self.finalBlock = []
 		self.RcommitmentSet = ""
+		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
 		# only when this node is the member of final committee
 		self.ConsensusMsgCount = dict()
@@ -239,7 +240,9 @@ class Elastico:
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
-		self.finalBlock = []
+		self.finalBlock = {"sent" : False, "finalBlock" : [] }
+		self.RcommitmentSet = self.newRcommitmentSet
+		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
 		# only when this node is the member of final committee
 		self.ConsensusMsgCount = dict()
@@ -508,8 +511,17 @@ class Elastico:
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 					# ToDo : Check this, It is overwritten here
 					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
-						self.state = ELASTICO_STATES["FinalBlockReceived"]
-					self.RcommitmentSet = received_commitmentSet
+						# for final members, their state is updated only when they have also sent the finalblock
+						if self.isFinalMember():
+							if self.finalBlock["sent"]:
+								self.state = ELASTICO_STATES["FinalBlockReceived"]
+							pass
+						else:
+							self.state = ELASTICO_STATES["FinalBlockReceived"]
+					# ToDo : Check this, It is overwritten here or need to be union of commitments
+					if self.newRcommitmentSet == "":
+						self.newRcommitmentSet = set()
+					self.newRcommitmentSet |= received_commitmentSet
 
 				else:
 					print("Signature invalid")
@@ -922,10 +934,12 @@ class Elastico:
 					print("less block signs : ", len(self.finalBlockbyFinalCommittee[txnBlock]))
 			if len(response) > 0:
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
-				return response	
+				return response
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
-			self.BroadcastR()
+			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures 
+			if len(self.newRcommitmentSet) >= c//2 + 1:
+				self.BroadcastR()
 		
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
 			# input("welcome all")
