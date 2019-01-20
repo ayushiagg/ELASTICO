@@ -166,7 +166,8 @@ class Elastico:
 			PoW - dict containing 256 bit hash computed by the node, set of Rs needed for epoch randomness, and a nonce
 			Ri - r-bit random string
 			commitments - set of H(Ri) received by final committee node members and H(Ri) is sent by the final committee node only
-			set_of_Rs - set of Ris obtained from the final committee
+			set_of_Rs - set of Ris obtained from the final committee of previous epoch
+			newset_of_Rs - In the present epoch, set of Ris obtained from the final committee
 			committee_id - integer value to represent the committee to which the node belongs
 			final_committee_id - committee id of final committee
 			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
@@ -174,7 +175,8 @@ class Elastico:
 			state - state in which a node is running
 			mergedBlock - list of txns of different committees after their intra committee consensus
 			finalBlock - agreed list of txns after pbft run by final committee
-			RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol
+			RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol [previous epoch values]
+			newRcommitmentSet - For the present it contains the set of H(Ri)s received from the final committee after the consistency protocol
 			finalCommitteeMembers - members of the final committee received from the directory committee
 			txn- transactions stored by the directory members
 			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
@@ -802,12 +804,8 @@ class Elastico:
 		"""
 			broadcast Ri to all the network
 		"""
-		# if self.Ri == "":
-		# 	self.generate_randomstrings()
 		data = {"Ri" : self.Ri, "identity" : self.identity}
 		msg = {"data" : data , "type" : "RandomStringBroadcast"}
-		# for nodeId in NtwParticipatingNodes:
-		# 	nodeId.send(msg)
 		self.state = ELASTICO_STATES["BroadcastedR"]
 		BroadcastTo_Network(data, "RandomStringBroadcast")
 
@@ -816,7 +814,7 @@ class Elastico:
 		"""
 			find xor of any random c/2 + 1 r-bit strings to set the epoch randomness
 		"""
-		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this
+		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this - done this!
 		randomset = SystemRandom().sample(self.set_of_Rs , c//2 + 1)
 		xor_val = 0
 		for R in randomset:
@@ -877,14 +875,20 @@ class Elastico:
 		"""
 			executing the functions based on the running state
 		"""
+		# print the current state of node for debug purpose
 		print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
+
 		if self.state == ELASTICO_STATES["NONE"]:
+			# compute Pow
 			self.compute_PoW()
 		elif self.state == ELASTICO_STATES["PoW Computed"]:
+			# form identity, when PoW computed
 			self.form_identity()
 		elif self.state == ELASTICO_STATES["Formed Identity"]:
+			# form committee, when formed identity
 			self.form_committee()
 		elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
+			# directory node will receive transactions
 			# Receive txns from client for an epoch
 			k = 0
 			num = len(epochTxn) // pow(2,s) 
@@ -908,9 +912,11 @@ class Elastico:
 			# These Nodes are not part of network
 			pass
 		elif self.state == ELASTICO_STATES["PBFT Finished"]:
+			# send pbft consensus blocks to final committee members
 			self.SendtoFinal()
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
+			# final committee node will collect blocks and merge them
 			flag = False
 			for commId in range(pow(2,s)):
 				if commId not in self.ConsensusMsgCount or self.ConsensusMsgCount[commId] <= c//2:
@@ -920,17 +926,21 @@ class Elastico:
 				self.verifyAndMergeConsensusData()
 			
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
+			# final committee member runs final pbft
 			self.runPBFT(self.mergedBlock, "final committee consensus")
 
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished-FinalCommittee"]:
+			# send the commitment to other final committee members
 			self.sendCommitment()
 
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
+			# broadcast final txn block to ntw
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
 
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
-			# input("welcome")
+			# collect final blocks sent by final committee and send to client.
+			# Todo : check this send to client
 			response = []
 			for txnBlock in self.finalBlockbyFinalCommittee:
 				if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
@@ -947,11 +957,10 @@ class Elastico:
 				self.BroadcastR()
 		
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
-			# input("welcome all")
 			pass
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
-			# self.reset()
+			# Now, the nodes can be reset
 			return "reset"
 
 
@@ -979,7 +988,6 @@ def Run(epochTxn):
 			elif response != None and len(response) != 0:
 				for txnBlock in response:
 					print(txnBlock)
-					# input("ayushiiiiiiiii")
 					epochBlock |= eval(txnBlock)
 		if resetcount == n:
 			# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
