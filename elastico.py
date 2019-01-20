@@ -970,7 +970,8 @@ class Elastico:
 				return response
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
-			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures 
+			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
+			# ToDo: check this constraint 
 			if len(self.newRcommitmentSet) >= c//2 + 1:
 				self.BroadcastR()
 		

@@ -9,41 +9,47 @@ def recvMsg(conn):
 	while msg:
 		data += msg.decode()
 		msg = conn.recv(1024)
+	print("dsfs", msg)	
 	data = json.loads(data)
 	return data
+try: 
+	# next create a socket object 
+	s = socket.socket()
+	print ("Socket successfully created")
 
-# next create a socket object 
-s = socket.socket()
-print ("Socket successfully created")
 
-# reserve a port on your computer in our 
-# case it is 12345 but it can be anything 
-port = 12346
+	# reserve a port on your computer in our 
+	# case it is 12345 but it can be anything 
+	port = 12346
 
-# Next bind to the port 
-# we have not typed any ip in the ip field 
-# instead we have inputted an empty string 
-# this makes the server listen to requests 
-# coming from other computers on the network 
-s.bind(('', port))
-print ("socket binded to %s" %(port) )
+	# Next bind to the port 
+	# we have not typed any ip in the ip field 
+	# instead we have inputted an empty string 
+	# this makes the server listen to requests 
+	# coming from other computers on the network 
+	s.bind(('', port))
+	print ("socket binded to %s" %(port) )
 
-# put the socket into listening mode 
-s.listen(5)
-print("socket is listening")
+	# put the socket into listening mode 
+	s.listen(5)
+	print("socket is listening")
 
-# a forever loop until we interrupt it or 
-# an error occurs 
-while True: 
+	# a forever loop until we interrupt it or 
+	# an error occurs 
+	while True: 
 
-	# Establish connection with client. 
-	c, addr = s.accept()
-	print('Got connection from', addr )
+		# Establish connection with client. 
+		c, addr = s.accept()
+		print('Got connection from', addr )
 
-	# send a thank you message to the client. 
-	c.send('Thank you for connecting'.encode()) 
+		# send a thank you message to the client. 
+		c.send('Thank you for connecting'.encode()) 
 
-	data = recvMsg(c)
-	# print(data)
-	# Close the connection with the client 
-	c.close() 
+		data = recvMsg(c)
+		# data = c.recv(1024)
+		# msg = json.loads(data.decode())
+		print(type(data))
+		# Close the connection with the client 
+		c.close() 
+except socket.error as err: 
+    print ("socket creation failed with error %s" %(err) )

@@ -20,10 +20,12 @@ port = 12346
 try:
 	s.connect(('127.0.0.1', port))
 	# receive data from the server
-	print( s.recv(1024) )
+	print( s.recv(1024).decode() )
 	msg = {"type" : "msgtype", "data" : "msgdata"*1000}
+	# s.send(msg)
 	s.send(json.dumps(msg).encode())
 	# close the connection
 	s.close()
 except Exception as e:
 	print("Connection not possible")
+	raise e

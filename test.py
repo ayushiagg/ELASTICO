@@ -32,5 +32,6 @@ for i in range(4):
 	p[i] = A()
 	# print(p[i], q[i])
 
+print(elastico.n)
 # print(p,q)
 print( p==q )
