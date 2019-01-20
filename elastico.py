@@ -393,7 +393,7 @@ class Elastico:
 			if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				msg = {"data" : self.identity ,"type" : "Committee full"}
 				BroadcastTo_Network(msg["data"] , msg["type"])
-			else: 
+			elif self.state != ELASTICO_STATES["Receiving Committee Members"]: 
 				self.state = ELASTICO_STATES["Formed Committee"]
 				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
 
@@ -464,7 +464,7 @@ class Elastico:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")
 
 		# union of committe members views
-		elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]):
+		elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
 			# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
 			commMembers = msg["data"]["committee members"]
 			finalMembers  = msg["data"]["final Committee members"]
@@ -634,9 +634,10 @@ class Elastico:
 							print("excepton:" , txnBlock , "  ", len(txnBlock), " ", type(txnBlock))
 							raise e
 						self.mergedBlock.extend(set_of_txns)
-		self.state = ELASTICO_STATES["Merged Consensus Data"]
-		print(self.mergedBlock)
-		input("Check merged block above!")
+		if len(self.mergedBlock) > 0:
+			self.state = ELASTICO_STATES["Merged Consensus Data"]
+			print(self.mergedBlock)
+			input("Check merged block above!")
 
 
 	def runPBFT(self , txnBlock, instance):
@@ -928,7 +929,7 @@ class Elastico:
 			if len(self.commitments) >= c//2 + 1:
 				self.BroadcastFinalTxn()
 
-		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False:
+		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
 			# input("welcome")
 			response = []
 			for txnBlock in self.finalBlockbyFinalCommittee:
