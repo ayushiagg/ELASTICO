@@ -8,7 +8,7 @@ import json
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
-global epochBlock
+global epochBlock, port
 # n : number of processors
 n = 150
 # s - where 2^s is the number of committees
@@ -16,7 +16,7 @@ s = 4
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 1 
+D = 4
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -33,6 +33,7 @@ NtwParticipatingNodes = []
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
+port = 49152 
 
 # class Network:
 # 	"""
@@ -125,13 +126,14 @@ class Identity:
 	"""
 		class for the identity of nodes
 	"""
-	def __init__(self, IP, PK, committee_id, PoW, epoch_randomness):
+	def __init__(self, IP, PK, committee_id, PoW, epoch_randomness, port):
 		self.IP = IP
 		self.PK = PK
 		self.committee_id = committee_id
 		self.PoW = PoW
 		self.epoch_randomness = epoch_randomness
 		self.partOfNtw = False
+		self.port = port
 
 
 	def isEqual(self, identityobj):
@@ -139,7 +141,8 @@ class Identity:
 			checking two objects of Identity class are equal or not
 		"""
 		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.committee_id == identityobj.committee_id \
-		and self.PoW == identityobj.PoW and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw
+		and self.PoW == identityobj.PoW and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw and self.port == identityobj.port
+
 
 	def send(self, msg):
 		"""
@@ -206,6 +209,7 @@ class Elastico:
 	def __init__(self):
 		print("---Constructor of elastico class---")
 		self.IP = self.get_IP()
+		self.port = self.get_port()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 		self.lock = threading.Lock()
@@ -237,6 +241,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
+		self.socketConn = self.get_socket() 
 
 	def reset(self):
 		"""
@@ -244,6 +249,7 @@ class Elastico:
 		"""
 		self.IP = self.get_IP()
 		self.key = self.get_key()
+		self.port = self.get_port()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 		self.cur_directory = []
 		self.identity = ""
@@ -272,6 +278,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
+		self.socketConn = self.get_socket()
 
 	def initER(self):
 		"""
@@ -282,6 +289,34 @@ class Elastico:
 		print("---initial epoch randomness for a node---")
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
+
+	def get_port(self):
+		"""
+		"""
+		global port
+		port += 1
+		return port
+
+
+	def get_socket(self):
+		"""
+		"""
+		s = socket.socket()
+		print ("Socket successfully created")
+
+
+		# reserve a port on your computer in our 
+		# case it is 12345 but it can be anything 
+		port = self.port
+
+		# Next bind to the port 
+		# we have not typed any ip in the ip field 
+		# instead we have inputted an empty string 
+		# this makes the server listen to requests 
+		# coming from other computers on the network 
+		s.bind(('', port))
+		print ("socket binded to %s" %(port) )
+		return s
 
 
 	def get_IP(self):
@@ -380,7 +415,7 @@ class Elastico:
 			PK = self.key.publickey().exportKey().decode()
 			# set the committee id acc to PoW solution
 			self.committee_id = self.get_committeeid(self.PoW["hash"])
-			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness)
+			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness,self.port)
 			# mapped identity object to the elastico object
 			identityNodeMap[self.identity] = self
 			self.state = ELASTICO_STATES["Formed Identity"]
