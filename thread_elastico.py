@@ -5,6 +5,8 @@ from Crypto.Hash import SHA256
 from secrets import SystemRandom
 import socket, threading
 import json
+# for creating logs
+import logging
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
@@ -427,6 +429,7 @@ class Elastico:
 			the directory members
 		"""	
 		if len(self.cur_directory) < c:
+			logging.info("By - %s : directory member Committee identity - %s" , str(self.identity), str(self.committee_id))
 			self.is_directory = True
 			print("---not seen c members yet, so broadcast to ntw---")
 			# ToDo: do all broadcast asynchronously
@@ -508,6 +511,10 @@ class Elastico:
 					self.committee_list[identityobj.committee_id].append(identityobj)
 					# Once each committee contains at least c identities each, directory members multicast the committee list to each committee member
 					if len(self.committee_list[identityobj.committee_id]) == c:
+						# logging
+						logging.debug("By - %s : Committee formed with committee id : %s", str(self.identity) , str(identityobj.committee_id))
+						strCommMembers = str(self.committee_list[identityobj.committee_id])
+						logging.debug("Members are : %s", strCommMembers)
 						self.checkCommitteeFull()
 			else:
 				print("$$$$$$$ PoW not valid 22222 $$$$$$")
@@ -521,11 +528,12 @@ class Elastico:
 			self.committee_Members |= set(commMembers)
 			self.finalCommitteeMembers |= set(finalMembers)
 			self.state  = ELASTICO_STATES["Receiving Committee Members"]
-			print("commMembers for committee id - " , self.committee_id, "is :-", self.committee_Members)
+			logging.info("For %s commMembers for committee id - %s is :- %s", str(self.identity), str(self.committee_id), str(self.committee_Members))
 
 
 		elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
 			if self.state == ELASTICO_STATES["Receiving Committee Members"]:
+				logging.debug("By %s - Committee Full state ", str(self.identity))
 				self.state = ELASTICO_STATES["Committee full"]
 
 		# receiving H(Ri) by final committe members
@@ -563,7 +571,8 @@ class Elastico:
 					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
 						# for final members, their state is updated only when they have also sent the finalblock
 						if self.isFinalMember():
-							if self.finalBlock["sent"]:
+							logging.info("%s coming to change into finalBlockreceived---state num---> %s" , str(self.identity) , str(self.state))
+							if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
 							pass
 						else:
@@ -953,7 +962,7 @@ class Elastico:
 			if self.is_directory == False:
 				self.runPBFT(self.txn_block, "intra committee consensus")
 			else:
-				print("directory member state changed to Committee full(unwanted state)")
+				logging.warning("directory member state changed to Committee full(unwanted state)")
 				# input()	
 
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
@@ -989,6 +998,7 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
 			# collect final blocks sent by final committee and send to client.
 			# Todo : check this send to client
+			logging.debug("$$$$$ final block with FinalBlockReceived $$$$$$")
 			response = []
 			for txnBlock in self.finalBlockbyFinalCommittee:
 				if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
@@ -996,16 +1006,24 @@ class Elastico:
 				else:
 					print("less block signs : ", len(self.finalBlockbyFinalCommittee[txnBlock]))
 			if len(response) > 0:
+				logging.debug("#############final block sent the block to client##########")
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
 				return response
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 			# ToDo: check this constraint 
+			logging.debug("$$$$$ final block with FinalBlockSentToClient State $$$$$$")
 			if len(self.newRcommitmentSet) >= c//2 + 1:
+				logging.debug("############# R Broadcasted by Final ##########")
 				self.BroadcastR()
+			else:
+				logging.debug("############# insufficient RCommitments ##########")
+
 		
 		elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
+			if self.isFinalMember():
+				logging.warning("how it can be ??? ")
 			pass
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
@@ -1111,6 +1129,9 @@ def Run(epochTxn):
 
 
 if __name__ == "__main__":
+
+	logging.basicConfig(filename='elastico.log',filemode='w',level=logging.DEBUG)
+
 	# epochTxns - dictionary that maps the epoch number to the list of transactions
 	epochTxns = dict()
 	for i in range(1):
