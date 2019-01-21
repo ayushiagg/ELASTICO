@@ -52,7 +52,7 @@ def consistencyProtocol():
 	for node in network_nodes:
 		if node.isFinalMember():
 			if len(node.commitments) <= c//2:
-				input("insufficientCommitments")
+				# input("insufficientCommitments")
 				return False, "insufficientCommitments"
 
 	# ToDo: Discuss with sir about intersection.
@@ -243,7 +243,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.socketConn = self.get_socket() 
+		# self.socketConn = self.get_socket() 
 
 	def reset(self):
 		"""
@@ -280,7 +280,7 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.socketConn = self.get_socket()
+		# self.socketConn = self.get_socket()
 
 	def initER(self):
 		"""
@@ -580,7 +580,7 @@ class Elastico:
 					# ToDo : Check this, It is overwritten here or need to be union of commitments
 					if self.newRcommitmentSet == "":
 						self.newRcommitmentSet = set()
-					self.newRcommitmentSet |= received_commitmentSet
+					self.newRcommitmentSet |= set(received_commitmentSet)
 
 				else:
 					print("Signature invalid")
@@ -1052,6 +1052,7 @@ def executeSteps(nodeIndex, epochTxn):
 	"""
 		execute the elastico node
 	"""
+	global epochBlock
 	node = network_nodes[nodeIndex]
 	# node.socketConn.listen(n)
 	while True:
