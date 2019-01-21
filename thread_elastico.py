@@ -1009,7 +1009,7 @@ class Elastico:
 				logging.debug("#############final block sent the block to client##########")
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
 				logging.debug("%s , my state should be 20" , str(self.state))
-				# return response
+				# return str(response)
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
@@ -1068,11 +1068,10 @@ def executeSteps(nodeIndex, epochTxn):
 				node.reset()
 			break	
 		elif response != None and len(response) != 0:
+			response = eval(response)
 			for txnBlock in response:
 				print(txnBlock)
 				epochBlock |= eval(txnBlock)
-
-				
 
 
 def Run(epochTxn):
