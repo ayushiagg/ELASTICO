@@ -1008,7 +1008,8 @@ class Elastico:
 			if len(response) > 0:
 				logging.debug("#############final block sent the block to client##########")
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
-				return response
+				logging.debug("%s , my state should be 20" , str(self.state))
+				# return response
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
