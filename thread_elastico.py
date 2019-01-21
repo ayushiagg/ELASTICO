@@ -1021,12 +1021,14 @@ def Run(epochTxn):
 	epochBlock = set()
 	commitmentSet = set()
 
-
+	t = []
 	for nodeIndex in range(n):
-		t = threading.Thread(target= executeSteps, args=(network_nodes[nodeIndex], epochTxn))
-		t.start()
+		t.append(threading.Thread(target= executeSteps, args=(network_nodes[nodeIndex], epochTxn)))
+	for nodeIndex in range(n):
+		t[nodeIndex].start()
 		print("thread number" , nodeIndex , "started")
-		t.join()
+	for nodeIndex in range(n):
+		t[nodeIndex].join()
 			
 	# while True:
 	# 	resetcount = 0
