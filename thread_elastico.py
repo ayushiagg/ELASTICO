@@ -16,7 +16,7 @@ s = 4
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 4
+D = 2
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -157,7 +157,7 @@ class Identity:
 		# # connect to the server on local computer
 		# socketconn.connect(('127.0.0.1', port))
 
-		# serialized_data = json.dumps(data)
+		# serialized_data = json.dumps(msg)
 		# encoded_data = serialized_data.encode()
 		# socketconn.send(encoded_data)
 
@@ -167,9 +167,9 @@ class Identity:
 		global identityNodeMap
 		# print("--send to node--")
 		node = identityNodeMap[self]
-		node.lock.acquire()
+		# node.lock.acquire()
 		response = node.receive(msg)
-		node.lock.release()
+		# node.lock.release()
 		return response
 
 class Elastico:
@@ -303,18 +303,7 @@ class Elastico:
 		"""
 		s = socket.socket()
 		print ("Socket successfully created")
-
-
-		# reserve a port on your computer in our 
-		# case it is 12345 but it can be anything 
-		port = self.port
-
-		# Next bind to the port 
-		# we have not typed any ip in the ip field 
-		# instead we have inputted an empty string 
-		# this makes the server listen to requests 
-		# coming from other computers on the network 
-		s.bind(('', port))
+		s.bind(('', self.port))
 		print ("socket binded to %s" %(port) )
 		return s
 
@@ -374,8 +363,9 @@ class Elastico:
 				# ToDo: Put the nonce here in Pow
 				nonce = self.PoW["nonce"]
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
-				print("---PoW computation end---")
+				# print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
+				# input("PoW Computed")
 				return hash_val
 			self.PoW["nonce"] += 1
 
@@ -484,7 +474,7 @@ class Elastico:
 			print("----------committees full----------------")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
 				print("directory member has not yet received the epochTxn")
-				input()
+				# input()
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
@@ -585,10 +575,10 @@ class Elastico:
 
 				else:
 					print("Signature invalid")
-					input()
+					# input()
 			else:
 				print("PoW not valid")
-				input()
+				# input()
 
 		elif msg["type"] == "getCommitteeMembers":
 			if self.is_directory == False:
@@ -696,7 +686,7 @@ class Elastico:
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
 			print(self.mergedBlock)
-			input("Check merged block above!")
+			# input("Check merged block above!")
 
 
 	def runPBFT(self , txnBlock, instance):
@@ -940,6 +930,7 @@ class Elastico:
 			self.compute_PoW()
 		elif self.state == ELASTICO_STATES["PoW Computed"]:
 			# form identity, when PoW computed
+			# input("PoW computed for me !!!!!!!!!!!!!!!!!!!!!!!!!!!")
 			self.form_identity()
 		elif self.state == ELASTICO_STATES["Formed Identity"]:
 			# form committee, when formed identity
@@ -963,7 +954,7 @@ class Elastico:
 				self.runPBFT(self.txn_block, "intra committee consensus")
 			else:
 				print("directory member state changed to Committee full(unwanted state)")
-				input()	
+				# input()	
 
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
@@ -1021,13 +1012,33 @@ class Elastico:
 			# Now, the nodes can be reset
 			return "reset"
 
+	def receiveMsg(self):
+		"""
 
-def executeSteps(node, epochTxn):
+		"""
+
+		conn, addr = self.socketConn.accept()
+		data = ""
+		msg = conn.recv(1024)
+		# for receiving of any size
+		while msg:
+			data += msg.decode()
+			msg = conn.recv(1024)
+		print("dsfs", msg)	
+		data = json.loads(data)
+		
+		self.receive(data)
+
+
+def executeSteps(nodeIndex, epochTxn):
 	"""
 		execute the elastico node
 	"""
+	node = network_nodes[nodeIndex]
+	# node.socketConn.listen(n)
 	while True:
 		response = node.execute(epochTxn)
+		# node.receiveMsg()
 		if response == "reset":
 			msg = {"type": "reset-all", "data" : node.identity}
 			if isinstance(node.identity, Identity):
@@ -1040,6 +1051,8 @@ def executeSteps(node, epochTxn):
 			for txnBlock in response:
 				print(txnBlock)
 				epochBlock |= eval(txnBlock)
+
+				
 
 
 def Run(epochTxn):
@@ -1058,10 +1071,11 @@ def Run(epochTxn):
 
 	t = []
 	for nodeIndex in range(n):
-		t.append(threading.Thread(target= executeSteps, args=(network_nodes[nodeIndex], epochTxn)))
+		t.append(threading.Thread(target= executeSteps, args=(nodeIndex, epochTxn)))
 	for nodeIndex in range(n):
-		t[nodeIndex].start()
 		print("thread number" , nodeIndex , "started")
+		# input()
+		t[nodeIndex].start()
 	for nodeIndex in range(n):
 		t[nodeIndex].join()
 			
@@ -1093,12 +1107,13 @@ def Run(epochTxn):
 
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
-	input("ledger updated!!")
+	# input("ledger updated!!")
+
 
 if __name__ == "__main__":
 	# epochTxns - dictionary that maps the epoch number to the list of transactions
 	epochTxns = dict()
-	for i in range(5):
+	for i in range(1):
 		# txns is the list of the transactions in one epoch to which the committees will agree on
 		txns = []
 		for j in range(200):
