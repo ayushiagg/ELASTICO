@@ -494,6 +494,7 @@ class Elastico:
 			method to recieve messages for a node as per the type of a msg
 		"""
 		# new node is added in directory committee if not yet formed
+		logging.info("%s message in receive" , str(msg))
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
@@ -1070,7 +1071,7 @@ def executeSteps(nodeIndex, epochTxn):
 	serverThread = threading.Thread(target= node.server, args=(nodeIndex,))
 	node.serve = True
 	serverThread.start()
-	serverThread.join()
+	# serverThread.join()
 
 	while True:
 		response = node.execute(epochTxn)
