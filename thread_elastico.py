@@ -1010,6 +1010,7 @@ class Elastico:
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
 				logging.debug("%s , my state should be 20" , str(self.state))
 				# return str(response)
+				logging.debug("response is - %s" , str(response))
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
@@ -1029,7 +1030,7 @@ class Elastico:
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
 			# Now, the nodes can be reset
-			return "reset"
+			return "reset"*100000
 
 	def receiveMsg(self):
 		"""
@@ -1059,7 +1060,7 @@ def executeSteps(nodeIndex, epochTxn):
 	while True:
 		response = node.execute(epochTxn)
 		# node.receiveMsg()
-		if response == "reset":
+		if response != None and response[ : 5] == "reset":
 			msg = {"type": "reset-all", "data" : node.identity}
 			if isinstance(node.identity, Identity):
 				node.identity.send(msg)
