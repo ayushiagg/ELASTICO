@@ -1063,7 +1063,7 @@ class Elastico:
 				conn, addr = self.socketConn.accept()
 
 				data = b''
-				msg  = self.socketConn.recv(1024)
+				msg  = conn.recv(1024)
 				logging.info('Got connection from %s', str(addr))
 				# for receiving of any size
 				while msg:
