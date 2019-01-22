@@ -153,21 +153,21 @@ class Identity:
 		# Create a socket object
 		logging.info("%s : sending message " , str(msg))
 
-		socketconn = socket.socket()
+		socketconn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 		# Define the port on which you want to connect
 		ip, port = self.IP, self.port
 
 		# connect to the server on local computer
-		socketconn.connect(('127.0.0.1', port))
+		# socketconn.connect(('127.0.0.1', port))
 
 		serialized_data = pickle.dumps(msg)
 		# encoded_data = serialized_data.encode()
 		# socketconn.send(encoded_data)
-		socketconn.send(serialized_data)
+		socketconn.sendto(serialized_data,('127.0.0.1',port))
 
 		# close the connection
-		socketconn.close()
+		# socketconn.close()
 
 		# global identityNodeMap
 		# # print("--send to node--")
@@ -308,7 +308,7 @@ class Elastico:
 	def get_socket(self):
 		"""
 		"""
-		s = socket.socket()
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		print ("Socket successfully created")
 		s.bind(('', self.port))
 		print ("socket binded to %s" %(port) )
@@ -1054,30 +1054,30 @@ class Elastico:
 	
 
 	def server(self, num):
-		self.socketConn.listen(n)
+		# self.socketConn.listen(n)
 		logging.info("%s serving started" , num)
 		while self.serve: 
 			# Establish connection with client. 
-			conn, addr = self.socketConn.accept()
+			# conn, addr = self.socketConn.accept()
 			logging.info('Got connection from %s', str(addr))
 
 			data = b''
 			# logging.info("mei aa rha hu")
-			msg = conn.recv(1024)
+			msg , addr = self.socketConn.recvfrom(1024)
 			# for receiving of any size
-			while msg:
-				data += msg
-				msg = conn.recv(1024)
+			# while msg:
+			# 	data += msg
+			# 	msg = conn.recv(1024)
 
 			# msg = msg.decode()
-			data  = pickle.loads(data)
+			data  = pickle.loads(msg)
 			logging.info("%s data to be send in receive msg " ,str(data))
 			# data = json.loads(msg)
 			logging.info("%s data to be send in receive" , str(data))
 			self.receive(data)
 
 			# do something for this data
-			conn.close()
+			# conn.close()
 
 
 def executeServer(nodeIndex):
