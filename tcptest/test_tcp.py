@@ -93,7 +93,7 @@ def BroadcastTo_Network(data, type_):
 	msg = {"type" : type_ , "data" : data}
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
-		node.receive(msg)
+		node.identity.send(msg)
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
