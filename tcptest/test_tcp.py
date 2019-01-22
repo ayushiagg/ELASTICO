@@ -78,17 +78,26 @@ def BroadcastTo_Network(data, type_):
 	"""
 		Broadcast data to the whole ntw
 	"""
-		# comment: no if statements
-		# for each instance of Elastico, create a receive(self, msg) method
-		# this function will just call node.receive(msg)
-		# inside msg, you will need to have a message type, and message data.
-
 	global identityNodeMap
 	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
-		node.identity.send(msg)
+		if node.identity == "":
+			# tcp connection
+			socketconn = socket.socket()
+
+			# port on which we want to connect
+			ip, port = node.IP, node.port
+
+			socketconn.connect(('127.0.0.1', port))
+
+			serialized_data = pickle.dumps(msg)
+			socketconn.send(serialized_data)
+			socketconn.close()
+			# socketconn.sendto(serialized_data,('127.0.0.1',port)) (for udp)
+		else:
+			node.identity.send(msg)
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -146,22 +155,20 @@ class Identity:
 		"""
 		# Create a socket object
 		logging.info("%s : sending message " , str(msg))
+		# tcp connection
+		socketconn = socket.socket()
 
-		socketconn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-		# Define the port on which you want to connect
+		# port on which we want to connect
 		ip, port = self.IP, self.port
 
-		# connect to the server on local computer
-		# socketconn.connect(('127.0.0.1', port))
+		socketconn.connect(('127.0.0.1', port))
 
 		serialized_data = pickle.dumps(msg)
-		# encoded_data = serialized_data.encode()
-		# socketconn.send(encoded_data)
-		socketconn.sendto(serialized_data,('127.0.0.1',port))
+		socketconn.send(serialized_data)
+		# socketconn.sendto(serialized_data,('127.0.0.1',port))
 
 		# close the connection
-		# socketconn.close()
+		socketconn.close()
 
 		# global identityNodeMap
 		# # print("--send to node--")
@@ -302,8 +309,9 @@ class Elastico:
 
 	def get_socket(self):
 		"""
+			create a socket connection
 		"""
-		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s = socket.socket()
 		print ("Socket successfully created")
 		s.bind(('', self.port))
 		print ("socket binded to %s" %(port) )
@@ -1047,31 +1055,29 @@ class Elastico:
 	
 
 	def server(self, num):
-		# self.socketConn.listen(n)
+		self.socketConn.listen(n)
 		logging.info("%s serving started" , num)
 		try:
 			while self.serve: 
 				# Establish connection with client. 
-				# conn, addr = self.socketConn.accept()
+				conn, addr = self.socketConn.accept()
 
 				data = b''
-				# logging.info("mei aa rha hu")
-				msg , addr = self.socketConn.recvfrom(1024)
+				msg  = self.socketConn.recv(1024)
 				logging.info('Got connection from %s', str(addr))
 				# for receiving of any size
-				# while msg:
-				# 	data += msg
-				# 	msg = conn.recv(1024)
+				while msg:
+					data += msg
+					msg = conn.recv(1024)
 
-				# msg = msg.decode()
-				data  = pickle.loads(msg)
+				data  = pickle.loads(data)
 				logging.info("%s data to be send in receive msg " ,str(data))
 				# data = json.loads(msg)
 				logging.info("%s data to be send in receive" , str(data))
 				self.receive(data)
 
 				# do something for this data
-				# conn.close()
+				conn.close()
 		except Exception as e:
 			logging.error('Error at server recv msg ', exc_info=e)
 			raise e
