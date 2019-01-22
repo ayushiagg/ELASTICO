@@ -1056,28 +1056,32 @@ class Elastico:
 	def server(self, num):
 		# self.socketConn.listen(n)
 		logging.info("%s serving started" , num)
-		while self.serve: 
-			# Establish connection with client. 
-			# conn, addr = self.socketConn.accept()
-			logging.info('Got connection from %s', str(addr))
+		try:
+			while self.serve: 
+				# Establish connection with client. 
+				# conn, addr = self.socketConn.accept()
 
-			data = b''
-			# logging.info("mei aa rha hu")
-			msg , addr = self.socketConn.recvfrom(1024)
-			# for receiving of any size
-			# while msg:
-			# 	data += msg
-			# 	msg = conn.recv(1024)
+				data = b''
+				# logging.info("mei aa rha hu")
+				msg , addr = self.socketConn.recvfrom(1024)
+				logging.info('Got connection from %s', str(addr))
+				# for receiving of any size
+				# while msg:
+				# 	data += msg
+				# 	msg = conn.recv(1024)
 
-			# msg = msg.decode()
-			data  = pickle.loads(msg)
-			logging.info("%s data to be send in receive msg " ,str(data))
-			# data = json.loads(msg)
-			logging.info("%s data to be send in receive" , str(data))
-			self.receive(data)
+				# msg = msg.decode()
+				data  = pickle.loads(msg)
+				logging.info("%s data to be send in receive msg " ,str(data))
+				# data = json.loads(msg)
+				logging.info("%s data to be send in receive" , str(data))
+				self.receive(data)
 
-			# do something for this data
-			# conn.close()
+				# do something for this data
+				# conn.close()
+		except Exception as e:
+			logging.error('Error at server recv msg ', exc_info=e)
+			raise e
 
 
 def executeServer(nodeIndex):
