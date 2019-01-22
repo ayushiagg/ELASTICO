@@ -243,7 +243,8 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		# self.socketConn = self.get_socket() 
+		# self.socketConn = self.get_socket()
+		self.response = []
 
 	def reset(self):
 		"""
@@ -999,18 +1000,19 @@ class Elastico:
 			# collect final blocks sent by final committee and send to client.
 			# Todo : check this send to client
 			logging.debug("$$$$$ final block with FinalBlockReceived $$$$$$")
-			response = []
+			# response = []
 			for txnBlock in self.finalBlockbyFinalCommittee:
 				if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
-					response.append(txnBlock)
+					self.response.append(txnBlock)
 				else:
 					print("less block signs : ", len(self.finalBlockbyFinalCommittee[txnBlock]))
-			if len(response) > 0:
+			if len(self.response) > 0:
 				logging.debug("#############final block sent the block to client##########")
 				self.state = ELASTICO_STATES["FinalBlockSentToClient"]
 				logging.debug("%s , my state should be 20" , str(self.state))
 				# return str(response)
-				logging.debug("response is - %s" , str(response))
+				logging.debug("response is - %s" , str(self.response))
+				return "checkresponse"
 		
 		elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 			# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
@@ -1030,7 +1032,7 @@ class Elastico:
 					
 		elif self.state == ELASTICO_STATES["ReceivedR"]:
 			# Now, the nodes can be reset
-			return "reset"*100000
+			return "reset"
 
 	def receiveMsg(self):
 		"""
@@ -1058,9 +1060,9 @@ def executeSteps(nodeIndex, epochTxn):
 	node = network_nodes[nodeIndex]
 	# node.socketConn.listen(n)
 	while True:
-		response = node.execute(epochTxn)
+		response =node.execute(epochTxn)
 		# node.receiveMsg()
-		if response != None and response[ : 5] == "reset":
+		if response == "reset":
 			msg = {"type": "reset-all", "data" : node.identity}
 			if isinstance(node.identity, Identity):
 				node.identity.send(msg)
@@ -1068,11 +1070,9 @@ def executeSteps(nodeIndex, epochTxn):
 				print("illegal call")
 				node.reset()
 			break	
-		elif response != None and len(response) != 0:
-			response = eval(response)
-			for txnBlock in response:
-				print(txnBlock)
-				epochBlock |= eval(txnBlock)
+		else:
+			pass
+
 
 
 def Run(epochTxn):
@@ -1122,6 +1122,13 @@ def Run(epochTxn):
 	# 				print("illegal call")
 	# 				node.reset()
 	# 		break
+	for nodeIndex in range(n):
+		response = network_nodes[nodeIndex].response
+		if len(response) > 0:
+			for txnBlock in response:
+				# print(txnBlock)
+				epochBlock |= eval(txnBlock)
+			network_nodes[nodeIndex].response = []
 
 
 
