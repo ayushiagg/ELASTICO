@@ -4,7 +4,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
 import socket, threading
-import json
+import json,pickle
 # for creating logs
 import logging
 
@@ -18,7 +18,7 @@ s = 4
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 2
+D = 3
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -151,6 +151,8 @@ class Identity:
 			send the msg to node based on their identity
 		"""
 		# Create a socket object
+		logging.info("%s : sending message " , str(msg))
+
 		socketconn = socket.socket()
 
 		# Define the port on which you want to connect
@@ -159,9 +161,10 @@ class Identity:
 		# connect to the server on local computer
 		socketconn.connect(('127.0.0.1', port))
 
-		serialized_data = json.dumps(msg)
-		encoded_data = serialized_data.encode()
-		socketconn.send(encoded_data)
+		serialized_data = pickle.dumps(msg)
+		# encoded_data = serialized_data.encode()
+		# socketconn.send(encoded_data)
+		socketconn.send(serialized_data)
 
 		# close the connection
 		socketconn.close()
@@ -494,15 +497,16 @@ class Elastico:
 			method to recieve messages for a node as per the type of a msg
 		"""
 		# new node is added in directory committee if not yet formed
-		logging.info("%s message in receive" , str(msg))
+		logging.info("%s message in receive" , msg["type"])
 		if msg["type"] == "directoryMember":
 			# verify the PoW of the sender
 			identityobj = msg["data"]
 			if self.verify_PoW(identityobj):
 				if len(self.cur_directory) < c:
+					logging.info("directory member appended")	
 					self.cur_directory.append(identityobj)
 			else:
-		 		print("$$$$$$$ PoW not valid $$$$$$")
+		 		logging.info("$$$$$$$ PoW not valid $$$$$$")
 
 		# new node is added to the corresponding committee list if committee list has less than c members
 		elif msg["type"] == "newNode" and self.is_directory:
@@ -1036,40 +1040,65 @@ class Elastico:
 			return "reset"*100000
 
 
-	def recvMsg(conn):
+	def recvMsg(self, conn):
+
 		data = ""
+		logging.info("mei aa rha hu")
 		msg = conn.recv(1024)
 		# for receiving of any size
 		while msg:
 			data += msg.decode()
 			msg = conn.recv(1024)
-		data = json.loads(data)
+		data = eval(data)
 		self.receive(data)
 	
 
 	def server(self, num):
 		self.socketConn.listen(n)
+		logging.info("%s serving started" , num)
 		while self.serve: 
 			# Establish connection with client. 
-			c, addr = self.socketConn.accept()
-			print('Got connection from', addr )
+			conn, addr = self.socketConn.accept()
+			logging.info('Got connection from %s', str(addr))
 
-			data = self.recvMsg(c)
+			data = b''
+			# logging.info("mei aa rha hu")
+			msg = conn.recv(1024)
+			# for receiving of any size
+			while msg:
+				data += msg
+				msg = conn.recv(1024)
+
+			# msg = msg.decode()
+			data  = pickle.loads(data)
+			logging.info("%s data to be send in receive msg " ,str(data))
+			# data = json.loads(msg)
+			logging.info("%s data to be send in receive" , str(data))
+			self.receive(data)
 
 			# do something for this data
-			c.close()
+			conn.close()
 
+
+def executeServer(nodeIndex):
+	"""
+	"""
+	global network_nodes
+	node = network_nodes[nodeIndex]
+
+	node.server(nodeIndex)
+	pass
 
 
 def executeSteps(nodeIndex, epochTxn):
 	"""
 		execute the elastico node
 	"""
-	global epochBlock
+	global epochBlock, network_nodes
 	node = network_nodes[nodeIndex]
 	# node.socketConn.listen(n)
-	serverThread = threading.Thread(target= node.server, args=(nodeIndex,))
 	node.serve = True
+	serverThread = threading.Thread(target= executeServer, args=(nodeIndex,))
 	serverThread.start()
 	# serverThread.join()
 
