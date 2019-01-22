@@ -243,7 +243,8 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.socketConn = self.get_socket() 
+		self.socketConn = self.get_socket()
+		self.serve = False
 
 	def reset(self):
 		"""
@@ -281,6 +282,7 @@ class Elastico:
 		# only when this is the member of the directory committee
 		self.txn = dict()
 		self.socketConn = self.get_socket()
+		self.serve = False
 
 	def initER(self):
 		"""
@@ -1046,7 +1048,7 @@ class Elastico:
 
 	def server(self, num):
 		self.socketConn.listen(n)
-		while True: 
+		while self.serve: 
 			# Establish connection with client. 
 			c, addr = self.socketConn.accept()
 			print('Got connection from', addr )
@@ -1066,6 +1068,7 @@ def executeSteps(nodeIndex, epochTxn):
 	node = network_nodes[nodeIndex]
 	# node.socketConn.listen(n)
 	serverThread = threading.Thread(target= node.server, args=(nodeIndex,))
+	node.serve = True
 	serverThread.start()
 	serverThread.join()
 
