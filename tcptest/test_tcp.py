@@ -35,12 +35,8 @@ NtwParticipatingNodes = []
 network_nodes = []
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
+# port - available port numbers start from here
 port = 49152 
-
-# class Network:
-# 	"""
-# 		class for networking between nodes
-# 	"""
 
 def consistencyProtocol():
 	"""
@@ -52,7 +48,6 @@ def consistencyProtocol():
 	for node in network_nodes:
 		if node.isFinalMember():
 			if len(node.commitments) <= c//2:
-				# input("insufficientCommitments")
 				return False, "insufficientCommitments"
 
 	# ToDo: Discuss with sir about intersection.
@@ -112,7 +107,6 @@ def MulticastCommittee(commList, identityobj, txns):
 
 	print("---multicast committee list to committee members---")
 	
-	# print(len(commList), commList)
 	finalCommitteeMembers = commList[fin_num]
 	for committee_id in commList:
 		commMembers = commList[committee_id]
@@ -299,6 +293,7 @@ class Elastico:
 
 	def get_port(self):
 		"""
+			get the available port
 		"""
 		global port
 		port += 1
@@ -358,7 +353,6 @@ class Elastico:
 							# minor comment: create a sha256 object by calling hashlib.sha256()
 							# then repeatedly call sha256.update(...) with the things that need to be hashed together.
 							# finally extract digest by calling sha256.digest()
-							# don't convert to json and then to string
 							# bug is possible in this, find and fix it.
 			digest = SHA256.new()
 			digest.update(IP.encode())
@@ -970,7 +964,6 @@ class Elastico:
 				self.runPBFT(self.txn_block, "intra committee consensus")
 			else:
 				logging.warning("directory member state changed to Committee full(unwanted state)")
-				# input()	
 
 		elif self.state == ELASTICO_STATES["Formed Committee"]:
 			# These Nodes are not part of network
@@ -1148,32 +1141,6 @@ def Run(epochTxn):
 	for nodeIndex in range(n):
 		t[nodeIndex].join()
 			
-	# while True:
-	# 	resetcount = 0
-	# 	for node in network_nodes:
-	# 		# node.lock.acquire()
-	# 		response = node.execute(epochTxn)
-	# 		# node.lock.release()
-	# 		if response == "reset":
-	# 			resetcount += 1
-	# 			pass
-	# 		elif response != None and len(response) != 0:
-	# 			for txnBlock in response:
-	# 				print(txnBlock)
-	# 				epochBlock |= eval(txnBlock)
-	# 	if resetcount == n:
-	# 		# ToDo: discuss with sir - earlier I was using broadcast, but it had a problem that anyone can send "reset-all" as msg[type]
-	# 		for node in network_nodes:
-	# 			msg = {"type": "reset-all", "data" : node.identity}
-	# 			if isinstance(node.identity, Identity):
-	# 				node.identity.send(msg)
-	# 			else:
-	# 				print("illegal call")
-	# 				node.reset()
-	# 		break
-
-
-
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
 	# input("ledger updated!!")
