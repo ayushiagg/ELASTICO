@@ -1105,28 +1105,29 @@ class Elastico:
 
 def executeSteps(nodeIndex, epochTxn):
 	"""
-		execute the elastico node
+		A thread will execute the elastico node
 	"""
 	try:
-		global epochBlock
 		node = network_nodes[nodeIndex]
-		# node.socketConn.listen(n)
 		while True:
-			response =node.execute(epochTxn)
-			# node.receiveMsg()
+			# execute one step of elastico node
+			response = node.execute(epochTxn)
 			if response == "reset":
-				msg = {"type": "reset-all", "data" : node.identity}
+				# now reset the node
 				if isinstance(node.identity, Identity):
+					# identity obj exists for this node
+					msg = {"type": "reset-all", "data" : node.identity}
 					node.identity.send(msg)
 				else:
+					# this node has not computed its identity
 					print("illegal call")
+					# calling reset explicitly for node
 					node.reset()
 				break	
 			else:
 				pass
-
-			pass
 	except Exception as e:
+		# log any error raised in the above try block
 		logging.error('Error in  execute steps ', exc_info=e)
 		raise e
 	
