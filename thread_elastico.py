@@ -245,6 +245,7 @@ class Elastico:
 		self.txn = dict()
 		# self.socketConn = self.get_socket()
 		self.response = []
+		self.flag = True
 
 	def reset(self):
 		"""
@@ -282,6 +283,7 @@ class Elastico:
 		# only when this is the member of the directory committee
 		self.txn = dict()
 		# self.socketConn = self.get_socket()
+		self.flag = True
 
 	def initER(self):
 		"""
@@ -500,7 +502,7 @@ class Elastico:
 				if len(self.cur_directory) < c:
 					self.cur_directory.append(identityobj)
 			else:
-		 		print("$$$$$$$ PoW not valid $$$$$$")
+		 		logging.info("%s $$$$$$$ PoW not valid $$$$$$" , str(identityobj) )
 
 		# new node is added to the corresponding committee list if committee list has less than c members
 		elif msg["type"] == "newNode" and self.is_directory:
@@ -927,6 +929,39 @@ class Elastico:
 		"""
 		pass
 
+	def compute_fakePoW(self):
+		"""
+			bad node generates the fake PoW
+		"""
+		# self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
+		index = random_gen(32)%3
+		if index == 0:
+			pass
+
+		elif index == 1:
+			digest = SHA256.new()
+			ranHash = digest.hexdigest()
+			PoW["hash"] += D*'0' + ranHash[D:]
+
+		elif index == 2:
+			randomset_R = set()
+			if len(self.set_of_Rs) > 0:
+				self.epoch_randomness, randomset_R = self.xor_R()	 
+			while True:
+				digest = SHA256.new()
+				digest.update(str(self.PoW["nonce"]).encode())
+				hash_val = digest.hexdigest()
+				if hash_val.startswith('0' * D):
+					# ToDo: Put the nonce here in Pow
+					nonce = self.PoW["nonce"]
+					self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
+					# print("---PoW computation end---")
+					self.state = ELASTICO_STATES["PoW Computed"]
+					# input("PoW Computed")
+				self.PoW["nonce"] += 1
+
+		self.state = ELASTICO_STATES["PoW Computed"]
+
 
 	def execute(self, epochTxn):
 		"""
@@ -936,8 +971,12 @@ class Elastico:
 		print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
 
 		if self.state == ELASTICO_STATES["NONE"]:
-			# compute Pow
-			self.compute_PoW()
+			if self.flag == True:
+				# compute Pow
+				self.compute_PoW()
+			else:
+				self.compute_fakePoW()
+
 		elif self.state == ELASTICO_STATES["PoW Computed"]:
 			# form identity, when PoW computed
 			# input("PoW computed for me !!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -959,6 +998,8 @@ class Elastico:
 				k = k + num
 			self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 		elif self.state == ELASTICO_STATES["Committee full"]:
+			if self.flag == False:
+				logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
 			# Now The node should go for Intra committee consensus
 			if self.is_directory == False:
 				self.runPBFT(self.txn_block, "intra committee consensus")
@@ -1085,6 +1126,10 @@ def Run(epochTxn):
 		for i in range(n):
 			print( "---Running for processor number---" , i + 1)
 			network_nodes.append(Elastico())
+
+	for i in range(5):
+		badNodeIndex = random_gen(32)%150
+		network_nodes[badNodeIndex].flag = False
 
 	epochBlock = set()
 	commitmentSet = set()

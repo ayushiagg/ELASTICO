@@ -1066,7 +1066,7 @@ class Elastico:
 	
 
 	def server(self, num):
-		self.socketConn.listen(n)
+		self.socketConn.listen(1000)
 		logging.info("%s serving started" , num)
 		try:
 			while self.serve: 
