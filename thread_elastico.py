@@ -3,10 +3,12 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
-import socket, threading
+import socket
 import json
 # for creating logs
 import logging
+# for multi-processing
+from multiprocessing import Process
 
 # network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
@@ -167,7 +169,6 @@ class Identity:
 		# socketconn.close()
 
 		global identityNodeMap
-		# print("--send to node--")
 		node = identityNodeMap[self]
 		# node.lock.acquire()
 		response = node.receive(msg)
@@ -214,7 +215,7 @@ class Elastico:
 		self.port = self.get_port()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		self.lock = threading.Lock()
+		# self.lock = threading.Lock()
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
@@ -1073,7 +1074,7 @@ class Elastico:
 
 def executeSteps(nodeIndex, epochTxn):
 	"""
-		A thread will execute the elastico node
+		A process will execute the elastico node
 	"""
 	try:
 		node = network_nodes[nodeIndex]
@@ -1122,24 +1123,24 @@ def Run(epochTxn):
 	epochBlock = set()
 	commitmentSet = set()
 
-	# list of threads
-	threads = []
+	# list of processes
+	processes = []
 	for nodeIndex in range(n):
-		# create a thread
-		thread = threading.Thread(target= executeSteps, args=(nodeIndex, epochTxn))
-		# add to the list of threads
-		threads.append(thread)
+		# create a process
+		process = Process(target= executeSteps, args=(nodeIndex, epochTxn))
+		# add to the list of processes
+		processes.append(process)
 
 	for nodeIndex in range(n):
-		print("thread number" , nodeIndex , "started")
-		# start the thread
-		threads[nodeIndex].start()
+		print("process number" , nodeIndex , "started")
+		# start the process
+		processes[nodeIndex].start()
 
 	for nodeIndex in range(n):
-		# waits for the thread to finish
-		threads[nodeIndex].join()
+		# waits for the process to finish
+		processes[nodeIndex].join()
 
-	# All threads are over. Computing response in each node to update ledger
+	# All processes are over. Computing response in each node to update ledger
 	for nodeIndex in range(n):
 		response = network_nodes[nodeIndex].response
 		if len(response) > 0:
