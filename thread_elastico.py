@@ -503,41 +503,44 @@ class Elastico:
 					if len(self.cur_directory) < c:
 						self.cur_directory.append(identityobj)
 				else:
-			 		logging.info("%s $$$$$$$ PoW not valid $$$$$$" , str(identityobj) )
+			 		logging.info("%s  PoW not valid " , str(identityobj) )
 
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
 				if self.verify_PoW(identityobj):
 					if identityobj.committee_id not in self.committee_list:
+						# Add the identity in committee
 						self.committee_list[identityobj.committee_id] = [identityobj]
+
 					elif len(self.committee_list[identityobj.committee_id]) < c:
+						# Add the identity in committee
 						self.committee_list[identityobj.committee_id].append(identityobj)
-						# Once each committee contains at least c identities each, directory members multicast the committee list to each committee member
+
 						if len(self.committee_list[identityobj.committee_id]) == c:
-							# logging
-							logging.debug("By - %s : Committee formed with committee id : %s", str(self.identity) , str(identityobj.committee_id))
-							strCommMembers = str(self.committee_list[identityobj.committee_id])
-							logging.debug("Members are : %s", strCommMembers)
+							# check that if all committees are full
 							self.checkCommitteeFull()
 				else:
-					print("$$$$$$$ PoW not valid 22222 $$$$$$")
+					logging.error("PoW not valid in adding new node")
 
 			# union of committe members views
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
-				# data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : self.txn[committee_id] ,"identity" : self.identity}
+
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
+				# update the txn block
 				self.txn_block |= set(msg["data"]["txns"])
+				# union of committee members wrt directory member
 				self.committee_Members |= set(commMembers)
+				# union of final committee members wrt directory member
 				self.finalCommitteeMembers |= set(finalMembers)
+				# received the members
 				self.state  = ELASTICO_STATES["Receiving Committee Members"]
-				logging.info("For %s commMembers for committee id - %s is :- %s", str(self.identity), str(self.committee_id), str(self.committee_Members))
 
 
 			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
 				if self.state == ELASTICO_STATES["Receiving Committee Members"]:
-					logging.debug("By %s - Committee Full state ", str(self.identity))
+					# all committee members have received their member views
 					self.state = ELASTICO_STATES["Committee full"]
 
 			# receiving H(Ri) by final committe members
@@ -553,6 +556,7 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					Ri = data["Ri"]
 					HashRi = self.hexdigest(Ri)
+
 					if HashRi in self.newRcommitmentSet:
 						self.newset_of_Rs.add(Ri)
 						if len(self.newset_of_Rs) >= c//2 + 1:
@@ -560,76 +564,65 @@ class Elastico:
 
 			elif msg["type"] == "finalTxnBlock":
 				data = msg["data"]
-				# data = {"commitmentSet" : S, "signature" : self.sign(S) , "finalTxnBlock" : self.txn_block}
 				identityobj = data["identity"]
+
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSet = data["commitmentSet"]
 					PK = identityobj.PK
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
+					# verify the signatures
 					if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
+
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+
 						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
 							# for final members, their state is updated only when they have also sent the finalblock
 							if self.isFinalMember():
-								logging.info("%s coming to change into finalBlockreceived---state num---> %s" , str(self.identity) , str(self.state))
 								if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
 									self.state = ELASTICO_STATES["FinalBlockReceived"]
 								pass
 							else:
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
-						# ToDo : Check this, It is overwritten here or need to be union of commitments
+
 						if self.newRcommitmentSet == "":
 							self.newRcommitmentSet = set()
+						# union of commitments 
 						self.newRcommitmentSet |= set(received_commitmentSet)
 
 					else:
-						print("Signature invalid")
-						# input()
+						logging.error("Signature invalid in final block received")
 				else:
-					print("PoW not valid")
-					# input()
-
-			elif msg["type"] == "getCommitteeMembers":
-				if self.is_directory == False:
-					return False , set()
-				data = msg["data"]
-				identityobj = data["identity"]
-				if self.verify_PoW(identityobj):
-					committeeid = data["committee_id"]
-					print("final comid :-" , committeeid)
-					return True, self.committee_list[committeeid]
+					logging.error("PoW not valid when final member send the block")
 
 			# final committee member receives the final set of txns along with the signature from the node
 			elif msg["type"] == "intraCommitteeBlock" and self.isFinalMember():
 				data = msg["data"]
 				identityobj = data["identity"]
-				print("txnBlock : - " , data["txnBlock"])
-				print("commid - " , identityobj.committee_id)
+
 				if self.verify_PoW(identityobj):
-					# data = {"txnBlock" = self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+					# verify the signatures
 					if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
+						
 						if identityobj.committee_id not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj.committee_id] = dict()
-						# add signatures for the txn block 
+
 						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
 							self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
+
+						# add signatures for the txn block 
 						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+						# to verify the number of txn blocks received from each committee
 						if identityobj.committee_id not in self.ConsensusMsgCount:
 							self.ConsensusMsgCount[identityobj.committee_id	] = 1
-						else:	
+						else:
 							self.ConsensusMsgCount[identityobj.committee_id] += 1
 
-			elif msg["type"] == "request committee list from directory member":
-				if self.is_directory == False:
-					return False , dict()
-				else:
-					commList = self.committee_list
-					return True , commList
-
+			# ToDo: add verify of pows if reqd in below ifs
 			elif msg["type"] == "command to run pbft":
 				if self.is_directory == False:
 					self.runPBFT(self.txn_block, msg["data"]["instance"])
@@ -638,14 +631,13 @@ class Elastico:
 				if self.isFinalMember():
 					self.runPBFT(self.mergedBlock, msg["data"]["instance"])
 
-
 			elif msg["type"] == "send txn set and sign to final committee":
 				if self.is_directory == False:
 					self.SendtoFinal()
 
 			elif msg["type"] == "verify and merge intra consensus data":
 				if self.isFinalMember():
-					self.verifyAndMergeConsensusData()	
+					self.verifyAndMergeConsensusData()
 
 			elif msg["type"] == "send commitments of Ris":
 				if self.isFinalMember():
@@ -663,19 +655,12 @@ class Elastico:
 				if self.isFinalMember():
 					self.BroadcastR()
 
-			elif msg["type"] == "append to ledger":
-				if self.is_directory == False and len(self.committee_Members) == c:
-					response = []
-					for txnBlock in self.finalBlockbyFinalCommittee:
-						if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
-							response.append(txnBlock)
-					return response		
-
 			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"]):
 				# reset the elastico node
 				self.reset()
-				pass
+
 		except Exception as e:
+			# log the raised exception
 			logging.error('Error at receive step ', exc_info=e)
 			raise e
 
