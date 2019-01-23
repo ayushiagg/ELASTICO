@@ -941,16 +941,13 @@ class Elastico:
 		"""
 		logging.info("computing fake POW")
 		# self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
-		index = random_gen(32)%3
+		index = random_gen(32)%2
 		if index == 0:
-			pass
-
-		elif index == 1:
 			digest = SHA256.new()
 			ranHash = digest.hexdigest()
-			PoW["hash"] += D*'0' + ranHash[D:]
+			self.PoW["hash"] = D*'0' + ranHash[D:]
 
-		elif index == 2:
+		elif index == 1:
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
 				self.epoch_randomness, randomset_R = self.xor_R()	 
@@ -1141,40 +1138,49 @@ def Run(epochTxn):
 	"""
 	global network_nodes, ledger, commitmentSet
 	if len(network_nodes) == 0:
-		# E is the list of elastico objects
+		# network_nodes is the list of elastico objects
 		for i in range(n):
 			print( "---Running for processor number---" , i + 1)
 			network_nodes.append(Elastico())
 
-	# making some nodes as malicious
-	for i in range(5):
-		badNodeIndex = random_gen(32)%150
+	# making some(5 here) nodes as malicious
+	malicious_count = 5
+	for i in range(malicious_count):
+		badNodeIndex = random_gen(32)%n
+		# set the flag false for bad nodes
 		network_nodes[badNodeIndex].flag = False
 
 	epochBlock = set()
 	commitmentSet = set()
 
 	# list of threads
-	t = []
+	threads = []
 	for nodeIndex in range(n):
-		t.append(threading.Thread(target= executeSteps, args=(nodeIndex, epochTxn)))
+		# create a thread
+		thread = threading.Thread(target= executeSteps, args=(nodeIndex, epochTxn))
+		# add to the list of threads
+		threads.append(thread)
+
 	for nodeIndex in range(n):
 		print("thread number" , nodeIndex , "started")
-		# input()
-		t[nodeIndex].start()
-	for nodeIndex in range(n):
-		t[nodeIndex].join()
+		# start the thread
+		threads[nodeIndex].start()
 
+	for nodeIndex in range(n):
+		# waits for the thread to finish
+		threads[nodeIndex].join()
+
+	# All threads are over. Computing response in each node to update ledger
 	for nodeIndex in range(n):
 		response = network_nodes[nodeIndex].response
 		if len(response) > 0:
 			for txnBlock in response:
-				# print(txnBlock)
+				# ToDo: remove eval
 				epochBlock |= eval(txnBlock)
+			# reset the response 
 			network_nodes[nodeIndex].response = []
 
-
-
+	# Append the block in ledger
 	ledger.append(epochBlock)
 	print("ledger block" , ledger)
 	# input("ledger updated!!")
@@ -1182,21 +1188,28 @@ def Run(epochTxn):
 
 if __name__ == "__main__":
 	try:
+		# logging module configured, will log in elastico.log file for each execution
 		logging.basicConfig(filename='elastico.log',filemode='w',level=logging.DEBUG)
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		for i in range(5):
+		numOfEpochs = 5
+		for i in range(numOfEpochs):
 			# txns is the list of the transactions in one epoch to which the committees will agree on
 			txns = []
-			for j in range(200):
-				random_num = random_gen(32)
+			# number of transactions in each epoch
+			numOfTxns = 200
+			for j in range(numOfTxns):
+				random_num = random_gen()
 				txns.append(random_num)
 			epochTxns[i] = txns
+		# run all the epochs 
 		for epoch in epochTxns:
 			print("epoch number :-" , epoch + 1 , "started")
 			Run(epochTxns[epoch])
+
 	except Exception as e:
+		# log the exception raised
 		logging.error('Error in  main ', exc_info=e)
 		raise e
 	
