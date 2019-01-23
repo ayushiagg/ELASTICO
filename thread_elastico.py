@@ -497,8 +497,8 @@ class Elastico:
 		try:
 			# new node is added in directory committee if not yet formed
 			if msg["type"] == "directoryMember":
-				# verify the PoW of the sender
 				identityobj = msg["data"]
+				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
 						self.cur_directory.append(identityobj)
@@ -678,33 +678,23 @@ class Elastico:
 		except Exception as e:
 			logging.error('Error at receive step ', exc_info=e)
 			raise e
-		
+
 
 	def verifyAndMergeConsensusData(self):
 		"""
 			each final committee member validates that the values received from the committees are signed by 
 			atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 		"""
-		print("--verify And Merge--")
 		for committeeid in range(pow(2,s)):
-			print("comm id : -" , committeeid)
 			if committeeid in self.CommitteeConsensusData:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
 					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
-						print(type(txnBlock) , txnBlock)
-						# input()
-						try:
-							# ToDo: Check where is empty block coming from
-							if len(txnBlock) > 0:
-								set_of_txns = eval(txnBlock)
-						except Exception as e:
-							print("excepton:" , txnBlock , "  ", len(txnBlock), " ", type(txnBlock))
-							raise e
-						self.mergedBlock.extend(set_of_txns)
+						if len(txnBlock) > 0:
+							set_of_txns = eval(txnBlock)
+							self.mergedBlock.extend(set_of_txns)
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
 			print(self.mergedBlock)
-			# input("Check merged block above!")
 
 
 	def runPBFT(self , txnBlock, instance):
@@ -714,9 +704,11 @@ class Elastico:
 		txn_set = set()
 		for txn in txnBlock:
 			txn_set.add(txn)
+		# for final committee consensus 
 		if instance == "final committee consensus":
 			self.finalBlock["finalBlock"] = txn_set
 			self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
+		# for intra committee consensus	
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
 			self.state = ELASTICO_STATES["PBFT Finished"]
@@ -764,6 +756,7 @@ class Elastico:
 			final committee members will broadcast S(commitmentSet), along with final set of 
 			X(txn_block) to everyone in the network
 		"""
+		# ToDo: check this S, discuss with sir
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
@@ -772,6 +765,7 @@ class Elastico:
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
 		BroadcastTo_Network(data, "finalTxnBlock")
+		# A final node which is already in received state should not change its state
 		if self.state != ELASTICO_STATES["FinalBlockReceived"]:
 			self.state = ELASTICO_STATES["FinalBlockSent"]
 
@@ -846,7 +840,7 @@ class Elastico:
 		"""
 			send the H(Ri) to the final committe members.This is done by a
 			final committee member
-		"""		
+		"""	
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in self.committee_Members:
@@ -867,19 +861,21 @@ class Elastico:
 
 	def BroadcastR(self):
 		"""
-			broadcast Ri to all the network
+			broadcast Ri to all the network, final member will do this
 		"""
-		data = {"Ri" : self.Ri, "identity" : self.identity}
-		msg = {"data" : data , "type" : "RandomStringBroadcast"}
-		self.state = ELASTICO_STATES["BroadcastedR"]
-		BroadcastTo_Network(data, "RandomStringBroadcast")
+		if self.isFinalMember():
+			data = {"Ri" : self.Ri, "identity" : self.identity}
+			msg = {"data" : data , "type" : "RandomStringBroadcast"}
+			self.state = ELASTICO_STATES["BroadcastedR"]
+			BroadcastTo_Network(data, "RandomStringBroadcast")
+		else:
+			logging.error("non final member broadcasting R")	
 
 
 	def xor_R(self):
 		"""
 			find xor of any random c/2 + 1 r-bit strings to set the epoch randomness
 		"""
-		# ToDo: set_of_Rs must be atleast c/2 + 1, so make sure this - done this!
 		randomset = SystemRandom().sample(self.set_of_Rs , c//2 + 1)
 		xor_val = 0
 		for R in randomset:
@@ -887,17 +883,22 @@ class Elastico:
 		self.epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
+
 	# verify the PoW of the sender
 	def verify_PoW(self, identityobj):
 		"""
 			verify the PoW of the node identityobj
 		"""
-		# PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R}
 		PoW = identityobj.PoW
+
+		# length of hash in hex
+		if len(PoW["hash"]) != 64:
+			return False
+
 		# Valid Hash has D leading '0's (in hex)
 		if not PoW["hash"].startswith('0' * D):
 			return False
-		
+
 		# check Digest for set of Ri strings
 		for Ri in PoW["set_of_Rs"]:
 			digest = self.hexdigest(Ri)
@@ -906,19 +907,18 @@ class Elastico:
 				return False
 
 		# reconstruct epoch randomness
-
 		epoch_randomness = identityobj.epoch_randomness
 		if len(PoW["set_of_Rs"]) > 0:
 			xor_val = 0
 			for R in PoW["set_of_Rs"]:
 				xor_val = xor_val ^ int(R, 2)
 			epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+
+		# recompute PoW 
 		PK = identityobj.PK
 		IP = identityobj.IP
-		
-		# recompute PoW 
 		nonce = PoW["nonce"]
-		 
+
 		digest = SHA256.new()
 		digest.update(IP.encode())
 		digest.update(PK.encode())
@@ -940,7 +940,7 @@ class Elastico:
 			bad node generates the fake PoW
 		"""
 		logging.info("computing fake POW")
-		# self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
+		# random fakeness
 		index = random_gen(32)%2
 		if index == 0:
 			digest = SHA256.new()
@@ -956,12 +956,9 @@ class Elastico:
 				digest.update(str(self.PoW["nonce"]).encode())
 				hash_val = digest.hexdigest()
 				if hash_val.startswith('0' * D):
-					# ToDo: Put the nonce here in Pow
 					nonce = self.PoW["nonce"]
 					self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
-					# print("---PoW computation end---")
 					self.state = ELASTICO_STATES["PoW Computed"]
-					# input("PoW Computed")
 				self.PoW["nonce"] += 1
 
 		self.state = ELASTICO_STATES["PoW Computed"]
@@ -975,20 +972,23 @@ class Elastico:
 			# print the current state of node for debug purpose
 			print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
 
+			# initial state of elastico node
 			if self.state == ELASTICO_STATES["NONE"]:
 				if self.flag == True:
-					# compute Pow
+					# compute Pow for good node
 					self.compute_PoW()
 				else:
+					# compute Pow for bad node
 					self.compute_fakePoW()
 
 			elif self.state == ELASTICO_STATES["PoW Computed"]:
 				# form identity, when PoW computed
-				# input("PoW computed for me !!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				self.form_identity()
+
 			elif self.state == ELASTICO_STATES["Formed Identity"]:
 				# form committee, when formed identity
 				self.form_committee()
+
 			elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
 				# directory node will receive transactions
 				# Receive txns from client for an epoch
@@ -997,24 +997,31 @@ class Elastico:
 				# loop in sorted order of committee ids
 				for iden in range(pow(2,s)):
 					if iden == pow(2,s)-1:
+						# give all the remaining txns to the last committee
 						self.txn[iden] = epochTxn[ k : ]
 					else:
 						self.txn[iden] = epochTxn[ k : k + num]
 					k = k + num
+				# directory member has received the txns for all committees 
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
+
+			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
 				if self.flag == False:
+					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
+				
 				# Now The node should go for Intra committee consensus
 				if self.is_directory == False:
 					self.runPBFT(self.txn_block, "intra committee consensus")
 				else:
+					# directory member should not change its state to committee full
 					logging.warning("directory member state changed to Committee full(unwanted state)")
-					# input()	
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
-				# These Nodes are not part of network
+				# nodes who are not the part of any committee
 				pass
+
 			elif self.state == ELASTICO_STATES["PBFT Finished"]:
 				# send pbft consensus blocks to final committee members
 				self.SendtoFinal()
@@ -1027,8 +1034,9 @@ class Elastico:
 						flag = True
 						break
 				if flag == False:
+					# when sufficient number of blocks from each committee are received
 					self.verifyAndMergeConsensusData()
-				
+
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 				# final committee member runs final pbft
 				self.runPBFT(self.mergedBlock, "final committee consensus")
@@ -1045,62 +1053,37 @@ class Elastico:
 			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
 				# collect final blocks sent by final committee and send to client.
 				# Todo : check this send to client
-				logging.debug("$$$$$ final block with FinalBlockReceived $$$$$$")
-				# response = []
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						self.response.append(txnBlock)
 					else:
-						print("less block signs : ", len(self.finalBlockbyFinalCommittee[txnBlock]))
+						logging.debug("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
+
 				if len(self.response) > 0:
-					logging.debug("#############final block sent the block to client##########")
+					logging.info("final block sent the block to client")
 					self.state = ELASTICO_STATES["FinalBlockSentToClient"]
-					logging.debug("%s , my state should be 20" , str(self.state))
-					# return str(response)
-					logging.debug("response is - %s" , str(self.response))
-					return "checkresponse"
-			
+
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 				# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 				# ToDo: check this constraint 
-				logging.debug("$$$$$ final block with FinalBlockSentToClient State $$$$$$")
 				if len(self.newRcommitmentSet) >= c//2 + 1:
-					logging.debug("############# R Broadcasted by Final ##########")
+					logging.info("R Broadcasted by Final member")
 					self.BroadcastR()
 				else:
-					logging.debug("############# insufficient RCommitments ##########")
+					logging.warning("insufficient RCommitments")
 
-			
 			elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
 				if self.isFinalMember():
-					logging.warning("how it can be ??? ")
-				pass
-						
+					logging.warning("wrong state of final committee member")
+
 			elif self.state == ELASTICO_STATES["ReceivedR"]:
-				# Now, the nodes can be reset
+				# Now, the node can be reset
 				return "reset"
 
-				pass
 		except Exception as e:
+			# log the raised exception
 			logging.error('Error at execute step ', exc_info=e)
 			raise e
-		
-	def receiveMsg(self):
-		"""
-
-		"""
-
-		conn, addr = self.socketConn.accept()
-		data = ""
-		msg = conn.recv(1024)
-		# for receiving of any size
-		while msg:
-			data += msg.decode()
-			msg = conn.recv(1024)
-		print("dsfs", msg)	
-		data = json.loads(data)
-		
-		self.receive(data)
 
 
 def executeSteps(nodeIndex, epochTxn):
@@ -1123,7 +1106,7 @@ def executeSteps(nodeIndex, epochTxn):
 					print("illegal call")
 					# calling reset explicitly for node
 					node.reset()
-				break	
+				break
 			else:
 				pass
 	except Exception as e:
@@ -1194,7 +1177,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 5
+		numOfEpochs = 1
 		for i in range(numOfEpochs):
 			# txns is the list of the transactions in one epoch to which the committees will agree on
 			txns = []
