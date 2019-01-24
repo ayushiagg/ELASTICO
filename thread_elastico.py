@@ -6,21 +6,20 @@ from secrets import SystemRandom
 import socket
 import json
 # for creating logs
-import logging
+import logging, threading
 # for multi-processing
 from multiprocessing import Process
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, NtwParticipatingNodes
-global epochBlock, port
-# n : number of processors
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port
+# n : number of nodes
 n = 150
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 2
+D = 3
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -31,18 +30,15 @@ identityNodeMap = dict()
 commitmentSet = set()
 # ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
 ledger = []
-# NtwParticipatingNodes - list of nodes those are the part of some committee
-NtwParticipatingNodes = []
 # network_nodes - list of all nodes 
 network_nodes = []
+
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
+# final block in an epoch
+epochBlock = []
+# port - avaliable ports start from here
 port = 49152 
-
-# class Network:
-# 	"""
-# 		class for networking between nodes
-# 	"""
 
 def consistencyProtocol():
 	"""
@@ -54,7 +50,7 @@ def consistencyProtocol():
 	for node in network_nodes:
 		if node.isFinalMember():
 			if len(node.commitments) <= c//2:
-				# input("insufficientCommitments")
+				logging.warning("insufficientCommitments")
 				return False, "insufficientCommitments"
 
 	# ToDo: Discuss with sir about intersection.
@@ -65,7 +61,7 @@ def consistencyProtocol():
 				if flag and len(commitmentSet) == 0:
 					flag = False
 					commitmentSet = node.commitments
-				else:	
+				else:
 					commitmentSet = commitmentSet.intersection(node.commitments)
 	return True,commitmentSet
 
@@ -112,9 +108,6 @@ def MulticastCommittee(commList, identityobj, txns):
 		each node getting views of its committee members from directory members
 	"""
 
-	print("---multicast committee list to committee members---")
-	
-	# print(len(commList), commList)
 	finalCommitteeMembers = commList[fin_num]
 	for committee_id in commList:
 		commMembers = commList[committee_id]
@@ -123,7 +116,6 @@ def MulticastCommittee(commList, identityobj, txns):
 			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
 			msg = {"data" : data , "type" : "committee members views"}
 			memberId.send(msg)
-
 
 
 class Identity:
@@ -207,6 +199,7 @@ class Elastico:
 			finalCommitteeMembers - members of the final committee received from the directory committee
 			txn- transactions stored by the directory members
 			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
+			flag- to denote a bad or good node
 	"""
 
 	def __init__(self):
@@ -215,7 +208,6 @@ class Elastico:
 		self.port = self.get_port()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		# self.lock = threading.Lock()
 		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
@@ -244,9 +236,10 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		# self.socketConn = self.get_socket()
+		self.socketConn = self.get_socket()
 		self.response = []
 		self.flag = True
+		self.serve = False
 
 	def reset(self):
 		"""
@@ -283,8 +276,9 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		# self.socketConn = self.get_socket()
+		self.socketConn = self.get_socket()
 		self.flag = True
+		self.serve = False
 
 	def initER(self):
 		"""
@@ -309,7 +303,7 @@ class Elastico:
 		"""
 		s = socket.socket()
 		print ("Socket successfully created")
-		s.bind(('', self.port))
+		s.bind(('127.0.0.1', self.port))
 		print ("socket binded to %s" %(port) )
 		return s
 
@@ -380,8 +374,7 @@ class Elastico:
 		"""
 			notify the members of the final committee that they are the final committee members
 		"""
-		# ToDo: Ensure that the final committee has c members 
-		
+
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
 			data = {"identity" : self.identity}
@@ -433,14 +426,12 @@ class Elastico:
 			the directory members
 		"""	
 		if len(self.cur_directory) < c:
-			logging.info("By - %s : directory member Committee identity - %s" , str(self.identity), str(self.committee_id))
 			self.is_directory = True
 			print("---not seen c members yet, so broadcast to ntw---")
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
-			print("---seen c members---")
 			# track previous state before adding in committee
 			prevState = self.state
 			
@@ -478,10 +469,9 @@ class Elastico:
 				break
 		if flag == 0:
 			# Send commList[iden] to members of commList[iden]
-			print("----------committees full----------------")
+			logging.info("committees full")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
 				print("directory member has not yet received the epochTxn")
-				# input()
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
@@ -495,6 +485,7 @@ class Elastico:
 		"""
 			method to recieve messages for a node as per the type of a msg
 		"""
+		logging.info("call to receive method with type - %s ",str(msg["type"]))
 		try:
 			# new node is added in directory committee if not yet formed
 			if msg["type"] == "directoryMember":
@@ -502,9 +493,10 @@ class Elastico:
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
+						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
 						self.cur_directory.append(identityobj)
 				else:
-			 		logging.info("%s  PoW not valid " , str(identityobj) )
+			 		logging.info("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
@@ -976,6 +968,7 @@ class Elastico:
 				self.form_committee()
 
 			elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
+				logging.info("%s is the directory member" , str(self.identity))
 				# directory node will receive transactions
 				# Receive txns from client for an epoch
 				k = 0
@@ -1107,6 +1100,7 @@ def Run(epochTxn):
 		runs for one epoch
 	"""
 	global network_nodes, ledger, commitmentSet
+	
 	if len(network_nodes) == 0:
 		# network_nodes is the list of elastico objects
 		for i in range(n):
@@ -1114,7 +1108,7 @@ def Run(epochTxn):
 			network_nodes.append(Elastico())
 
 	# making some(5 here) nodes as malicious
-	malicious_count = 5
+	malicious_count = 0
 	for i in range(malicious_count):
 		badNodeIndex = random_gen(32)%n
 		# set the flag false for bad nodes
@@ -1161,6 +1155,7 @@ if __name__ == "__main__":
 		# logging module configured, will log in elastico.log file for each execution
 		logging.basicConfig(filename='elastico.log',filemode='w',level=logging.DEBUG)
 
+		logging.info("logging started")
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
 		numOfEpochs = 1
@@ -1175,7 +1170,7 @@ if __name__ == "__main__":
 			epochTxns[i] = txns
 		# run all the epochs 
 		for epoch in epochTxns:
-			print("epoch number :-" , epoch + 1 , "started")
+			logging.info("epoch number :- %s started" , str(epoch + 1) )
 			Run(epochTxns[epoch])
 
 	except Exception as e:
