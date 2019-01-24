@@ -154,28 +154,22 @@ class Identity:
 		"""
 			send the msg to node based on their identity
 		"""
-		# # Create a socket object
-		# socketconn = socket.socket()
+		logging.info("sending msg - %s" , str(msg))
+		s = socket.socket()
 
-		# # Define the port on which you want to connect
-		# ip, port = self.IP, self.port
+		# Define the port on which you want to connect 
+		port = self.port
 
-		# # connect to the server on local computer
-		# socketconn.connect(('127.0.0.1', port))
-
-		# serialized_data = json.dumps(msg)
-		# encoded_data = serialized_data.encode()
-		# socketconn.send(encoded_data)
-
-		# # close the connection
-		# socketconn.close()
-
-		global identityNodeMap
-		node = identityNodeMap[self]
-		# node.lock.acquire()
-		response = node.receive(msg)
-		# node.lock.release()
-		return response
+		s.connect(('127.0.0.1', port))
+		serialized_data = pickle.dumps(msg)
+		s.send(serialized_data)
+		
+		# close the connection
+		s.close()
+		
+		# global identityNodeMap
+		# node = identityNodeMap[self]
+		# node.receive(msg)
 
 class Elastico:
 	"""
