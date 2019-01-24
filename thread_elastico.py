@@ -6,14 +6,15 @@ from secrets import SystemRandom
 import socket
 import json
 # for creating logs
-import logging, threading
+import logging, threading,pickle
 # for multi-processing
-from multiprocessing import Process
+from multiprocessing import Process , Lock
 
 # network_nodes - All objects of nodes in the network
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
+lock = Lock()
 # n : number of nodes
-n = 150
+n = 200
 # s - where 2^s is the number of committees
 s = 4
 # c - size of committee
@@ -81,14 +82,11 @@ def BroadcastTo_Network(data, type_):
 	"""
 		Broadcast data to the whole ntw
 	"""
-
 	global identityNodeMap
 	msg = {"type" : type_ , "data" : data}
-	logging.info("broadcasting msg with type as - %s" , str(msg["type"]))
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
-		if isinstance(node.identity, Identity):
-			# tcp connection
+		try:
 			socketconn = socket.socket()
 
 			# port on which we want to connect
@@ -100,8 +98,15 @@ def BroadcastTo_Network(data, type_):
 			socketconn.send(serialized_data)
 			socketconn.close()
 			# socketconn.sendto(serialized_data,('127.0.0.1',port)) (for udp)
-		else:
-			node.identity.send(msg)
+			# else:
+			# 	node.identity.send(msg)
+		except Exception as e:
+			logging.error("error in broadcast to network" , exc_info=e)
+			if isinstance(e, ConnectionRefusedError):
+				logging.info("ConnectionRefusedError at port : %s", str(node.port))
+			raise e
+		finally:
+			logging.info("Broadcast to Node : %s", str(node.port))
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -297,9 +302,18 @@ class Elastico:
 	def get_port(self):
 		"""
 		"""
-		global port
-		port += 1
-		return port
+		try:
+			lock.acquire()
+			global port
+			port += 1
+		except Exception as e:
+			logging.error("error in acquiring port lock" , exc_info=e)
+			raise e
+		finally:
+			lock.release()
+			return port	
+		
+		
 
 
 	def get_socket(self):
@@ -307,7 +321,8 @@ class Elastico:
 		"""
 		s = socket.socket()
 		print ("Socket successfully created")
-		s.bind(('127.0.0.1', self.port))
+		# Modified 
+		s.bind(('', self.port))
 		print ("socket binded to %s" %(port) )
 		return s
 
@@ -659,6 +674,8 @@ class Elastico:
 		except Exception as e:
 			# log the raised exception
 			logging.error('Error at receive step ', exc_info=e)
+			if isinstance(e, ConnectionRefusedError):
+				logging.info("ConnectionRefusedError at port : %s", "pata krte hai!")
 			raise e
 
 
@@ -1066,6 +1083,8 @@ class Elastico:
 		except Exception as e:
 			# log the raised exception
 			logging.error('Error at execute step ', exc_info=e)
+			if isinstance(e, ConnectionRefusedError):
+				logging.info("ConnectionRefusedError at port : %s", str(self.port))
 			raise e
 
 
@@ -1083,30 +1102,36 @@ class Elastico:
 	def executeServer(self, nodeIndex):
 		"""
 		"""
-		s = self.socketConn
-		port = self.port
+		try:
+			s = self.socketConn
+			port = self.port
 
-		# put the socket into listening mode 
-		s.listen(200)
-		
-		print("socket is listening")
- 
-		while self.serve: 
+			# put the socket into listening mode 
+			s.listen(10000)
+			
+			# print("socket is listening")
+	 
+			while self.serve:
 
-			# Establish connection with client. 
-			c, addr = s.accept()
-			data = b''
-			msg  = conn.recv(1024)
-			logging.info('Got connection from %s', str(addr))
-			# for receiving of any size
-			while msg:
-				data += msg
+				# Establish connection with client. 
+				conn, addr = s.accept()
+				data = b''
 				msg = conn.recv(1024)
-			data  = pickle.loads(data)
-			# data = self.recvMsg(c)
-			self.receive(data)
-			# Close the connection with the client 
-			c.close()
+				logging.info('Got connection from %s', str(addr))
+				# for receiving of any size
+				while msg:
+					data += msg
+					msg = conn.recv(1024)
+				data  = pickle.loads(data)
+				# data = self.recvMsg(c)
+				self.receive(data)
+				# Close the connection with the client 
+				conn.close()
+		except Exception as e:
+			logging.error('Error in  execute server ', exc_info=e)
+			if isinstance(e, ConnectionRefusedError):
+				logging.info("ConnectionRefusedError at port : %s", str(self.port))
+			raise e
 
 def executeSteps(nodeIndex, epochTxn):
 	"""
@@ -1114,7 +1139,9 @@ def executeSteps(nodeIndex, epochTxn):
 	"""
 	try:
 		node = network_nodes[nodeIndex]
+		# set the flag for Start serving
 		node.serve = True
+		# node.socketConn.listen(1000)
 		serverThread = threading.Thread(target= node.executeServer, args=(nodeIndex,))
 		serverThread.start()
 		while True:
