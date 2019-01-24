@@ -1069,12 +1069,54 @@ class Elastico:
 			raise e
 
 
+	# def recvMsg(conn):
+	# 	data = ""
+	# 	msg = conn.recv(1024)
+	# 	# for receiving of any size
+	# 	while msg:
+	# 		data += msg.decode()
+	# 		msg = conn.recv(1024)
+	# 	data = json.loads(data)
+	# 	return data
+
+
+	def executeServer(self, nodeIndex):
+		"""
+		"""
+		s = self.socketConn
+		port = self.port
+
+		# put the socket into listening mode 
+		s.listen(200)
+		
+		print("socket is listening")
+ 
+		while self.serve: 
+
+			# Establish connection with client. 
+			c, addr = s.accept()
+			data = b''
+			msg  = conn.recv(1024)
+			logging.info('Got connection from %s', str(addr))
+			# for receiving of any size
+			while msg:
+				data += msg
+				msg = conn.recv(1024)
+			data  = pickle.loads(data)
+			# data = self.recvMsg(c)
+			self.receive(data)
+			# Close the connection with the client 
+			c.close()
+
 def executeSteps(nodeIndex, epochTxn):
 	"""
 		A process will execute the elastico node
 	"""
 	try:
 		node = network_nodes[nodeIndex]
+		node.serve = True
+		serverThread = threading.Thread(target= node.executeServer, args=(nodeIndex,))
+		serverThread.start()
 		while True:
 			# execute one step of elastico node
 			response = node.execute(epochTxn)
