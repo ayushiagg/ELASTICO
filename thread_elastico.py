@@ -81,17 +81,27 @@ def BroadcastTo_Network(data, type_):
 	"""
 		Broadcast data to the whole ntw
 	"""
-		# comment: no if statements
-		# for each instance of Elastico, create a receive(self, msg) method
-		# this function will just call node.receive(msg)
-		# inside msg, you will need to have a message type, and message data.
 
 	global identityNodeMap
-	print("---Broadcast to network---")
 	msg = {"type" : type_ , "data" : data}
+	logging.info("broadcasting msg with type as - %s" , str(msg["type"]))
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
-		node.receive(msg)
+		if isinstance(node.identity, Identity):
+			# tcp connection
+			socketconn = socket.socket()
+
+			# port on which we want to connect
+			ip, port = node.IP, node.port
+
+			socketconn.connect(('127.0.0.1', port))
+
+			serialized_data = pickle.dumps(msg)
+			socketconn.send(serialized_data)
+			socketconn.close()
+			# socketconn.sendto(serialized_data,('127.0.0.1',port)) (for udp)
+		else:
+			node.identity.send(msg)
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
