@@ -1129,30 +1129,6 @@ class Elastico:
         """
         """
         try:
-            # s = self.socketConn
-            # port = self.port
-
-            # # put the socket into listening mode 
-            # s.listen(10000)
-            
-            # # print("socket is listening")
-     
-            # while self.serve:
-
-            #   # Establish connection with client. 
-            #   conn, addr = s.accept()
-            #   data = b''
-            #   msg = conn.recv(1024)
-            #   logging.info('Got connection from %s', str(addr))
-            #   # for receiving of any size
-            #   while msg:
-            #       data += msg
-            #       msg = conn.recv(1024)
-            #   data  = pickle.loads(data)
-            #   # data = self.recvMsg(c)
-            #   self.receive(data)
-            #   # Close the connection with the client 
-            #   conn.close()
             connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
             channel = connection.channel()
 
