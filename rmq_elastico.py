@@ -1033,6 +1033,9 @@ class Elastico:
 					# directory member should not change its state to committee full
 					logging.warning("directory member state changed to Committee full(unwanted state)")
 
+			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
+				self.state = ELASTICO_STATES["Committee full"]
+
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
 				pass
