@@ -124,15 +124,19 @@ def MulticastCommittee(commList, identityobj, txns):
 	"""
 		each node getting views of its committee members from directory members
 	"""
-
-	finalCommitteeMembers = commList[fin_num]
-	for committee_id in commList:
-		commMembers = commList[committee_id]
-		for memberId in commMembers:
-			# union of committe members views
-			data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
-			msg = {"data" : data , "type" : "committee members views"}
-			memberId.send(msg)
+	try:
+		finalCommitteeMembers = commList[fin_num]
+		for committee_id in commList:
+			commMembers = commList[committee_id]
+			for memberId in commMembers:
+				# union of committe members views
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
+				msg = {"data" : data , "type" : "committee members views"}
+				logging.error("multicast")
+				memberId.send(msg)
+	except Exception as e:
+		logging.error("error in multicast ", exc_info=e)
+		raise e
 
 
 class Identity:
