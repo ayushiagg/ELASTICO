@@ -165,7 +165,8 @@ class Identity:
 		"""
 			send the msg to node based on their identity
 		"""
-		logging.info("sending msg - %s" , str(msg))
+		try:
+			logging.info("sending msg - %s" , str(msg))
 
 		# establish a connection with RabbitMQ server
 		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -179,8 +180,11 @@ class Identity:
 		channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data)
 		print(" [x] Sent 'Hello World!'")
 
-		# close the connection
-		connection.close()
+			# close the connection
+			connection.close()
+		except Exception as e:
+			logging.error("error at send msg ", exc_info=e)
+			raise e
 
 class Elastico:
 	"""
@@ -490,11 +494,12 @@ class Elastico:
 		flag = 0
 		for iden in range(pow(2,s)):
 			if iden not in commList or len(commList[iden]) < c:
+				logging.warning("committees not full  - bad miss id : %s", str(iden))
 				flag = 1
 				break
 		if flag == 0:
 			# Send commList[iden] to members of commList[iden]
-			logging.info("committees full")
+			logging.warning("committees full  - good")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
 				print("directory member has not yet received the epochTxn")
 				# directory member has not yet received the epochTxn
@@ -543,7 +548,7 @@ class Elastico:
 
 			# union of committe members views
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
-
+				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
 				# update the txn block
@@ -559,7 +564,10 @@ class Elastico:
 			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
 				if self.state == ELASTICO_STATES["Receiving Committee Members"]:
 					# all committee members have received their member views
+					logging.warning("change to committee full")
 					self.state = ELASTICO_STATES["Committee full"]
+				else:
+					logging.warning("change to committee full failure")
 
 			# receiving H(Ri) by final committe members
 			elif msg["type"] == "hash" and self.isFinalMember():
@@ -1013,6 +1021,7 @@ class Elastico:
 
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
+				logging.warning("welcome to committee full - ", self.port)
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
