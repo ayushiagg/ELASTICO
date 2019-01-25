@@ -168,17 +168,17 @@ class Identity:
 		try:
 			logging.info("sending msg - %s" , str(msg))
 
-		# establish a connection with RabbitMQ server
-		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-		channel = connection.channel()
+			# establish a connection with RabbitMQ server
+			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+			channel = connection.channel()
 
-		port = self.port
+			port = self.port
 
-		# create a hello queue to which the message will be delivered
-		channel.queue_declare( queue= 'hello' + str(port) )
-		serialized_data = pickle.dumps(msg)
-		channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data)
-		print(" [x] Sent 'Hello World!'")
+			# create a hello queue to which the message will be delivered
+			channel.queue_declare( queue= 'hello' + str(port) )
+			serialized_data = pickle.dumps(msg)
+			channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data)
+			print(" [x] Sent 'Hello World!'")
 
 			# close the connection
 			connection.close()
