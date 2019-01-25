@@ -79,36 +79,36 @@ def random_gen(size=32):
 
 
 def BroadcastTo_Network(data, type_):
-    """
-        Broadcast data to the whole ntw
-    """
+	"""
+		Broadcast data to the whole ntw
+	"""
 
-    global identityNodeMap
-    msg = {"type" : type_ , "data" : data}
-    # ToDo: directly accessing of elastico objects should be removed
-    for node in network_nodes:
-        try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-            channel = connection.channel()
+	global identityNodeMap
+	msg = {"type" : type_ , "data" : data}
+	# ToDo: directly accessing of elastico objects should be removed
+	for node in network_nodes:
+		try:
+			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+			channel = connection.channel()
 
-            port = node.port
+			port = node.port
 
-            # create a hello queue to which the message will be delivered
-            channel.queue_declare( queue= 'hello' + str(port) )
-            msg_data = {"sendto" : node.identity , "msg" : msg}
-            serialized_data = pickle.dumps(msg_data)
-            channel.basic_publish(exchange='', routing_key='hello' + str(port), body=serialized_data)
-            print(" [x] Sent 'Hello World!'")
+			# create a hello queue to which the message will be delivered
+			channel.queue_declare( queue= 'hello' + str(port) )
+			# msg_data = {"sendto" : node.identity , "msg" : msg}
+			serialized_data = pickle.dumps(msg)
+			channel.basic_publish(exchange='', routing_key='hello' + str(port), body=serialized_data)
+			print(" [x] Sent 'Hello World!'")
 
-            # close the connection
-            connection.close()
-        except Exception as e:
-            logging.error("error in broadcast to network" , exc_info=e)
-            if isinstance(e, ConnectionRefusedError):
-                logging.info("ConnectionRefusedError at port : %s", str(node.port))
-            raise e
-        finally:
-            logging.info("Broadcast to Node : %s", str(node.port))
+			# close the connection
+			connection.close()
+		except Exception as e:
+			logging.error("error in broadcast to network" , exc_info=e)
+			if isinstance(e, ConnectionRefusedError):
+				logging.info("ConnectionRefusedError at port : %s", str(node.port))
+			raise e
+		finally:
+			logging.info("Broadcast to Node : %s", str(node.port))
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -1150,38 +1150,51 @@ class Elastico:
 			raise e		
 
 def executeSteps(nodeIndex, epochTxn):
-    """
-        A process will execute the elastico node
-    """
-    try:
-        node = network_nodes[nodeIndex]
-        # set the flag for Start serving
-        node.serve = True
-        # node.socketConn.listen(1000)
-        serverThread = threading.Thread(target= node.executeServer, args=(nodeIndex,))
-        serverThread.start()
-        while True:
-            # execute one step of elastico node
-            response = node.execute(epochTxn)
-            if response == "reset":
-                # now reset the node
-                if isinstance(node.identity, Identity):
-                    # identity obj exists for this node
-                    msg = {"type": "reset-all", "data" : node.identity}
-                    node.identity.send(msg)
-                else:
-                    # this node has not computed its identity
-                    print("illegal call")
-                    # calling reset explicitly for node
-                    node.reset()
-                break
-            else:
-                pass
-    except Exception as e:
-        # log any error raised in the above try block
-        logging.error('Error in  execute steps ', exc_info=e)
-        raise e
-    
+	"""
+		A process will execute the elastico node
+	"""
+	try:
+		node = network_nodes[nodeIndex]
+		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+
+		channel = connection.channel()
+		while True:
+			# execute one step of elastico node
+			response = node.execute(epochTxn)
+			if response == "reset":
+				# now reset the node
+				if isinstance(node.identity, Identity):
+					# identity obj exists for this node
+					msg = {"type": "reset-all", "data" : node.identity}
+					node.identity.send(msg)
+				else:
+					# this node has not computed its identity
+					print("illegal call")
+					# calling reset explicitly for node
+					node.reset()
+				break
+			else:
+				pass
+		
+					# channel.basic_qos(prefetch_size=0 )
+					
+			# print("msg count : ", queue.method.message_count)
+			queue = channel.queue_declare( queue='hello' + str(node.port))
+			count = queue.method.message_count
+			while count > 0:
+				# print("count" , count)
+				data = node.serve(nodeIndex, channel , connection)
+				if data != '':
+					data = pickle.loads(data)
+					node.receive(data)
+				# print("msg-" , data)
+				count -= 1
+				# print("count" , count)    
+	except Exception as e:
+		# log any error raised in the above try block
+		logging.error('Error in  execute steps ', exc_info=e)
+		raise e
+	
 
 
 
