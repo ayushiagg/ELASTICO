@@ -14,13 +14,13 @@ from multiprocessing import Process , Lock
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
 lock = Lock()
 # n : number of nodes
-n = 150
+n = 30
 # s - where 2^s is the number of committees
-s = 4
+s = 2
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 3
+D = 4
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
