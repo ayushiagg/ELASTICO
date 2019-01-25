@@ -1,7 +1,7 @@
 from multiprocessing import Process
 import pika
-import threading
-global nodes, pickle
+import threading, pickle , logging
+global nodes
 nodes = []
 
 class Node:
