@@ -105,10 +105,10 @@ def BroadcastTo_Network(data, type_):
 		except Exception as e:
 			logging.error("error in broadcast to network" , exc_info=e)
 			if isinstance(e, ConnectionRefusedError):
-				logging.info("ConnectionRefusedError at port : %s", str(node.port))
+				logging.error("ConnectionRefusedError at port : %s", str(node.port))
 			raise e
 		finally:
-			logging.info("Broadcast to Node : %s", str(node.port))
+			logging.warning("Broadcast to Node : %s", str(node.port))
 
 
 def BroadcastTo_Committee(committee_id, data , type_):
@@ -227,7 +227,7 @@ class Elastico:
 		self.port = self.get_port()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		self.cur_directory = []
+		self.cur_directory = set()
 		self.identity = ""
 		self.committee_id = ""
 		# only when this node is the member of directory committee
@@ -255,10 +255,11 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.socketConn = self.get_socket()
+		# self.socketConn = self.get_socket()
 		self.response = []
 		self.flag = True
 		# self.serve = False
+		self.views = set()
 
 	def reset(self):
 		"""
@@ -268,7 +269,7 @@ class Elastico:
 		self.key = self.get_key()
 		self.port = self.get_port()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		self.cur_directory = []
+		self.cur_directory = set()
 		self.identity = ""
 		self.committee_id = ""
 		# only when this node is the member of directory committee
@@ -295,9 +296,10 @@ class Elastico:
 		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		self.socketConn = self.get_socket()
+		# self.socketConn = self.get_socket()
 		self.flag = True
 		# self.serve = False
+		self.views = set()
 
 	def initER(self):
 		"""
@@ -548,6 +550,7 @@ class Elastico:
 
 			# union of committe members views
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
+				self.views.add(msg["data"]["identity"])
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
