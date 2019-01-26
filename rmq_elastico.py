@@ -457,8 +457,10 @@ class Elastico:
 			the directory members
 		""" 
 		if len(self.cur_directory) < c:
+
 			self.is_directory = True
-			print("---not seen c members yet, so broadcast to ntw---")
+			self.cur_directory.add(self.identity)
+			logging.warning(" %s - not seen c members yet, so broadcast to ntw---" , str(self.identity))
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
@@ -526,9 +528,9 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
 						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
-						self.cur_directory.append(identityobj)
+						self.cur_directory.add(identityobj)
 				else:
-					logging.info("%s  PoW not valid of an incoming directory member " , str(identityobj) )
+					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
@@ -650,8 +652,13 @@ class Elastico:
 							self.ConsensusMsgCount[identityobj.committee_id ] = 1
 						else:
 							self.ConsensusMsgCount[identityobj.committee_id] += 1
-
+						logging.warning("intra committee block received by state - %s" , str(self.state))	
+					else:
+						logging.error("signature invalid for intra committee block")		
+				else:
+					logging.error("pow invalid for intra committee block")
 			# ToDo: add verify of pows if reqd in below ifs
+			
 			elif msg["type"] == "command to run pbft":
 				if self.is_directory == False:
 					self.runPBFT(self.txn_block, msg["data"]["instance"])
@@ -727,6 +734,7 @@ class Elastico:
 		# for intra committee consensus 
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
+			logging.warning("%s changing state to pbft finished" , str(self.identity))
 			self.state = ELASTICO_STATES["PBFT Finished"]
 
 	def isFinalMember(self):
@@ -994,6 +1002,7 @@ class Elastico:
 					# compute Pow for good node
 					self.compute_PoW()
 				else:
+					logging.warning("wrong pow computing")
 					# compute Pow for bad node
 					self.compute_fakePoW()
 
@@ -1006,7 +1015,7 @@ class Elastico:
 				self.form_committee()
 
 			elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
-				logging.info("%s is the directory member" , str(self.identity))
+				logging.warning("%s is the directory member" , str(self.identity))
 				# directory node will receive transactions
 				# Receive txns from client for an epoch
 				k = 0
@@ -1022,9 +1031,13 @@ class Elastico:
 				# directory member has received the txns for all committees 
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 
+			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
+				logging.warning("changing to committee full")
+				self.state = ELASTICO_STATES["Committee full"]
+			
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
-				logging.warning("welcome to committee full - ", self.port)
+				logging.warning("welcome to committee full - %s", str(self.port))
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
@@ -1036,8 +1049,6 @@ class Elastico:
 					# directory member should not change its state to committee full
 					logging.warning("directory member state changed to Committee full(unwanted state)")
 
-			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				self.state = ELASTICO_STATES["Committee full"]
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
@@ -1049,6 +1060,7 @@ class Elastico:
 			
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 				# final committee node will collect blocks and merge them
+				logging.warning("final member sent the block to final")
 				flag = False
 				for commId in range(pow(2,s)):
 					if commId not in self.ConsensusMsgCount or self.ConsensusMsgCount[commId] <= c//2:
@@ -1173,14 +1185,20 @@ def executeSteps(nodeIndex, epochTxn):
 	"""
 	try:
 		node = network_nodes[nodeIndex]
+
+		# establish a connection with RabbitMQ server
 		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
 		channel = connection.channel()
+
 		while True:
+			
 			# execute one step of elastico node
 			response = node.execute(epochTxn)
 			if response == "reset":
 				# now reset the node
+				logging.warning("call for reset for identity %s" , str(node.identity))
+
 				if isinstance(node.identity, Identity):
 					# identity obj exists for this node
 					msg = {"type": "reset-all", "data" : node.identity}
@@ -1202,6 +1220,7 @@ def executeSteps(nodeIndex, epochTxn):
 				data = node.serve(nodeIndex, channel , connection)
 				if data != '':
 					data = pickle.loads(data)
+					logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
 					node.receive(data)
 				# print("msg-" , data)
 				count -= 1
@@ -1274,7 +1293,6 @@ if __name__ == "__main__":
 		# logging module configured, will log in elastico.log file for each execution
 		logging.basicConfig(filename='elastico.log',filemode='w',level=logging.WARNING)
 
-		logging.info("logging started")
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
 		numOfEpochs = 1
