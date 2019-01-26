@@ -328,15 +328,15 @@ class Elastico:
 		
 
 
-	def get_socket(self):
-		"""
-		"""
-		s = socket.socket()
-		print ("Socket successfully created")
-		# Modified 
-		s.bind(('', self.port))
-		print ("socket binded to %s" %(port) )
-		return s
+	# def get_socket(self):
+	# 	"""
+	# 	"""
+	# 	s = socket.socket()
+	# 	print ("Socket successfully created")
+	# 	# Modified 
+	# 	s.bind(('', self.port))
+	# 	print ("socket binded to %s" %(port) )
+	# 	return s
 
 
 	def get_IP(self):
@@ -1119,35 +1119,35 @@ class Elastico:
 	#   data = json.loads(data)
 	#   return data
 
-	def callback(self, ch, method, properties, body):
-		# print(" [x] Received %r" % body)
-		try:
-			logging.info("queue message consumed")
-			data = pickle.loads(body)
-			self.receive(data["msg"])
-		except Exception as e:
-			logging.error("callback error", exc_info=e)
-			raise e
+	# def callback(self, ch, method, properties, body):
+	# 	# print(" [x] Received %r" % body)
+	# 	try:
+	# 		logging.info("queue message consumed")
+	# 		data = pickle.loads(body)
+	# 		self.receive(data["msg"])
+	# 	except Exception as e:
+	# 		logging.error("callback error", exc_info=e)
+	# 		raise e
 
-	def executeServer(self, nodeIndex):
-		"""
-		"""
-		try:
-			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-			channel = connection.channel()
-
-
-			channel.queue_declare(queue='hello' + str(self.port))
+	# def executeServer(self, nodeIndex):
+	# 	"""
+	# 	"""
+	# 	try:
+	# 		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+	# 		channel = connection.channel()
 
 
-			channel.basic_consume(self.callback, queue='hello' + str(self.port), no_ack=True)
+	# 		channel.queue_declare(queue='hello' + str(self.port))
 
-			print(' [*] Waiting for messages. To exit press CTRL+C')
-			channel.start_consuming()
 
-		except Exception as e:
-			logging.error('Error in  execute server ', exc_info=e)
-			raise e
+	# 		channel.basic_consume(self.callback, queue='hello' + str(self.port), no_ack=True)
+
+	# 		print(' [*] Waiting for messages. To exit press CTRL+C')
+	# 		channel.start_consuming()
+
+	# 	except Exception as e:
+	# 		logging.error('Error in  execute server ', exc_info=e)
+	# 		raise e
 
 	
 	def serve(self, nodeId, channel, connection):
@@ -1157,10 +1157,9 @@ class Elastico:
 			print(nodeId, "serving")
 			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(self.port))        
 			if method_frame.NAME == 'Basic.GetEmpty':
-				connection.close()
+				# connection.close()
 				return ''
 			else:            
-				logging.warning("aagya!")
 				channel.basic_ack(delivery_tag=method_frame.delivery_tag)
 				# connection.close() 
 				return body
@@ -1195,8 +1194,6 @@ def executeSteps(nodeIndex, epochTxn):
 			else:
 				pass
 		
-					# channel.basic_qos(prefetch_size=0 )
-					
 			# print("msg count : ", queue.method.message_count)
 			queue = channel.queue_declare( queue='hello' + str(node.port))
 			count = queue.method.message_count
