@@ -564,7 +564,11 @@ class Elastico:
 				# union of final committee members wrt directory member
 				self.finalCommitteeMembers |= set(finalMembers)
 				# received the members
-				self.state  = ELASTICO_STATES["Receiving Committee Members"]
+				# ToDo : Check and ensure that states are not overwritten
+				if self.state == ELASTICO_STATES["Formed Committee"] and len(self.views) >= c //2 + 1:
+					self.state = ELASTICO_STATES["Receiving Committee Members"]
+				else:
+					logging.error("Wrong state : %s", str(self.state))
 
 
 			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
