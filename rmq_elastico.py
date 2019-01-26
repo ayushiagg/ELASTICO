@@ -470,7 +470,8 @@ class Elastico:
 			
 			self.Send_to_Directory()
 			# ToDo : check state assignment order
-			if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
+			# if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
+			if self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				msg = {"data" : self.identity ,"type" : "Committee full"}
 				BroadcastTo_Network(msg["data"] , msg["type"])
 			elif self.state != ELASTICO_STATES["Receiving Committee Members"]: 
@@ -1237,55 +1238,61 @@ def Run(epochTxn):
 	"""
 		runs for one epoch
 	"""
-	global network_nodes, ledger, commitmentSet
+	global network_nodes, ledger, commitmentSet, epochBlock
 	
-	if len(network_nodes) == 0:
-		# network_nodes is the list of elastico objects
-		for i in range(n):
-			print( "---Running for processor number---" , i + 1)
-			network_nodes.append(Elastico())
+	try:
+		if len(network_nodes) == 0:
+			# network_nodes is the list of elastico objects
+			for i in range(n):
+				print( "---Running for processor number---" , i + 1)
+				network_nodes.append(Elastico())
 
-	# making some(5 here) nodes as malicious
-	malicious_count = 0
-	for i in range(malicious_count):
-		badNodeIndex = random_gen(32)%n
-		# set the flag false for bad nodes
-		network_nodes[badNodeIndex].flag = False
+		# making some(5 here) nodes as malicious
+		malicious_count = 0
+		for i in range(malicious_count):
+			badNodeIndex = random_gen(32)%n
+			# set the flag false for bad nodes
+			network_nodes[badNodeIndex].flag = False
 
-	epochBlock = set()
-	commitmentSet = set()
+		epochBlock = set()
+		commitmentSet = set()
 
-	# list of processes
-	processes = []
-	for nodeIndex in range(n):
-		# create a process
-		process = Process(target= executeSteps, args=(nodeIndex, epochTxn))
-		# add to the list of processes
-		processes.append(process)
+		# list of processes
+		processes = []
+		for nodeIndex in range(n):
+			# create a process
+			process = Process(target= executeSteps, args=(nodeIndex, epochTxn))
+			# add to the list of processes
+			processes.append(process)
 
-	for nodeIndex in range(n):
-		print("process number" , nodeIndex , "started")
-		# start the process
-		processes[nodeIndex].start()
+		for nodeIndex in range(n):
+			print("process number" , nodeIndex , "started")
+			# start the process
+			processes[nodeIndex].start()
 
-	for nodeIndex in range(n):
-		# waits for the process to finish
-		processes[nodeIndex].join()
+		for nodeIndex in range(n):
+			# waits for the process to finish
+			processes[nodeIndex].join()
 
-	# All processes are over. Computing response in each node to update ledger
-	for nodeIndex in range(n):
-		response = network_nodes[nodeIndex].response
-		if len(response) > 0:
-			for txnBlock in response:
-				# ToDo: remove eval
-				epochBlock |= eval(txnBlock)
-			# reset the response 
-			network_nodes[nodeIndex].response = []
+		logging.warning("processes finished")
 
-	# Append the block in ledger
-	ledger.append(epochBlock)
-	print("ledger block" , ledger)
-	# input("ledger updated!!")
+		# All processes are over. Computing response in each node to update ledger
+		for nodeIndex in range(n):
+			response = network_nodes[nodeIndex].response
+			if len(response) > 0:
+				for txnBlock in response:
+					# ToDo: remove eval
+					epochBlock |= eval(txnBlock)
+				# reset the response 
+				network_nodes[nodeIndex].response = []
+
+		# Append the block in ledger
+		ledger.append(epochBlock)
+		print("ledger block" , ledger)
+		# input("ledger updated!!")
+	except Exception as e:
+		logging.error("error in run step" , exc_info=e)
+		raise e
 
 
 if __name__ == "__main__":
