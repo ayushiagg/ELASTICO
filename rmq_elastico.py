@@ -83,7 +83,8 @@ def BroadcastTo_Network(data, type_):
 		Broadcast data to the whole ntw
 	"""
 
-	global identityNodeMap, network_nodes
+	global network_nodes
+
 	msg = { "data" : data , "type" : type_ }
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
@@ -714,7 +715,7 @@ class Elastico:
 			each final committee member validates that the values received from the committees are signed by 
 			atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 		"""
-		logging.warning("verify and merge")
+		logging.warning("verify and merge %s -- %s" , str(self.port) ,str(self.committee_id))
 		for committeeid in range(pow(2,s)):
 			if committeeid in self.CommitteeConsensusData:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
@@ -741,7 +742,7 @@ class Elastico:
 		# for intra committee consensus 
 		elif instance == "intra committee consensus":
 			self.txn_block = txn_set
-			logging.warning("%s changing state to pbft finished" , str(self.identity))
+			logging.warning("%s changing state to pbft finished" , str(self.port))
 			self.state = ELASTICO_STATES["PBFT Finished"]
 
 	def isFinalMember(self):
@@ -1022,7 +1023,7 @@ class Elastico:
 				self.form_committee()
 
 			elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
-				logging.warning("%s is the directory member" , str(self.identity))
+				logging.warning("%s is the directory member" , str(self.port))
 				# directory node will receive transactions
 				# Receive txns from client for an epoch
 				k = 0
@@ -1084,6 +1085,7 @@ class Elastico:
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished-FinalCommittee"]:
 				# send the commitment to other final committee members
+				logging.warning("pbft finished by final committee %s" , str(self.port))
 				self.sendCommitment()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
