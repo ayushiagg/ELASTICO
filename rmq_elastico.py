@@ -531,7 +531,7 @@ class Elastico:
 				logging.warning("directory member to be appended %s" , str(identityobj))
 				logging.warning(" %s - %s - %s -  %s- directory member to get appended" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP) )
 				# verify the PoW of the sender
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					if len(self.cur_directory) < c:
 						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
 						self.cur_directory.add(identityobj)
@@ -541,7 +541,7 @@ class Elastico:
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					if identityobj.committee_id not in self.committee_list:
 						# Add the identity in committee
 						self.committee_list[identityobj.committee_id] = [identityobj]
@@ -557,7 +557,7 @@ class Elastico:
 					logging.error("PoW not valid in adding new node")
 
 			# union of committe members views
-			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
+			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"].PoW) and self.is_directory == False:
 				self.views.add(msg["data"]["identity"])
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
@@ -576,7 +576,7 @@ class Elastico:
 					logging.error("Wrong state : %s", str(self.state))
 
 
-			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
+			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"].PoW):
 				if self.state == ELASTICO_STATES["Receiving Committee Members"]:
 					# all committee members have received their member views
 					logging.warning("change to committee full")
@@ -588,13 +588,13 @@ class Elastico:
 			elif msg["type"] == "hash" and self.isFinalMember():
 				data = msg["data"]
 				identityobj = data["identity"]
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					self.commitments.add(data["Hash_Ri"])
 
 			elif msg["type"] == "RandomStringBroadcast":
 				data = msg["data"]
 				identityobj = data["identity"]
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					Ri = data["Ri"]
 					HashRi = self.hexdigest(Ri)
 
@@ -607,7 +607,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					sign = data["signature"]
 					received_commitmentSet = data["commitmentSet"]
 					PK = data["PK"]
@@ -645,7 +645,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				if self.verify_PoW(identityobj):
+				if self.verify_PoW(identityobj.PoW):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
 					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj.committee_id))	
@@ -695,14 +695,14 @@ class Elastico:
 
 			elif msg["type"] == "notify final member":
 				logging.warning("notifying final member %s" , str(self.port))
-				if self.verify_PoW(msg["data"]["identity"]):
+				if self.verify_PoW(msg["data"]["identity"].PoW):
 					self.is_final = True
 
 			elif msg["type"] == "Broadcast Ri":
 				if self.isFinalMember():
 					self.BroadcastR()
 
-			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"]):
+			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"].PoW):
 				# reset the elastico node
 				self.reset()
 
@@ -924,11 +924,11 @@ class Elastico:
 
 
 	# verify the PoW of the sender
-	def verify_PoW(self, identityobj):
+	def verify_PoW(self, PoW):
 		"""
 			verify the PoW of the node identityobj
 		"""
-		PoW = identityobj.PoW
+		# PoW = identityobj.PoW
 
 		# length of hash in hex
 		if len(PoW["hash"]) != 64:
