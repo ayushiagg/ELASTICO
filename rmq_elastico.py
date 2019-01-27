@@ -83,8 +83,8 @@ def BroadcastTo_Network(data, type_):
 		Broadcast data to the whole ntw
 	"""
 
-	global identityNodeMap
-	msg = {"type" : type_ , "data" : data}
+	global identityNodeMap, network_nodes
+	msg = { "data" : data , "type" : type_ }
 	# ToDo: directly accessing of elastico objects should be removed
 	for node in network_nodes:
 		try:
@@ -95,11 +95,10 @@ def BroadcastTo_Network(data, type_):
 
 			# create a hello queue to which the message will be delivered
 			channel.queue_declare( queue= 'hello' + str(port) )
-			# msg_data = {"sendto" : node.identity , "msg" : msg}
+			
 			serialized_data = pickle.dumps(msg)
 			channel.basic_publish(exchange='', routing_key='hello' + str(port), body=serialized_data)
-			print(" [x] Sent 'Hello World!'")
-
+			
 			# close the connection
 			connection.close()
 		except Exception as e:
@@ -178,7 +177,6 @@ class Identity:
 			channel.queue_declare( queue= 'hello' + str(port) )
 			serialized_data = pickle.dumps(msg)
 			channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data)
-			print(" [x] Sent 'Hello World!'")
 
 			# close the connection
 			connection.close()
@@ -460,7 +458,7 @@ class Elastico:
 
 			self.is_directory = True
 			self.cur_directory.add(self.identity)
-			logging.warning(" %s - not seen c members yet, so broadcast to ntw---" , str(self.identity))
+			logging.warning(" %s %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity))
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
@@ -471,10 +469,10 @@ class Elastico:
 			self.Send_to_Directory()
 			# ToDo : check state assignment order
 			# if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
-			if self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				msg = {"data" : self.identity ,"type" : "Committee full"}
-				BroadcastTo_Network(msg["data"] , msg["type"])
-			elif self.state != ELASTICO_STATES["Receiving Committee Members"]: 
+			# if self.state == ELASTICO_STATES["Receiving Committee Members"]:
+			# 	msg = {"data" : self.identity ,"type" : "Committee full"}
+			# 	BroadcastTo_Network(msg["data"] , msg["type"])
+			if self.state != ELASTICO_STATES["Receiving Committee Members"]: 
 				self.state = ELASTICO_STATES["Formed Committee"]
 				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
 
@@ -506,7 +504,7 @@ class Elastico:
 			# Send commList[iden] to members of commList[iden]
 			logging.warning("committees full  - good")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
-				print("directory member has not yet received the epochTxn")
+				logging.error("directory member has not yet received the epochTxn")
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
@@ -525,6 +523,8 @@ class Elastico:
 			# new node is added in directory committee if not yet formed
 			if msg["type"] == "directoryMember":
 				identityobj = msg["data"]
+				logging.warning("directory member to be appended %s" , str(identityobj))
+				logging.warning("data for this:- %s" ,str(identityobj.port) )
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
@@ -689,6 +689,7 @@ class Elastico:
 					self.BroadcastFinalTxn()
 
 			elif msg["type"] == "notify final member":
+				logging.warning("notifying final member %s" , str(self.port))
 				if self.verify_PoW(msg["data"]["identity"]):
 					self.is_final = True
 
@@ -704,7 +705,7 @@ class Elastico:
 			# log the raised exception
 			logging.error('Error at receive step ', exc_info=e)
 			if isinstance(e, ConnectionRefusedError):
-				logging.info("ConnectionRefusedError at port : %s", "pata krte hai!")
+				logging.info("ConnectionRefusedError at port : %s", "!")
 			raise e
 
 
@@ -713,6 +714,7 @@ class Elastico:
 			each final committee member validates that the values received from the committees are signed by 
 			atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 		"""
+		logging.warning("verify and merge")
 		for committeeid in range(pow(2,s)):
 			if committeeid in self.CommitteeConsensusData:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
@@ -1077,6 +1079,7 @@ class Elastico:
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 				# final committee member runs final pbft
+				logging.warning("merged consensus data")
 				self.runPBFT(self.mergedBlock, "final committee consensus")
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished-FinalCommittee"]:
@@ -1170,9 +1173,10 @@ class Elastico:
 	def serve(self, nodeId, channel, connection):
 
 		global nodes
+		node = network_nodes[nodeId]
 		try:
 			print(nodeId, "serving")
-			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(self.port))        
+			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(node.port))        
 			if method_frame.NAME == 'Basic.GetEmpty':
 				# connection.close()
 				return ''
@@ -1188,6 +1192,8 @@ def executeSteps(nodeIndex, epochTxn):
 	"""
 		A process will execute the elastico node
 	"""
+	global network_nodes
+
 	try:
 		node = network_nodes[nodeIndex]
 
@@ -1227,6 +1233,8 @@ def executeSteps(nodeIndex, epochTxn):
 					data = pickle.loads(data)
 					logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
 					node.receive(data)
+				else:
+					break	
 				# print("msg-" , data)
 				count -= 1
 				# print("count" , count)    
