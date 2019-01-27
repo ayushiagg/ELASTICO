@@ -1067,6 +1067,7 @@ class Elastico:
 
 			elif self.state == ELASTICO_STATES["PBFT Finished"]:
 				# send pbft consensus blocks to final committee members
+				logging.warning("pbft finished by memebers %s" , str(self.port))
 				self.SendtoFinal()
 			
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
@@ -1074,11 +1075,19 @@ class Elastico:
 				logging.warning("final member sent the block to final")
 				flag = False
 				for commId in range(pow(2,s)):
-					if commId not in self.ConsensusMsgCount or self.ConsensusMsgCount[commId] <= c//2:
+					if commId not in self.CommitteeConsensusData:
 						flag = True
+						logging.warning("bad committee id lol %s" , str(commId))
 						break
+					else:
+						for txnBlock in self.CommitteeConsensusData[commId]:
+							if len(self.CommitteeConsensusData[commId][txnBlock]) <= c//2:
+								flag = True
+								logging.warning("bad committee id for intra committee block %s" , str(commId))
+								break
 				if flag == False:
 					# when sufficient number of blocks from each committee are received
+					input
 					self.verifyAndMergeConsensusData()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
