@@ -132,10 +132,9 @@ def MulticastCommittee(commList, identityobj, txns):
 				# union of committe members views
 				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
 				msg = {"data" : data , "type" : "committee members views"}
-				logging.error("multicast")
 				memberId.send(msg)
 	except Exception as e:
-		logging.error("error in multicast ", exc_info=e)
+		logging.error("error in multicast committees list", exc_info=e)
 		raise e
 
 
@@ -315,14 +314,14 @@ class Elastico:
 		"""
 		try:
 			lock.acquire()
-			logging.warning("lock acq")
+			# logging.warning("lock acq")
 			global port
 			port += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
-			logging.warning("lock release")
+			# logging.warning("lock release")
 			lock.release()
 			return port 
 		
@@ -461,15 +460,15 @@ class Elastico:
 
 			self.is_directory = True
 			self.cur_directory.add(self.identity)
-			logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
+			# logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
 
-			logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
+			# logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
 			# track previous state before adding in committee
-			prevState = self.state
+			# prevState = self.state
 			
 			self.Send_to_Directory()
 			# ToDo : check state assignment order
@@ -528,10 +527,10 @@ class Elastico:
 			# new node is added in directory committee if not yet formed
 			if msg["type"] == "directoryMember":
 				identityobj = msg["data"]
-				logging.warning("directory member to be appended %s" , str(identityobj))
-				logging.warning(" %s - %s - %s -  %s- directory member to get appended" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP) )
+				# logging.warning("directory member to be appended %s" , str(identityobj))
+				# logging.warning(" %s - %s - %s -  %s- directory member to get appended" , str(identityobj.port)  ,str(identityobj) , str(identityobj.committee_id) , str(identityobj.IP) )
 				# verify the PoW of the sender
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
 						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
 						self.cur_directory.add(identityobj)
@@ -541,7 +540,7 @@ class Elastico:
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					if identityobj.committee_id not in self.committee_list:
 						# Add the identity in committee
 						self.committee_list[identityobj.committee_id] = [identityobj]
@@ -557,7 +556,8 @@ class Elastico:
 					logging.error("PoW not valid in adding new node")
 
 			# union of committe members views
-			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"].PoW) and self.is_directory == False:
+			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
+				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
 				self.views.add(msg["data"]["identity"])
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
@@ -576,7 +576,7 @@ class Elastico:
 					logging.error("Wrong state : %s", str(self.state))
 
 
-			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"].PoW):
+			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
 				if self.state == ELASTICO_STATES["Receiving Committee Members"]:
 					# all committee members have received their member views
 					logging.warning("change to committee full")
@@ -588,13 +588,13 @@ class Elastico:
 			elif msg["type"] == "hash" and self.isFinalMember():
 				data = msg["data"]
 				identityobj = data["identity"]
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					self.commitments.add(data["Hash_Ri"])
 
 			elif msg["type"] == "RandomStringBroadcast":
 				data = msg["data"]
 				identityobj = data["identity"]
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					Ri = data["Ri"]
 					HashRi = self.hexdigest(Ri)
 
@@ -607,7 +607,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSet = data["commitmentSet"]
 					PK = data["PK"]
@@ -645,7 +645,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				if self.verify_PoW(identityobj.PoW):
+				if self.verify_PoW(identityobj):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
 					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj.committee_id))	
@@ -662,7 +662,7 @@ class Elastico:
 						self.ConsensusMsgCount[identityobj.committee_id ] = 1
 					else:
 						self.ConsensusMsgCount[identityobj.committee_id] += 1
-					logging.warning("intra committee block received by state - %s %s" , str(self.state) , identityobj.committee_id)	
+					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj.committee_id))	
 					# else:
 					# 	logging.error("signature invalid for intra committee block")		
 				else:
@@ -695,14 +695,14 @@ class Elastico:
 
 			elif msg["type"] == "notify final member":
 				logging.warning("notifying final member %s" , str(self.port))
-				if self.verify_PoW(msg["data"]["identity"].PoW):
+				if self.verify_PoW(msg["data"]["identity"]):
 					self.is_final = True
 
 			elif msg["type"] == "Broadcast Ri":
 				if self.isFinalMember():
 					self.BroadcastR()
 
-			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"].PoW):
+			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"]):
 				# reset the elastico node
 				self.reset()
 
@@ -820,6 +820,8 @@ class Elastico:
 		"""
 		PK = self.key.publickey().exportKey().decode()
 
+		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
+		logging.warning("send to final %s - %s", str(self.committee_id) , str(self.port))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity, "PK" : PK}
@@ -924,11 +926,11 @@ class Elastico:
 
 
 	# verify the PoW of the sender
-	def verify_PoW(self, PoW):
+	def verify_PoW(self, identityobj):
 		"""
 			verify the PoW of the node identityobj
 		"""
-		# PoW = identityobj.PoW
+		PoW = identityobj.PoW
 
 		# length of hash in hex
 		if len(PoW["hash"]) != 64:
@@ -1052,7 +1054,7 @@ class Elastico:
 			
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
-				logging.warning("welcome to committee full - %s", str(self.port))
+				logging.warning("welcome to committee full - %s -- %s", str(self.port) , str(self.committee_id))
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
@@ -1071,7 +1073,7 @@ class Elastico:
 
 			elif self.state == ELASTICO_STATES["PBFT Finished"]:
 				# send pbft consensus blocks to final committee members
-				logging.warning("pbft finished by memebers %s" , str(self.port))
+				logging.warning("pbft finished by memebrs %s" , str(self.port))
 				self.SendtoFinal()
 			
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
