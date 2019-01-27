@@ -606,33 +606,33 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSet = data["commitmentSet"]
-					PK = identityobj.PK
+					PK = data["PK"]
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
-					if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					# if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
-						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
-							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
+					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
+						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 
-						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 
-						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
-							# for final members, their state is updated only when they have also sent the finalblock
-							if self.isFinalMember():
-								if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
-									self.state = ELASTICO_STATES["FinalBlockReceived"]
-								pass
-							else:
+					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
+						# for final members, their state is updated only when they have also sent the finalblock
+						if self.isFinalMember():
+							if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
+							pass
+						else:
+							self.state = ELASTICO_STATES["FinalBlockReceived"]
 
-						if self.newRcommitmentSet == "":
-							self.newRcommitmentSet = set()
-						# union of commitments 
-						self.newRcommitmentSet |= set(received_commitmentSet)
+					if self.newRcommitmentSet == "":
+						self.newRcommitmentSet = set()
+					# union of commitments 
+					self.newRcommitmentSet |= set(received_commitmentSet)
 
-					else:
-						logging.error("Signature invalid in final block received")
+					# else:
+					# 	logging.error("Signature invalid in final block received")
 				else:
 					logging.error("PoW not valid when final member send the block")
 
@@ -643,24 +643,24 @@ class Elastico:
 
 				if self.verify_PoW(identityobj):
 					# verify the signatures
-					if self.verify_sign(data["sign"], data["txnBlock"] , identityobj.PK):
-						
-						if identityobj.committee_id not in self.CommitteeConsensusData:
-							self.CommitteeConsensusData[identityobj.committee_id] = dict()
+					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
+					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj.committee_id))	
+					if identityobj.committee_id not in self.CommitteeConsensusData:
+						self.CommitteeConsensusData[identityobj.committee_id] = dict()
 
-						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
-							self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
+					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
+						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 
-						# add signatures for the txn block 
-						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
-						# to verify the number of txn blocks received from each committee
-						if identityobj.committee_id not in self.ConsensusMsgCount:
-							self.ConsensusMsgCount[identityobj.committee_id ] = 1
-						else:
-							self.ConsensusMsgCount[identityobj.committee_id] += 1
-						logging.warning("intra committee block received by state - %s" , str(self.state))	
+					# add signatures for the txn block 
+					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+					# to verify the number of txn blocks received from each committee
+					if identityobj.committee_id not in self.ConsensusMsgCount:
+						self.ConsensusMsgCount[identityobj.committee_id ] = 1
 					else:
-						logging.error("signature invalid for intra committee block")		
+						self.ConsensusMsgCount[identityobj.committee_id] += 1
+					logging.warning("intra committee block received by state - %s %s" , str(self.state) , identityobj.committee_id)	
+					# else:
+					# 	logging.error("signature invalid for intra committee block")		
 				else:
 					logging.error("pow invalid for intra committee block")
 			# ToDo: add verify of pows if reqd in below ifs
