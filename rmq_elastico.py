@@ -315,12 +315,14 @@ class Elastico:
 		"""
 		try:
 			lock.acquire()
+			logging.warning("lock acq")
 			global port
 			port += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
+			logging.warning("lock release")
 			lock.release()
 			return port 
 		
@@ -459,7 +461,9 @@ class Elastico:
 
 			self.is_directory = True
 			self.cur_directory.add(self.identity)
-			logging.warning(" %s %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity))
+			logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
+
+			logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
@@ -525,7 +529,7 @@ class Elastico:
 			if msg["type"] == "directoryMember":
 				identityobj = msg["data"]
 				logging.warning("directory member to be appended %s" , str(identityobj))
-				logging.warning("data for this:- %s" ,str(identityobj.port) )
+				logging.warning(" %s - %s - %s -  %s- directory member to get appended" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP) )
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
