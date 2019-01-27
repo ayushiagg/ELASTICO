@@ -792,7 +792,8 @@ class Elastico:
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
+		PK = self.key.publickey().exportKey().decode()	
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
 		print("finalblock-" , self.finalBlock)
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -813,9 +814,11 @@ class Elastico:
 			Each committee member sends the signed value(txn block after intra committee consensus)
 			along with signatures to final committee
 		"""
+		PK = self.key.publickey().exportKey().decode()
+
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
-			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity}
+			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity, "PK" : PK}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
