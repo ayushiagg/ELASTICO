@@ -1257,19 +1257,37 @@ def executeSteps(nodeIndex, epochTxn):
 			else:
 				pass
 		
-			# print("msg count : ", queue.method.message_count)
+			# # establish a connection with RabbitMQ server
+			# connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+
+			# channel = connection.channel()
+			# # print("msg count : ", queue.method.message_count)
+
+			# # while count > 0:
+			# 	# print("count" , count)
+			# data = node.serve(nodeIndex, channel , connection)
+			# if data != "":
+			# 	data = pickle.loads(data)
+			# 	logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
+			# 	node.receive(data)	
+			# # print("msg-" , data)
+			# # count -= 1
+			# 	# print("count" , count)
+			# connection.close()  
+			connection = pika.BlockingConnection()
+			channel = connection.channel()
 			queue = channel.queue_declare( queue='hello' + str(node.port))
 			count = queue.method.message_count
-			while count > 0:
-				# print("count" , count)
-				data = node.serve(nodeIndex, channel , connection)
-				if data != "":
-					data = pickle.loads(data)
-					logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
-					node.receive(data)	
-				# print("msg-" , data)
-				count -= 1
-				# print("count" , count)    
+			while count:
+				method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+				if method_frame:
+					print(method_frame, header_frame, body)
+					channel.basic_ack(method_frame.delivery_tag)
+					data = pickle.loads(body)
+					node.receive(data)
+				else:
+					logging.info('No message returned')
+				count -= 1	 
 	except Exception as e:
 		# log any error raised in the above try block
 		logging.error('Error in  execute steps ', exc_info=e)
