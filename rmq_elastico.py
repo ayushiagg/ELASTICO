@@ -577,15 +577,14 @@ class Elastico:
 						if flag:
 							# self.cur_directory.add(idenobj)
 							self.committee_list[identityobj["committee_id"]].append(idenobj)
-
-						if len(self.committee_list[identityobj["committee_id"]]) == c:
-							# check that if all committees are full
-							self.checkCommitteeFull()
+							if len(self.committee_list[identityobj["committee_id"]]) == c:
+								# check that if all committees are full
+								self.checkCommitteeFull()
 				else:
 					logging.error("PoW not valid in adding new node")
 
 			# union of committe members views
-			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
+			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False and msg["data"]["identity"]["port"] not in self.views:
 				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
 				self.views.add(msg["data"]["identity"]["port"])
 				logging.warning("receiving views")
