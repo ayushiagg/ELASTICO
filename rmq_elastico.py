@@ -528,7 +528,15 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
 						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
-						self.cur_directory.add(identityobj)
+						idenobj = Identity(identityobj["IP"] , identityobj["PK"] , identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
+						flag = True
+						for obj in self.cur_directory:
+							if idenobj.isEqual(obj):
+								flag = False
+								break
+						if flag:
+							self.cur_directory.add(idenobj)		
+						# self.cur_directory.add(identityobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
@@ -536,15 +544,23 @@ class Elastico:
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
 				if self.verify_PoW(identityobj):
-					if identityobj.committee_id not in self.committee_list:
+					idenobj = Identity(identityobj["IP"] , identityobj["PK"] ,identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
+					if identityobj["committee_id"] not in self.committee_list:
 						# Add the identity in committee
-						self.committee_list[identityobj.committee_id] = [identityobj]
+						self.committee_list[identityobj["committee_id"]] = [idenobj]
 
-					elif len(self.committee_list[identityobj.committee_id]) < c:
+					elif len(self.committee_list[identityobj["committee_id"]]) < c:
 						# Add the identity in committee
-						self.committee_list[identityobj.committee_id].append(identityobj)
+						flag = True
+						for obj in self.committee_list[identityobj["committee_id"]]:
+							if idenobj.isEqual(obj):
+								flag = False
+								break
+						if flag:
+							# self.cur_directory.add(idenobj)
+							self.committee_list[identityobj["committee_id"]].append(idenobj)
 
-						if len(self.committee_list[identityobj.committee_id]) == c:
+						if len(self.committee_list[identityobj["committee_id"]]) == c:
 							# check that if all committees are full
 							self.checkCommitteeFull()
 				else:
@@ -643,15 +659,15 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
-					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj.committee_id))	
-					if identityobj.committee_id not in self.CommitteeConsensusData:
-						self.CommitteeConsensusData[identityobj.committee_id] = dict()
+					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj["committee_id"]))	
+					if identityobj["committee_id"] not in self.CommitteeConsensusData:
+						self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
 
-					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
-						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
+					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
+						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
 
 					# add signatures for the txn block 
-					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+					self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
 					# to verify the number of txn blocks received from each committee
 					# if identityobj["committee_id"] not in self.ConsensusMsgCount:
 					# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
