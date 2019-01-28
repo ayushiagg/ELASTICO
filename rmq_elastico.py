@@ -826,7 +826,7 @@ class Elastico:
 			return S
 		PK = self.key.publickey().exportKey().decode()	
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
-		print("finalblock-" , self.finalBlock)
+		logging.warning("finalblock-" , self.finalBlock)
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
 		BroadcastTo_Network(data, "finalTxnBlock")
@@ -905,6 +905,7 @@ class Elastico:
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in self.committee_Members:
+				logging.warning("sent the commitment by %s" , str(self.port))
 				data = {"identity" : self.identity.__dict__ , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
@@ -1129,6 +1130,7 @@ class Elastico:
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
 				# broadcast final txn block to ntw
 				if len(self.commitments) >= c//2 + 1:
+					logging.warning("got sufficient commitments")
 					self.BroadcastFinalTxn()
 
 			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
