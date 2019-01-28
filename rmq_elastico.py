@@ -4,14 +4,14 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
 import socket
-import json, pika
+import json, pika, threading, pickle
 # for creating logs
-import logging, threading,pickle
+import logging
 # for multi-processing
-from multiprocessing import Process , Lock
+from multiprocessing import Process, Lock
 
-# network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
+
 lock = Lock()
 # n : number of nodes
 n = 30
@@ -20,7 +20,7 @@ s = 2
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 4
+D = 3
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -33,19 +33,20 @@ commitmentSet = set()
 ledger = []
 # network_nodes - list of all nodes 
 network_nodes = []
-
-# ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
 # final block in an epoch
 epochBlock = []
 # port - avaliable ports start from here
 port = 49152 
+
+# ELASTICO_STATES - states reperesenting the running state of the node
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19}
 
 def consistencyProtocol():
 	"""
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
+	# ToDo: fix this 
 	global network_nodes, commitmentSet
 
 	for node in network_nodes:
@@ -86,7 +87,7 @@ def BroadcastTo_Network(data, type_):
 	global network_nodes
 
 	msg = { "data" : data , "type" : type_ }
-	# ToDo: directly accessing of elastico objects should be removed
+
 	for node in network_nodes:
 		try:
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -102,22 +103,21 @@ def BroadcastTo_Network(data, type_):
 			
 			# close the connection
 			connection.close()
+
 		except Exception as e:
 			logging.error("error in broadcast to network" , exc_info=e)
 			if isinstance(e, ConnectionRefusedError):
 				logging.error("ConnectionRefusedError at port : %s", str(node.port))
 			raise e
-		finally:
-			logging.warning("Broadcast to Node : %s", str(node.port))
 
 
-def BroadcastTo_Committee(committee_id, data , type_):
-	"""
-		Broadcast to the particular committee id
-	"""
-	msg = {"type" : type_ , "data" : data}
+# def BroadcastTo_Committee(committee_id, data , type_):
+# 	"""
+# 		Broadcast to the particular committee id
+# 	"""
+# 	msg = {"type" : type_ , "data" : data}
 
-	pass
+# 	pass
 
 
 def MulticastCommittee(commList, identityobj, txns):
@@ -305,7 +305,6 @@ class Elastico:
 		"""
 				# minor comment: this must be cryptographically secure, but this is not.
 				# might want to replace this with reads from /dev/urandom.
-		print("---initial epoch randomness for a node---")
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -314,14 +313,12 @@ class Elastico:
 		"""
 		try:
 			lock.acquire()
-			# logging.warning("lock acq")
 			global port
 			port += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
-			# logging.warning("lock release")
 			lock.release()
 			return port 
 		
@@ -391,12 +388,10 @@ class Elastico:
 			digest.update(str(self.PoW["nonce"]).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
-				# ToDo: Put the nonce here in Pow
 				nonce = self.PoW["nonce"]
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
 				# print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
-				# input("PoW Computed")
 				return hash_val
 			self.PoW["nonce"] += 1
 
@@ -430,11 +425,13 @@ class Elastico:
 		"""
 		if self.state == ELASTICO_STATES["PoW Computed"]:
 			global identityNodeMap
-			print("---form identity---")
+			
 			# export public key
 			PK = self.key.publickey().exportKey().decode()
+			
 			# set the committee id acc to PoW solution
 			self.committee_id = self.get_committeeid(self.PoW["hash"])
+			
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness,self.port)
 			# mapped identity object to the elastico object
 			identityNodeMap[self.identity] = self
@@ -658,11 +655,11 @@ class Elastico:
 					# add signatures for the txn block 
 					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
 					# to verify the number of txn blocks received from each committee
-					if identityobj.committee_id not in self.ConsensusMsgCount:
-						self.ConsensusMsgCount[identityobj.committee_id ] = 1
-					else:
-						self.ConsensusMsgCount[identityobj.committee_id] += 1
-					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj.committee_id))	
+					# if identityobj["committee_id"] not in self.ConsensusMsgCount:
+					# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
+					# else:
+					# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
+					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj["committee_id"]))	
 					# else:
 					# 	logging.error("signature invalid for intra committee block")		
 				else:
