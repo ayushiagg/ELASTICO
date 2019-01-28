@@ -120,7 +120,7 @@ def BroadcastTo_Network(data, type_):
 # 	pass
 
 
-def MulticastCommittee(commList, identityobj, txns):
+def MulticastCommittee(commList, identityobj_dict, txns):
 	"""
 		each node getting views of its committee members from directory members
 	"""
@@ -129,8 +129,7 @@ def MulticastCommittee(commList, identityobj, txns):
 		for committee_id in commList:
 			commMembers = commList[committee_id]
 			for memberId in commMembers:
-				# union of committe members views
-				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj_dict}
 				msg = {"data" : data , "type" : "committee members views"}
 				memberId.send(msg)
 	except Exception as e:
@@ -403,7 +402,7 @@ class Elastico:
 
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
-			data = {"identity" : self.identity}
+			data = {"identity" : self.identity.__dict__}
 			msg = {"data" : data , "type" : "notify final member"}
 			finalMember.send(msg)
 
@@ -456,12 +455,11 @@ class Elastico:
 		if len(self.cur_directory) < c:
 
 			self.is_directory = True
-			self.cur_directory.add(self.identity)
 			# logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
 
 			# logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
 			# ToDo: do all broadcast asynchronously
-			BroadcastTo_Network(self.identity, "directoryMember")
+			BroadcastTo_Network(self.identity.__dict__, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
 			# track previous state before adding in committee
@@ -485,7 +483,7 @@ class Elastico:
 		# Add the new processor in particular committee list of directory committee nodes
 		print("---Send to directory---")
 		for nodeId in self.cur_directory:
-			msg = {"data" : self.identity, "type" : "newNode"}
+			msg = {"data" : self.identity.__dict__, "type" : "newNode"}
 			nodeId.send(msg)
 
 
@@ -509,7 +507,7 @@ class Elastico:
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
-				MulticastCommittee(commList, self.identity, self.txn)
+				MulticastCommittee(commList, self.identity.__dict__, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 				self.notify_finalCommittee()
 				# ToDo: transition of state to committee full 
@@ -794,7 +792,7 @@ class Elastico:
 		if boolVal == False:
 			return S
 		PK = self.key.publickey().exportKey().decode()	
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
 		print("finalblock-" , self.finalBlock)
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -821,7 +819,7 @@ class Elastico:
 		logging.warning("send to final %s - %s", str(self.committee_id) , str(self.port))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
-			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity, "PK" : PK}
+			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__, "PK" : PK}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
@@ -882,7 +880,7 @@ class Elastico:
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in self.committee_Members:
-				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
+				data = {"identity" : self.identity.__dict__ , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
 			self.state = ELASTICO_STATES["CommitmentSentToFinal"]
@@ -902,7 +900,7 @@ class Elastico:
 			broadcast Ri to all the network, final member will do this
 		"""
 		if self.isFinalMember():
-			data = {"Ri" : self.Ri, "identity" : self.identity}
+			data = {"Ri" : self.Ri, "identity" : self.identity.__dict__}
 			msg = {"data" : data , "type" : "RandomStringBroadcast"}
 			self.state = ELASTICO_STATES["BroadcastedR"]
 			BroadcastTo_Network(data, "RandomStringBroadcast")
