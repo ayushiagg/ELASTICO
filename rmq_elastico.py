@@ -4,14 +4,14 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
 import socket
-import json, pika
+import json, pika, threading, pickle
 # for creating logs
-import logging, threading,pickle
+import logging
 # for multi-processing
-from multiprocessing import Process , Lock
+from multiprocessing import Process, Lock
 
-# network_nodes - All objects of nodes in the network
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
+
 lock = Lock()
 # n : number of nodes
 n = 30
@@ -20,7 +20,7 @@ s = 2
 # c - size of committee
 c = 2
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-D = 4
+D = 3
 # r - number of bits in random string 
 r = 5
 # fin_num - final committee id
@@ -33,19 +33,20 @@ commitmentSet = set()
 ledger = []
 # network_nodes - list of all nodes 
 network_nodes = []
-
-# ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "Final Committee in PBFT" : 9, "FinalBlockSent" : 10, "FinalBlockReceived" : 11, "RunAsDirectory after-TxnReceived" : 12, "RunAsDirectory after-TxnMulticast" : 13, "Final PBFT Start" : 14, "Merged Consensus Data" : 15, "PBFT Finished-FinalCommittee" : 16 , "CommitmentSentToFinal" : 17, "BroadcastedR" : 18, "ReceivedR" :  19, "FinalBlockSentToClient" : 20}
 # final block in an epoch
 epochBlock = []
 # port - avaliable ports start from here
 port = 49152 
+
+# ELASTICO_STATES - states reperesenting the running state of the node
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19}
 
 def consistencyProtocol():
 	"""
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
+	# ToDo: fix this 
 	global network_nodes, commitmentSet
 
 	for node in network_nodes:
@@ -86,7 +87,7 @@ def BroadcastTo_Network(data, type_):
 	global network_nodes
 
 	msg = { "data" : data , "type" : type_ }
-	# ToDo: directly accessing of elastico objects should be removed
+
 	for node in network_nodes:
 		try:
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -102,25 +103,24 @@ def BroadcastTo_Network(data, type_):
 			
 			# close the connection
 			connection.close()
+
 		except Exception as e:
 			logging.error("error in broadcast to network" , exc_info=e)
 			if isinstance(e, ConnectionRefusedError):
 				logging.error("ConnectionRefusedError at port : %s", str(node.port))
 			raise e
-		finally:
-			logging.warning("Broadcast to Node : %s", str(node.port))
 
 
-def BroadcastTo_Committee(committee_id, data , type_):
-	"""
-		Broadcast to the particular committee id
-	"""
-	msg = {"type" : type_ , "data" : data}
+# def BroadcastTo_Committee(committee_id, data , type_):
+# 	"""
+# 		Broadcast to the particular committee id
+# 	"""
+# 	msg = {"type" : type_ , "data" : data}
 
-	pass
+# 	pass
 
 
-def MulticastCommittee(commList, identityobj, txns):
+def MulticastCommittee(commList, identityobj_dict, txns):
 	"""
 		each node getting views of its committee members from directory members
 	"""
@@ -129,8 +129,7 @@ def MulticastCommittee(commList, identityobj, txns):
 		for committee_id in commList:
 			commMembers = commList[committee_id]
 			for memberId in commMembers:
-				# union of committe members views
-				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj}
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj_dict}
 				msg = {"data" : data , "type" : "committee members views"}
 				memberId.send(msg)
 	except Exception as e:
@@ -305,7 +304,6 @@ class Elastico:
 		"""
 				# minor comment: this must be cryptographically secure, but this is not.
 				# might want to replace this with reads from /dev/urandom.
-		print("---initial epoch randomness for a node---")
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
@@ -314,14 +312,12 @@ class Elastico:
 		"""
 		try:
 			lock.acquire()
-			# logging.warning("lock acq")
 			global port
 			port += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
-			# logging.warning("lock release")
 			lock.release()
 			return port 
 		
@@ -391,12 +387,10 @@ class Elastico:
 			digest.update(str(self.PoW["nonce"]).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
-				# ToDo: Put the nonce here in Pow
 				nonce = self.PoW["nonce"]
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
 				# print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
-				# input("PoW Computed")
 				return hash_val
 			self.PoW["nonce"] += 1
 
@@ -408,7 +402,7 @@ class Elastico:
 
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
-			data = {"identity" : self.identity}
+			data = {"identity" : self.identity.__dict__}
 			msg = {"data" : data , "type" : "notify final member"}
 			finalMember.send(msg)
 
@@ -430,11 +424,13 @@ class Elastico:
 		"""
 		if self.state == ELASTICO_STATES["PoW Computed"]:
 			global identityNodeMap
-			print("---form identity---")
+			
 			# export public key
 			PK = self.key.publickey().exportKey().decode()
+			
 			# set the committee id acc to PoW solution
 			self.committee_id = self.get_committeeid(self.PoW["hash"])
+			
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness,self.port)
 			# mapped identity object to the elastico object
 			identityNodeMap[self.identity] = self
@@ -459,12 +455,11 @@ class Elastico:
 		if len(self.cur_directory) < c:
 
 			self.is_directory = True
-			self.cur_directory.add(self.identity)
 			# logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
 
 			# logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
 			# ToDo: do all broadcast asynchronously
-			BroadcastTo_Network(self.identity, "directoryMember")
+			BroadcastTo_Network(self.identity.__dict__, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
 			# track previous state before adding in committee
@@ -488,7 +483,7 @@ class Elastico:
 		# Add the new processor in particular committee list of directory committee nodes
 		print("---Send to directory---")
 		for nodeId in self.cur_directory:
-			msg = {"data" : self.identity, "type" : "newNode"}
+			msg = {"data" : self.identity.__dict__, "type" : "newNode"}
 			nodeId.send(msg)
 
 
@@ -512,7 +507,7 @@ class Elastico:
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
-				MulticastCommittee(commList, self.identity, self.txn)
+				MulticastCommittee(commList, self.identity.__dict__, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 				self.notify_finalCommittee()
 				# ToDo: transition of state to committee full 
@@ -533,7 +528,15 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
 						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
-						self.cur_directory.add(identityobj)
+						idenobj = Identity(identityobj["IP"] , identityobj["PK"] , identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
+						flag = True
+						for obj in self.cur_directory:
+							if idenobj.isEqual(obj):
+								flag = False
+								break
+						if flag:
+							self.cur_directory.add(idenobj)		
+						# self.cur_directory.add(identityobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
@@ -541,15 +544,23 @@ class Elastico:
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
 				if self.verify_PoW(identityobj):
-					if identityobj.committee_id not in self.committee_list:
+					idenobj = Identity(identityobj["IP"] , identityobj["PK"] ,identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
+					if identityobj["committee_id"] not in self.committee_list:
 						# Add the identity in committee
-						self.committee_list[identityobj.committee_id] = [identityobj]
+						self.committee_list[identityobj["committee_id"]] = [idenobj]
 
-					elif len(self.committee_list[identityobj.committee_id]) < c:
+					elif len(self.committee_list[identityobj["committee_id"]]) < c:
 						# Add the identity in committee
-						self.committee_list[identityobj.committee_id].append(identityobj)
+						flag = True
+						for obj in self.committee_list[identityobj["committee_id"]]:
+							if idenobj.isEqual(obj):
+								flag = False
+								break
+						if flag:
+							# self.cur_directory.add(idenobj)
+							self.committee_list[identityobj["committee_id"]].append(idenobj)
 
-						if len(self.committee_list[identityobj.committee_id]) == c:
+						if len(self.committee_list[identityobj["committee_id"]]) == c:
 							# check that if all committees are full
 							self.checkCommitteeFull()
 				else:
@@ -558,7 +569,7 @@ class Elastico:
 			# union of committe members views
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
 				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
-				self.views.add(msg["data"]["identity"])
+				self.views.add(msg["data"]["identity"]["port"])
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
@@ -648,21 +659,21 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
-					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj.committee_id))	
-					if identityobj.committee_id not in self.CommitteeConsensusData:
-						self.CommitteeConsensusData[identityobj.committee_id] = dict()
+					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj["committee_id"]))	
+					if identityobj["committee_id"] not in self.CommitteeConsensusData:
+						self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
 
-					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
-						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
+					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
+						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
 
 					# add signatures for the txn block 
-					self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+					self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
 					# to verify the number of txn blocks received from each committee
-					if identityobj.committee_id not in self.ConsensusMsgCount:
-						self.ConsensusMsgCount[identityobj.committee_id ] = 1
-					else:
-						self.ConsensusMsgCount[identityobj.committee_id] += 1
-					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj.committee_id))	
+					# if identityobj["committee_id"] not in self.ConsensusMsgCount:
+					# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
+					# else:
+					# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
+					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj["committee_id"]))	
 					# else:
 					# 	logging.error("signature invalid for intra committee block")		
 				else:
@@ -797,7 +808,7 @@ class Elastico:
 		if boolVal == False:
 			return S
 		PK = self.key.publickey().exportKey().decode()	
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
 		print("finalblock-" , self.finalBlock)
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -824,7 +835,7 @@ class Elastico:
 		logging.warning("send to final %s - %s", str(self.committee_id) , str(self.port))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
-			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity, "PK" : PK}
+			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__, "PK" : PK}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
@@ -885,7 +896,7 @@ class Elastico:
 		if self.isFinalMember() == True:
 			Hash_Ri = self.getCommitment()
 			for nodeId in self.committee_Members:
-				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
+				data = {"identity" : self.identity.__dict__ , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
 			self.state = ELASTICO_STATES["CommitmentSentToFinal"]
@@ -905,7 +916,7 @@ class Elastico:
 			broadcast Ri to all the network, final member will do this
 		"""
 		if self.isFinalMember():
-			data = {"Ri" : self.Ri, "identity" : self.identity}
+			data = {"Ri" : self.Ri, "identity" : self.identity.__dict__}
 			msg = {"data" : data , "type" : "RandomStringBroadcast"}
 			self.state = ELASTICO_STATES["BroadcastedR"]
 			BroadcastTo_Network(data, "RandomStringBroadcast")
@@ -930,7 +941,7 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
-		PoW = identityobj.PoW
+		PoW = identityobj["PoW"]
 
 		# length of hash in hex
 		if len(PoW["hash"]) != 64:
@@ -948,7 +959,7 @@ class Elastico:
 				return False
 
 		# reconstruct epoch randomness
-		epoch_randomness = identityobj.epoch_randomness
+		epoch_randomness = identityobj["epoch_randomness"]
 		if len(PoW["set_of_Rs"]) > 0:
 			xor_val = 0
 			for R in PoW["set_of_Rs"]:
@@ -956,8 +967,8 @@ class Elastico:
 			epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 
 		# recompute PoW 
-		PK = identityobj.PK
-		IP = identityobj.IP
+		PK = identityobj["PK"]
+		IP = identityobj["IP"]
 		nonce = PoW["nonce"]
 
 		digest = SHA256.new()
