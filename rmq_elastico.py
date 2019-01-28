@@ -510,11 +510,26 @@ class Elastico:
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
+				self.notify_finalCommittee()
 				MulticastCommittee(commList, self.identity.__dict__, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
-				self.notify_finalCommittee()
 				# ToDo: transition of state to committee full 
 
+
+	def unionViews(self, nodeData, incomingData):
+		"""
+		"""
+		for data in incomingData:
+			flag = False
+			for nodeId in nodeData:
+				if nodeId.isEqual(data):
+					flag = True
+					break
+			if flag == False:
+				nodeData.add(data)
+		return nodeData
+
+						
 
 	def receive(self, msg):
 		"""
@@ -579,9 +594,9 @@ class Elastico:
 				# update the txn block
 				self.txn_block |= set(msg["data"]["txns"])
 				# union of committee members wrt directory member
-				self.committee_Members |= set(commMembers)
+				self.committee_Members = self.unionViews(self.committee_Members, commMembers)
 				# union of final committee members wrt directory member
-				self.finalCommitteeMembers |= set(finalMembers)
+				self.finalCommitteeMembers = self.unionViews(self.finalCommitteeMembers , finalMembers)
 				# received the members
 				# ToDo : Check and ensure that states are not overwritten
 				if self.state == ELASTICO_STATES["Formed Committee"] and len(self.views) >= c //2 + 1:
