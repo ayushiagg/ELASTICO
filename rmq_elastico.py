@@ -1192,14 +1192,12 @@ class Elastico:
 	
 	def serve(self, nodeId, channel, connection):
 
-		global nodes
-		node = network_nodes[nodeId]
 		try:
 			print(nodeId, "serving")
-			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(node.port))        
+			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(self.port))        
 			if method_frame.NAME == 'Basic.GetEmpty':
 				# connection.close()
-				return ''
+				return ""
 			else:            
 				channel.basic_ack(delivery_tag=method_frame.delivery_tag)
 				# connection.close() 
@@ -1249,12 +1247,10 @@ def executeSteps(nodeIndex, epochTxn):
 			while count > 0:
 				# print("count" , count)
 				data = node.serve(nodeIndex, channel , connection)
-				if data != '':
+				if data != "":
 					data = pickle.loads(data)
 					logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
-					node.receive(data)
-				else:
-					break	
+					node.receive(data)	
 				# print("msg-" , data)
 				count -= 1
 				# print("count" , count)    
