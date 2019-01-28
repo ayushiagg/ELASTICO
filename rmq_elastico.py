@@ -941,7 +941,7 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
-		PoW = identityobj.PoW
+		PoW = identityobj["PoW"]
 
 		# length of hash in hex
 		if len(PoW["hash"]) != 64:
@@ -959,7 +959,7 @@ class Elastico:
 				return False
 
 		# reconstruct epoch randomness
-		epoch_randomness = identityobj.epoch_randomness
+		epoch_randomness = identityobj["epoch_randomness"]
 		if len(PoW["set_of_Rs"]) > 0:
 			xor_val = 0
 			for R in PoW["set_of_Rs"]:
@@ -967,8 +967,8 @@ class Elastico:
 			epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 
 		# recompute PoW 
-		PK = identityobj.PK
-		IP = identityobj.IP
+		PK = identityobj["PK"]
+		IP = identityobj["IP"]
 		nonce = PoW["nonce"]
 
 		digest = SHA256.new()
