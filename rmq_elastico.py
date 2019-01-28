@@ -673,10 +673,10 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
+				logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj["committee_id"]))	
 				if self.verify_PoW(identityobj):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
-					logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj["committee_id"]))	
 					if identityobj["committee_id"] not in self.CommitteeConsensusData:
 						self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
 
@@ -690,7 +690,7 @@ class Elastico:
 					# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
 					# else:
 					# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
-					logging.warning("intra committee block received by state - %s %s" , str(self.state) ,str( identityobj["committee_id"]))	
+					logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))	
 					# else:
 					# 	logging.error("signature invalid for intra committee block")		
 				else:
@@ -856,14 +856,6 @@ class Elastico:
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
-
-
-
-	def union(data):
-		"""
-			Takes ordered set union of agreed values of committees
-		"""
-		pass
 
 
 	def validate_signs(signatures):
@@ -1243,10 +1235,6 @@ def executeSteps(nodeIndex, epochTxn):
 	try:
 		node = network_nodes[nodeIndex]
 
-		# establish a connection with RabbitMQ server
-		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-
-		channel = connection.channel()
 
 		while True:
 			
