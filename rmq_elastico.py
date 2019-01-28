@@ -175,7 +175,10 @@ class Identity:
 			# create a hello queue to which the message will be delivered
 			channel.queue_declare( queue= 'hello' + str(port) )
 			serialized_data = pickle.dumps(msg)
-			channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data)
+			if channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data, properties=pika.BasicProperties(delivery_mode=1)):
+				pass
+			else:
+				logging.error("messgae not published %s" , str(msg))	
 
 			# close the connection
 			connection.close()
