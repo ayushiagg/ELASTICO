@@ -569,7 +569,7 @@ class Elastico:
 			# union of committe members views
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False:
 				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
-				self.views.add(msg["data"]["identity"])
+				self.views.add(msg["data"]["identity"]["port"])
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
