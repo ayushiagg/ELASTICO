@@ -9,6 +9,7 @@ import json, pika, threading, pickle
 import logging
 # for multi-processing
 from multiprocessing import Process, Lock, Manager
+import time
 
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
 
@@ -1239,9 +1240,9 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						node.receive(data)
 					else:
 						logging.error('No message returned')
-					count -= 1
-
-					
+					count -= 1		
+			# ToDo: Ensure that all nodes are reset and sharedobj is not affect
+			time.sleep(60)
 
 	except Exception as e:
 		# log any error raised in the above try block
