@@ -293,6 +293,7 @@ class Elastico:
 			self.ConsensusMsgCount = dict()
 			# only when this is the member of the directory committee
 			self.txn = dict()
+			self.response = []
 			# self.socketConn = self.get_socket()
 			self.flag = True
 			# self.serve = False
@@ -377,7 +378,7 @@ class Elastico:
 			# otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
-				logging.warning("set of Rs greater than zero")
+				# logging.warning("set of Rs greater than zero")
 				self.epoch_randomness, randomset_R = self.xor_R()
 							# minor comment: create a sha256 object by calling hashlib.sha256()
 							# then repeatedly call sha256.update(...) with the things that need to be hashed together.
@@ -735,7 +736,8 @@ class Elastico:
 				if self.isFinalMember():
 					self.BroadcastR()
 
-			elif msg["type"] == "reset-all" and self.verify_PoW(msg["data"]):
+			# ToDo: Add verification of pow here.
+			elif msg["type"] == "reset-all":
 				# reset the elastico node
 				self.reset()
 
@@ -1200,8 +1202,8 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	global network_nodes
 
 	try:
-		node = network_nodes[nodeIndex]
 		for epoch in epochTxns:
+			node = network_nodes[nodeIndex]
 			logging.warning("new epoch started")
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
@@ -1236,13 +1238,13 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				while count:
 					method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
 					if method_frame:
-						print(method_frame, header_frame, body)
 						channel.basic_ack(method_frame.delivery_tag)
 						data = pickle.loads(body)
 						node.receive(data)
 					else:
-						logging.error('No message returned')
-					count -= 1		
+						logging.error('No message returned %s' , str(count))
+						logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
+					count -= 1
 			# ToDo: Ensure that all nodes are reset and sharedobj is not affect
 			time.sleep(60)
 
@@ -1268,7 +1270,7 @@ def Run(epochTxns):
 				network_nodes.append(Elastico())
 
 		# making some(5 here) nodes as malicious
-		malicious_count = 0
+		malicious_count =5
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
@@ -1298,16 +1300,15 @@ def Run(epochTxns):
 		logging.warning("processes finished")
 
 		# All processes are over. Computing response in each node to update ledger
-		for nodeIndex in range(n):
-			# logging.warning("comingggg")
-			response = network_nodes[nodeIndex].response
-			if len(response) > 0:
-				logging.warning("taking response by member")
-				for txnBlock in response:
-					# ToDo: remove eval
-					epochBlock |= eval(txnBlock)
-				# reset the response 
-				network_nodes[nodeIndex].response = []
+		# for nodeIndex in range(n):
+		# 	response = network_nodes[nodeIndex].response
+		# 	if len(response) > 0:
+		# 		logging.warning("taking response by member")
+		# 		for txnBlock in response:
+		# 			# ToDo: remove eval
+		# 			epochBlock |= eval(txnBlock)
+		# 		# reset the response 
+		# 		network_nodes[nodeIndex].response = []
 
 		# Append the block in ledger
 		ledger.append(epochBlock)
