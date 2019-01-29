@@ -8,7 +8,7 @@ import json, pika, threading, pickle
 # for creating logs
 import logging
 # for multi-processing
-from multiprocessing import Process, Lock
+from multiprocessing import Process, Lock, Manager
 
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
 
@@ -1192,7 +1192,7 @@ class Elastico:
 			logging.error('Error in consumer ', exc_info=e)
 			raise e		
 
-def executeSteps(nodeIndex, epochTxn):
+def executeSteps(nodeIndex, epochTxns , sharedObj):
 	"""
 		A process will execute the elastico node
 	"""
@@ -1201,6 +1201,8 @@ def executeSteps(nodeIndex, epochTxn):
 	try:
 		node = network_nodes[nodeIndex]
 		for epoch in epochTxns:
+			if nodeIndex in sharedObj:
+				sharedObj.pop(nodeIndex)
 			epochTxn = epochTxns[epoch]
 			while True:
 				# execute one step of elastico node
@@ -1218,7 +1220,9 @@ def executeSteps(nodeIndex, epochTxn):
 						print("illegal call")
 						# calling reset explicitly for node
 						node.reset()
-					break
+					sharedObj[nodeIndex] = "reset"
+					if len(sharedObj) == n:
+						break
 				else:
 					pass
 			
@@ -1247,7 +1251,7 @@ def executeSteps(nodeIndex, epochTxn):
 
 
 
-def Run(epochTxn):
+def Run(epochTxns):
 	"""
 		runs for one epoch
 	"""
@@ -1269,12 +1273,13 @@ def Run(epochTxn):
 
 		epochBlock = set()
 		commitmentSet = set()
-
+		manager = Manager()
+		sharedObj = manager.dict()
 		# list of processes
 		processes = []
 		for nodeIndex in range(n):
 			# create a process
-			process = Process(target= executeSteps, args=(nodeIndex, epochTxn))
+			process = Process(target= executeSteps, args=(nodeIndex, epochTxns, sharedObj))
 			# add to the list of processes
 			processes.append(process)
 
@@ -1315,7 +1320,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 1
+		numOfEpochs = 2
 		for i in range(numOfEpochs):
 			# txns is the list of the transactions in one epoch to which the committees will agree on
 			txns = []
@@ -1325,10 +1330,12 @@ if __name__ == "__main__":
 				random_num = random_gen()
 				txns.append(random_num)
 			epochTxns[i] = txns
+
 		# run all the epochs 
-		for epoch in epochTxns:
-			logging.info("epoch number :- %s started" , str(epoch + 1) )
-			Run(epochTxns[epoch])
+		# for epoch in epochTxns:
+		# 	logging.info("epoch number :- %s started" , str(epoch + 1) )
+		# 	Run(epochTxns[epoch])
+		Run(epochTxns)
 
 	except Exception as e:
 		# log the exception raised
