@@ -112,15 +112,6 @@ def BroadcastTo_Network(data, type_):
 			raise e
 
 
-# def BroadcastTo_Committee(committee_id, data , type_):
-# 	"""
-# 		Broadcast to the particular committee id
-# 	"""
-# 	msg = {"type" : type_ , "data" : data}
-
-# 	pass
-
-
 def MulticastCommittee(commList, identityobj_dict, txns):
 	"""
 		each node getting views of its committee members from directory members
@@ -378,6 +369,7 @@ class Elastico:
 			# otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
+				logging.warning("set of Rs greater than zero")
 				self.epoch_randomness, randomset_R = self.xor_R()
 							# minor comment: create a sha256 object by calling hashlib.sha256()
 							# then repeatedly call sha256.update(...) with the things that need to be hashed together.
@@ -1297,8 +1289,10 @@ def Run(epochTxns):
 
 		# All processes are over. Computing response in each node to update ledger
 		for nodeIndex in range(n):
+			# logging.warning("comingggg")
 			response = network_nodes[nodeIndex].response
 			if len(response) > 0:
+				logging.warning("taking response by member")
 				for txnBlock in response:
 					# ToDo: remove eval
 					epochBlock |= eval(txnBlock)
