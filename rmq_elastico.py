@@ -257,41 +257,49 @@ class Elastico:
 		"""
 			reset some of the elastico class members
 		"""
-		self.IP = self.get_IP()
-		self.key = self.get_key()
-		self.port = self.get_port()
-		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		self.cur_directory = set()
-		self.identity = ""
-		self.committee_id = ""
-		# only when this node is the member of directory committee
-		self.committee_list = dict()
-		# only when this node is not the member of directory committee
-		self.committee_Members = set()
-		self.is_directory = False
-		self.is_final = False
-		self.Ri = ""
-		# only when this node is the member of final committee
-		self.commitments = set()
-		self.txn_block = set()
-		self.set_of_Rs = self.newset_of_Rs
-		self.newset_of_Rs = set()
-		self.CommitteeConsensusData = dict()
-		self.finalBlockbyFinalCommittee = dict()
-		self.state = ELASTICO_STATES["NONE"]
-		self.mergedBlock = []
-		self.finalBlock = {"sent" : False, "finalBlock" : [] }
-		self.RcommitmentSet = self.newRcommitmentSet
-		self.newRcommitmentSet = ""
-		self.finalCommitteeMembers = set()
-		# only when this node is the member of final committee
-		self.ConsensusMsgCount = dict()
-		# only when this is the member of the directory committee
-		self.txn = dict()
-		# self.socketConn = self.get_socket()
-		self.flag = True
-		# self.serve = False
-		self.views = set()
+		try:
+			self.IP = self.get_IP()
+			self.key = self.get_key()
+			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+			channel = connection.channel()
+			channel.queue_delete(queue='hello' + str(self.port))
+			connection.close()
+			self.port = self.get_port()
+			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
+			self.cur_directory = set()
+			self.identity = ""
+			self.committee_id = ""
+			# only when this node is the member of directory committee
+			self.committee_list = dict()
+			# only when this node is not the member of directory committee
+			self.committee_Members = set()
+			self.is_directory = False
+			self.is_final = False
+			self.Ri = ""
+			# only when this node is the member of final committee
+			self.commitments = set()
+			self.txn_block = set()
+			self.set_of_Rs = self.newset_of_Rs
+			self.newset_of_Rs = set()
+			self.CommitteeConsensusData = dict()
+			self.finalBlockbyFinalCommittee = dict()
+			self.state = ELASTICO_STATES["NONE"]
+			self.mergedBlock = []
+			self.finalBlock = {"sent" : False, "finalBlock" : [] }
+			self.RcommitmentSet = self.newRcommitmentSet
+			self.newRcommitmentSet = ""
+			self.finalCommitteeMembers = set()
+			# only when this node is the member of final committee
+			self.ConsensusMsgCount = dict()
+			# only when this is the member of the directory committee
+			self.txn = dict()
+			# self.socketConn = self.get_socket()
+			self.flag = True
+			# self.serve = False
+			self.views = set()
+		except Exception as e:
+			logging.error("error in reset", exc_info=e)
+			raise e
 
 	def initER(self):
 		"""
