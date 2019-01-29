@@ -1202,28 +1202,30 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	try:
 		node = network_nodes[nodeIndex]
 		for epoch in epochTxns:
+			logging.warning("new epoch started")
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
 			epochTxn = epochTxns[epoch]
 			while True:
 				# execute one step of elastico node
-				response = node.execute(epochTxn)
-				if response == "reset":
-					# now reset the node
-					logging.warning("call for reset for identity %s" , str(node.identity))
+				if nodeIndex not in sharedObj:
+					response = node.execute(epochTxn)
+					if response == "reset":
+						# now reset the node
+						logging.warning("call for reset for  %s" , str(node.port))
 
-					if isinstance(node.identity, Identity):
-						# identity obj exists for this node
-						msg = {"type": "reset-all", "data" : node.identity}
-						node.identity.send(msg)
-					else:
-						# this node has not computed its identity
-						print("illegal call")
-						# calling reset explicitly for node
-						node.reset()
-					sharedObj[nodeIndex] = "reset"
-					if len(sharedObj) == n:
-						break
+						if isinstance(node.identity, Identity):
+							# identity obj exists for this node
+							msg = {"type": "reset-all", "data" : node.identity.__dict__}
+							node.identity.send(msg)
+						else:
+							# this node has not computed its identity
+							print("illegal call")
+							# calling reset explicitly for node
+							node.reset()
+						sharedObj[nodeIndex] = "reset"
+				if len(sharedObj) == n:
+					break
 				else:
 					pass
 			
