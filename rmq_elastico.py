@@ -629,6 +629,7 @@ class Elastico:
 					if HashRi in self.newRcommitmentSet:
 						self.newset_of_Rs.add(Ri)
 						if len(self.newset_of_Rs) >= c//2 + 1:
+							logging.warning("received r by %s--%s" , str(self.port) , str(self.committee_id))
 							self.state = ELASTICO_STATES["ReceivedR"]
 
 			elif msg["type"] == "finalTxnBlock":
@@ -650,9 +651,11 @@ class Elastico:
 					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 
 					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
+						logging.warning("condition fulfilled")
 						# for final members, their state is updated only when they have also sent the finalblock
 						if self.isFinalMember():
 							if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
+								logging.warning("changing state of final member to FinalBlockReceived")
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
 							pass
 						else:
@@ -661,7 +664,8 @@ class Elastico:
 					if self.newRcommitmentSet == "":
 						self.newRcommitmentSet = set()
 					# union of commitments 
-					self.newRcommitmentSet |= set(received_commitmentSet)
+					self.newRcommitmentSet |= received_commitmentSet
+					logging.warning("new r commit set %s", str(self.newRcommitmentSet))
 
 					# else:
 					# 	logging.error("Signature invalid in final block received")
@@ -673,7 +677,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				logging.warning("%s received the intra committee block from commitee id - %s", str(self.port) , str(identityobj["committee_id"]))	
+				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))	
 				if self.verify_PoW(identityobj):
 					# verify the signatures
 					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
@@ -757,7 +761,7 @@ class Elastico:
 							self.mergedBlock.extend(set_of_txns)
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
-			print(self.mergedBlock)
+			logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
 
 
 	def runPBFT(self , txnBlock, instance):
@@ -826,13 +830,14 @@ class Elastico:
 			return S
 		PK = self.key.publickey().exportKey().decode()	
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
-		logging.warning("finalblock-" , self.finalBlock)
+		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
-		BroadcastTo_Network(data, "finalTxnBlock")
 		# A final node which is already in received state should not change its state
 		if self.state != ELASTICO_STATES["FinalBlockReceived"]:
+			logging.warning("change state to FinalBlockSent by %s" , str(self.port))
 			self.state = ELASTICO_STATES["FinalBlockSent"]
+		BroadcastTo_Network(data, "finalTxnBlock")
 
 	def getCommittee_members(committee_id):
 		"""
@@ -849,7 +854,7 @@ class Elastico:
 		PK = self.key.publickey().exportKey().decode()
 
 		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
-		logging.warning("send to final %s - %s", str(self.committee_id) , str(self.port))
+		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
 			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__, "PK" : PK}
@@ -1070,7 +1075,7 @@ class Elastico:
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 
 			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				logging.warning("changing to committee full")
+				logging.warning("changing to committee full %s" , str(self.port))
 				self.state = ELASTICO_STATES["Committee full"]
 			
 			# when a node is part of some committee
@@ -1114,7 +1119,6 @@ class Elastico:
 								break
 				if flag == False:
 					# when sufficient number of blocks from each committee are received
-					input
 					self.verifyAndMergeConsensusData()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
@@ -1133,24 +1137,25 @@ class Elastico:
 					logging.warning("got sufficient commitments")
 					self.BroadcastFinalTxn()
 
-			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and len(self.committee_Members) == c and self.is_directory == False and self.isFinalMember():
+			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and self.isFinalMember():
 				# collect final blocks sent by final committee and send to client.
 				# Todo : check this send to client
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						self.response.append(txnBlock)
+						logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 					else:
-						logging.debug("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
+						logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
 
 				if len(self.response) > 0:
-					logging.info("final block sent the block to client")
+					logging.warning("final block sent the block to client by %s", str(self.port))
 					self.state = ELASTICO_STATES["FinalBlockSentToClient"]
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 				# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 				# ToDo: check this constraint 
 				if len(self.newRcommitmentSet) >= c//2 + 1:
-					logging.info("R Broadcasted by Final member")
+					logging.warning("R Broadcasted by Final member")
 					self.BroadcastR()
 				else:
 					logging.warning("insufficient RCommitments")
@@ -1161,6 +1166,7 @@ class Elastico:
 
 			elif self.state == ELASTICO_STATES["ReceivedR"]:
 				# Now, the node can be reset
+				logging.warning("call for reset BY %s - %s" , str(self.port), str(self.committee_id))
 				return "reset"
 
 		except Exception as e:
@@ -1170,52 +1176,10 @@ class Elastico:
 				logging.info("ConnectionRefusedError at port : %s", str(self.port))
 			raise e
 
-
-	# def recvMsg(conn):
-	#   data = ""
-	#   msg = conn.recv(1024)
-	#   # for receiving of any size
-	#   while msg:
-	#       data += msg.decode()
-	#       msg = conn.recv(1024)
-	#   data = json.loads(data)
-	#   return data
-
-	# def callback(self, ch, method, properties, body):
-	# 	# print(" [x] Received %r" % body)
-	# 	try:
-	# 		logging.info("queue message consumed")
-	# 		data = pickle.loads(body)
-	# 		self.receive(data["msg"])
-	# 	except Exception as e:
-	# 		logging.error("callback error", exc_info=e)
-	# 		raise e
-
-	# def executeServer(self, nodeIndex):
-	# 	"""
-	# 	"""
-	# 	try:
-	# 		connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-	# 		channel = connection.channel()
-
-
-	# 		channel.queue_declare(queue='hello' + str(self.port))
-
-
-	# 		channel.basic_consume(self.callback, queue='hello' + str(self.port), no_ack=True)
-
-	# 		print(' [*] Waiting for messages. To exit press CTRL+C')
-	# 		channel.start_consuming()
-
-	# 	except Exception as e:
-	# 		logging.error('Error in  execute server ', exc_info=e)
-	# 		raise e
-
 	
 	def serve(self, nodeId, channel, connection):
 
 		try:
-			print(nodeId, "serving")
 			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(self.port))        
 			if method_frame.NAME == 'Basic.GetEmpty':
 				# connection.close()
@@ -1236,60 +1200,45 @@ def executeSteps(nodeIndex, epochTxn):
 
 	try:
 		node = network_nodes[nodeIndex]
+		for epoch in epochTxns:
+			epochTxn = epochTxns[epoch]
+			while True:
+				# execute one step of elastico node
+				response = node.execute(epochTxn)
+				if response == "reset":
+					# now reset the node
+					logging.warning("call for reset for identity %s" , str(node.identity))
 
-
-		while True:
+					if isinstance(node.identity, Identity):
+						# identity obj exists for this node
+						msg = {"type": "reset-all", "data" : node.identity}
+						node.identity.send(msg)
+					else:
+						# this node has not computed its identity
+						print("illegal call")
+						# calling reset explicitly for node
+						node.reset()
+					break
+				else:
+					pass
 			
-			# execute one step of elastico node
-			response = node.execute(epochTxn)
-			if response == "reset":
-				# now reset the node
-				logging.warning("call for reset for identity %s" , str(node.identity))
+				connection = pika.BlockingConnection()
+				channel = connection.channel()
+				queue = channel.queue_declare( queue='hello' + str(node.port))
+				count = queue.method.message_count
+				while count:
+					method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+					if method_frame:
+						print(method_frame, header_frame, body)
+						channel.basic_ack(method_frame.delivery_tag)
+						data = pickle.loads(body)
+						node.receive(data)
+					else:
+						logging.error('No message returned')
+					count -= 1
 
-				if isinstance(node.identity, Identity):
-					# identity obj exists for this node
-					msg = {"type": "reset-all", "data" : node.identity}
-					node.identity.send(msg)
-				else:
-					# this node has not computed its identity
-					print("illegal call")
-					# calling reset explicitly for node
-					node.reset()
-				break
-			else:
-				pass
-		
-			# # establish a connection with RabbitMQ server
-			# connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+					
 
-			# channel = connection.channel()
-			# # print("msg count : ", queue.method.message_count)
-
-			# # while count > 0:
-			# 	# print("count" , count)
-			# data = node.serve(nodeIndex, channel , connection)
-			# if data != "":
-			# 	data = pickle.loads(data)
-			# 	logging.warning("data for the node - %s is -- %s" , str(node.port), str(data))
-			# 	node.receive(data)	
-			# # print("msg-" , data)
-			# # count -= 1
-			# 	# print("count" , count)
-			# connection.close()  
-			connection = pika.BlockingConnection()
-			channel = connection.channel()
-			queue = channel.queue_declare( queue='hello' + str(node.port))
-			count = queue.method.message_count
-			while count:
-				method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
-				if method_frame:
-					print(method_frame, header_frame, body)
-					channel.basic_ack(method_frame.delivery_tag)
-					data = pickle.loads(body)
-					node.receive(data)
-				else:
-					logging.info('No message returned')
-				count -= 1	 
 	except Exception as e:
 		# log any error raised in the above try block
 		logging.error('Error in  execute steps ', exc_info=e)
