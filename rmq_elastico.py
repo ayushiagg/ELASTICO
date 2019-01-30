@@ -1321,12 +1321,13 @@ def Run(epochTxns):
 
 if __name__ == "__main__":
 	try:
+		
 		# logging module configured, will log in elastico.log file for each execution
 		logging.basicConfig(filename='elastico.log',filemode='w',level=logging.WARNING)
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 2
+		numOfEpochs = 1
 		for i in range(numOfEpochs):
 			# txns is the list of the transactions in one epoch to which the committees will agree on
 			txns = []
