@@ -681,6 +681,7 @@ class Elastico:
 				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))	
 				if self.verify_PoW(identityobj):
 					# verify the signatures
+					logging.warning("baddddd %s by %s", str(data["sign"]) , str(data["identity"]["port"]))
 					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj["PK"]):
 						if identityobj["committee_id"] not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
@@ -863,7 +864,7 @@ class Elastico:
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 			if self.verify_sign( data["sign"], data["txnBlock"] , data["identity"]["PK"]):
-				logging.warning("good signatures going %s", str(type(data["sign"])))
+				logging.warning("good signatures going %s by %s", str(data["sign"]) , str(data["identity"]["port"]))
 				pass
 			else:
 				logging.error("bad signatures coming")
