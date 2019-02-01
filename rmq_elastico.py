@@ -1015,7 +1015,7 @@ class Elastico:
 			digest = SHA256.new()
 			ranHash = digest.hexdigest()
 			self.PoW["hash"] = D*'0' + ranHash[D:]
-
+		# todo : fix this
 		elif index == 1:
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
@@ -1203,7 +1203,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	try:
 		for epoch in epochTxns:
 			node = network_nodes[nodeIndex]
-			logging.warning("new epoch started")
+			
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
 			epochTxn = epochTxns[epoch]
@@ -1229,9 +1229,12 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 					break
 				else:
 					pass
-			
-				connection = pika.BlockingConnection()
+				
+				# connect to rabbitmq server
+				connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+				# create a channel
 				channel = connection.channel()
+				# specify the queue 
 				queue = channel.queue_declare( queue='hello' + str(node.port))
 				count = queue.method.message_count
 				while count:
@@ -1277,8 +1280,10 @@ def Run(epochTxns):
 
 		epochBlock = set()
 		commitmentSet = set()
+		# Manager for managing the shared variable among the processes
 		manager = Manager()
 		sharedObj = manager.dict()
+		
 		# list of processes
 		processes = []
 		for nodeIndex in range(n):
