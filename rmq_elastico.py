@@ -640,36 +640,36 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSet = data["commitmentSet"]
-					PK = data["PK"]
+					PK = identityobj["PK"]
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
-					# if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
-					if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
-						self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
+						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
+							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
 
-					self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
 
-					if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
-						logging.warning("condition fulfilled")
-						# for final members, their state is updated only when they have also sent the finalblock
-						if self.isFinalMember():
-							if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
-								logging.warning("changing state of final member to FinalBlockReceived")
+						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
+							logging.warning("condition fulfilled")
+							# for final members, their state is updated only when they have also sent the finalblock
+							if self.isFinalMember():
+								if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
+									logging.warning("changing state of final member to FinalBlockReceived")
+									self.state = ELASTICO_STATES["FinalBlockReceived"]
+								pass
+							else:
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
-							pass
-						else:
-							self.state = ELASTICO_STATES["FinalBlockReceived"]
 
-					if self.newRcommitmentSet == "":
-						self.newRcommitmentSet = set()
-					# union of commitments 
-					self.newRcommitmentSet |= received_commitmentSet
-					logging.warning("new r commit set %s", str(self.newRcommitmentSet))
+						if self.newRcommitmentSet == "":
+							self.newRcommitmentSet = set()
+						# union of commitments 
+						self.newRcommitmentSet |= received_commitmentSet
+						logging.warning("new r commit set %s", str(self.newRcommitmentSet))
 
-					# else:
-					# 	logging.error("Signature invalid in final block received")
+					else:
+						logging.error("Signature invalid in final block received")
 				else:
 					logging.error("PoW not valid when final member send the block")
 
@@ -681,23 +681,23 @@ class Elastico:
 				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))	
 				if self.verify_PoW(identityobj):
 					# verify the signatures
-					# if self.verify_sign( data["sign"], data["txnBlock"] , data["PK"]):
-					if identityobj["committee_id"] not in self.CommitteeConsensusData:
-						self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
+					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj["PK"]):
+						if identityobj["committee_id"] not in self.CommitteeConsensusData:
+							self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
 
-					if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
-						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
+						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
+							self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
 
-					# add signatures for the txn block 
-					self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
-					# to verify the number of txn blocks received from each committee
-					# if identityobj["committee_id"] not in self.ConsensusMsgCount:
-					# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
-					# else:
-					# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
-					logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))	
-					# else:
-					# 	logging.error("signature invalid for intra committee block")		
+						# add signatures for the txn block 
+						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
+						# to verify the number of txn blocks received from each committee
+						# if identityobj["committee_id"] not in self.ConsensusMsgCount:
+						# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
+						# else:
+						# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
+						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))	
+					else:
+						logging.error("signature invalid for intra committee block")		
 				else:
 					logging.error("pow invalid for intra committee block")
 			# ToDo: add verify of pows if reqd in below ifs
@@ -831,7 +831,7 @@ class Elastico:
 		if boolVal == False:
 			return S
 		PK = self.key.publickey().exportKey().decode()	
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"]) , "PK" : PK}
+		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -859,9 +859,14 @@ class Elastico:
 		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set
-			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__, "PK" : PK}
+			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
+			if self.verify_sign( data["sign"], data["txnBlock"] , data["identity"]["PK"]):
+				logging.warning("good signatures going %s", str(type(data["sign"])))
+				pass
+			else:
+				logging.error("bad signatures coming")
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
 
 
@@ -1279,9 +1284,9 @@ def Run(epochTxns):
 			network_nodes[badNodeIndex].flag = False
 
 		epochBlock = set()
-		commitmentSet = set()
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
+		commitmentSet = set()
 		sharedObj = manager.dict()
 		
 		# list of processes
