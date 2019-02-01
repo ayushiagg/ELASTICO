@@ -293,7 +293,6 @@ class Elastico:
 			self.ConsensusMsgCount = dict()
 			# only when this is the member of the directory committee
 			self.txn = dict()
-			self.response = []
 			# self.socketConn = self.get_socket()
 			self.flag = True
 			# self.serve = False
@@ -1028,7 +1027,7 @@ class Elastico:
 				if hash_val.startswith('0' * D):
 					nonce = self.PoW["nonce"]
 					self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
-					self.state = ELASTICO_STATES["PoW Computed"]
+					break
 				self.PoW["nonce"] += 1
 
 		self.state = ELASTICO_STATES["PoW Computed"]
@@ -1270,7 +1269,7 @@ def Run(epochTxns):
 				network_nodes.append(Elastico())
 
 		# making some(5 here) nodes as malicious
-		malicious_count =5
+		malicious_count = 0
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
