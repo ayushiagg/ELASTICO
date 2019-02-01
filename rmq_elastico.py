@@ -40,7 +40,7 @@ epochBlock = []
 port = 49152 
 
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARE" : 22, "PBFT_COMMIT" : 23}
 
 def consistencyProtocol():
 	"""
