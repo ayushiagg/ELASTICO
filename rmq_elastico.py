@@ -849,6 +849,12 @@ class Elastico:
 				self.send_pre_prepare(pre_preparemsg)
 				# change the state of primary to pre-prepared 
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+		elif self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+			if not self.primary:
+				# construct prepare msg
+				preparemsg = self.construct_prepare()
+				self.send_prepare(preparemsg)
+
 		# txn_set = set()
 		# for txn in txnBlock:
 		#   txn_set.add(txn)
@@ -862,16 +868,32 @@ class Elastico:
 		#   logging.warning("%s changing state to pbft finished" , str(self.port))
 		#   self.state = ELASTICO_STATES["PBFT Finished"]
 
+	def construct_prepare(self):
+		"""
+		"""
+		# make prepare_contents Ordered Dict for signatures purpose
+
+		# ToDo: complete this
+		for socketId in self.pre_prepareMsgLog:
+			msg = self.pre_prepareMsgLog[socketId]
+			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" :  msg["pre-prepareData"]["viewId"],  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
+		
+			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
+			 
+
+		pass
+
+
 	def construct_pre_prepare(self):
 		"""
 			construct pre-prepare msg
 		"""
 		txnBlockList = list(self.txn_block)
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : 1 , , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : 1  , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
-		return pre_preparemsg
+		return pre_preparemsg 
 
 
 	def send_pre_prepare(self, pre_preparemsg):
