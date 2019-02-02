@@ -755,6 +755,12 @@ class Elastico:
 				# reset the elastico node
 				self.reset()
 
+			elif msg["type"] == "pre-prepare":
+				if self.primary == False:
+					if self.verify_PoW(msg["identity"]) and self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+						
+
+
 		except Exception as e:
 			# log the raised exception
 			logging.error('Error at receive step ', exc_info=e)
@@ -785,18 +791,24 @@ class Elastico:
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
-		txn_set = set()
-		for txn in txnBlock:
-			txn_set.add(txn)
-		# for final committee consensus 
-		if instance == "final committee consensus":
-			self.finalBlock["finalBlock"] = txn_set
-			self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
-		# for intra committee consensus 
-		elif instance == "intra committee consensus":
-			self.txn_block = txn_set
-			logging.warning("%s changing state to pbft finished" , str(self.port))
-			self.state = ELASTICO_STATES["PBFT Finished"]
+		if self.primary:
+			txnBlockList = list(txnBlock)
+			pre_prepare_contents = { "type" : "pre-prepare" , "viewId"  :1 , "digest" : self.hexdigest(txnBlockList), "seq" : 1 }
+			pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
+			for nodeId in self.committee_Members:
+				nodeId.send(pre_preparemsg)	
+		# txn_set = set()
+		# for txn in txnBlock:
+		# 	txn_set.add(txn)
+		# # for final committee consensus 
+		# if instance == "final committee consensus":
+		# 	self.finalBlock["finalBlock"] = txn_set
+		# 	self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
+		# # for intra committee consensus 
+		# elif instance == "intra committee consensus":
+		# 	self.txn_block = txn_set
+		# 	logging.warning("%s changing state to pbft finished" , str(self.port))
+		# 	self.state = ELASTICO_STATES["PBFT Finished"]
 
 	def isFinalMember(self):
 		"""
@@ -1111,6 +1123,7 @@ class Elastico:
 				
 				# Now The node should go for Intra committee consensus
 				if self.is_directory == False:
+					self.state = ELASTICO_STATES["PBFT_NONE"]
 					self.runPBFT(self.txn_block, "intra committee consensus")
 				else:
 					# directory member should not change its state to committee full
