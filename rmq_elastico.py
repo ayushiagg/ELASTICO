@@ -758,7 +758,11 @@ class Elastico:
 			elif msg["type"] == "pre-prepare":
 				if self.primary == False:
 					if self.verify_PoW(msg["identity"]) and self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
-						
+						if self.hexdigest(msg["message"]) == msg["pre-prepareData"]["digest"]:
+							self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+
+
+
 
 
 		except Exception as e:
@@ -797,6 +801,7 @@ class Elastico:
 			pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 			for nodeId in self.committee_Members:
 				nodeId.send(pre_preparemsg)	
+			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		# txn_set = set()
 		# for txn in txnBlock:
 		# 	txn_set.add(txn)
