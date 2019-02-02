@@ -120,8 +120,13 @@ def MulticastCommittee(commList, identityobj_dict, txns):
 		finalCommitteeMembers = commList[fin_num]
 		for committee_id in commList:
 			commMembers = commList[committee_id]
+			# find the primary identity, Take the first identity
+			primaryId = commMembers[0]
 			for memberId in commMembers:
-				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "txns" : txns[committee_id] ,"identity" : identityobj_dict}
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "identity" : identityobj_dict}
+				# give txns only to the primary node
+				if memberId == primaryId:
+					data["txns"] = txns[committee_id]
 				msg = {"data" : data , "type" : "committee members views"}
 				memberId.send(msg)
 	except Exception as e:
@@ -252,6 +257,7 @@ class Elastico:
 		self.flag = True
 		# self.serve = False
 		self.views = set()
+		self.primary = False
 
 	def reset(self):
 		"""
@@ -297,6 +303,7 @@ class Elastico:
 			self.flag = True
 			# self.serve = False
 			self.views = set()
+			self.primary = False
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
 			raise e
@@ -591,8 +598,11 @@ class Elastico:
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
-				# update the txn block
-				self.txn_block |= set(msg["data"]["txns"])
+
+				if txns in msg["data"]:
+					# update the txn block
+					self.txn_block |= set(msg["data"]["txns"])
+					self.primary =  True
 				# union of committee members wrt directory member
 				self.committee_Members = self.unionViews(self.committee_Members, commMembers)
 				# union of final committee members wrt directory member
