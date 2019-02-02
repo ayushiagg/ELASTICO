@@ -526,14 +526,18 @@ class Elastico:
 
 	def unionViews(self, nodeData, incomingData):
 		"""
+			nodeData and incomingData are the set of identities
+			Adding those identities of incomingData to nodeData that are not present in nodeData
 		"""
 		for data in incomingData:
 			flag = False
 			for nodeId in nodeData:
+				# data is present already in nodeData
 				if nodeId.isEqual(data):
 					flag = True
 					break
 			if flag == False:
+				# Adding the new identity
 				nodeData.add(data)
 		return nodeData
 
