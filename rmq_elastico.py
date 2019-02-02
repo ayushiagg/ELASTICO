@@ -9,7 +9,7 @@ import json, pika, threading, pickle
 import logging
 # for multi-processing
 from multiprocessing import Process, Lock, Manager
-import time
+import time, base64
 
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
 
@@ -797,10 +797,13 @@ class Elastico:
 		# make sure that data is string or not
 		if type(data) is not str:
 			data = str(data)
+		# create digest of data
 		digest = SHA256.new()
 		digest.update(data.encode())
 		signer = PKCS1_v1_5.new(self.key)
 		signature = signer.sign(digest)
+		# encode the signature before sending
+		signature = base64.b64encode(signature)
 		return signature
 
 
@@ -810,12 +813,15 @@ class Elastico:
 			if public key is not key object then create a key object
 		"""
 		# print("---verify_sign func---")
+		# decode the signature before verifying
+		signature = base64.b64decode(signature)
 		if type(publickey) is str:
 			publickey = publickey.encode()
 		if type(data) is not str:
 			data = str(data)
 		if type(publickey) is bytes:
 			publickey = RSA.importKey(publickey)
+		# create digest of data
 		digest = SHA256.new()
 		digest.update(data.encode())
 		verifier = PKCS1_v1_5.new(publickey)
