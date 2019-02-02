@@ -681,11 +681,11 @@ class Elastico:
 				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))	
 				if self.verify_PoW(identityobj):
 					# verify the signatures
-					logging.warning("baddddd %s by %s", str(data["sign"]) , str(data["identity"]["port"]))
 					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj["PK"]):
 						if identityobj["committee_id"] not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
-
+						# txnBlock sent was converted as a list
+						data["txnBlock"] = set(data["txnBlock"])
 						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
 							self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
 
@@ -865,15 +865,11 @@ class Elastico:
 		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
 		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
-			# here txn_block is a set
-			data = {"txnBlock" : self.txn_block , "sign" : self.sign(self.txn_block), "identity" : self.identity.__dict__}
+			# here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
+			txnBlock = list(self.txn_block)
+			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity.__dict__}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
-			if self.verify_sign( data["sign"], data["txnBlock"] , data["identity"]["PK"]):
-				logging.warning("good signatures going %s by %s", str(data["sign"]) , str(data["identity"]["port"]))
-				pass
-			else:
-				logging.error("bad signatures coming")
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
 
 
