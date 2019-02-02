@@ -814,17 +814,17 @@ class Elastico:
 			logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
 
 
-	def runPBFT(self , txnBlock, instance):
+	def runPBFT(self, instance):
 		"""
 			Runs a Pbft instance for the intra-committee consensus
 		"""
-		if self.primary:
-			txnBlockList = list(txnBlock)
-			pre_prepare_contents = { "type" : "pre-prepare" , "viewId"  :1 , "digest" : self.hexdigest(txnBlockList), "seq" : 1 }
-			pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
-			for nodeId in self.committee_Members:
-				nodeId.send(pre_preparemsg)	
-			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+		if self.state == ELASTICO_STATES["PBFT_NONE"]:
+			if self.primary:
+				# construct pre-prepare msg
+				pre_preparemsg = self.construct_pre_prepare()
+				self.send_pre_prepare(pre_preparemsg)
+				# change the state of primary to pre-prepared 
+				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		# txn_set = set()
 		# for txn in txnBlock:
 		# 	txn_set.add(txn)
@@ -837,6 +837,32 @@ class Elastico:
 		# 	self.txn_block = txn_set
 		# 	logging.warning("%s changing state to pbft finished" , str(self.port))
 		# 	self.state = ELASTICO_STATES["PBFT Finished"]
+
+	def construct_pre_prepare(self):
+		"""
+			construct pre-prepare msg
+		"""
+		txnBlockList = list(self.txn_block)
+		# make pre_prepare_contents Ordered Dict for signatures purpose
+		pre_prepare_contents = 	OrderedDict({ "type" : "pre-prepare" , "viewId" : 1 , , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		
+		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
+		return pre_preparemsg
+
+
+	def send_pre_prepare(self, pre_preparemsg):
+		"""
+			Send pre-prepare msgs to all committee members
+		"""
+		# send pre-prepare msg to committee members
+		for nodeId in self.committee_Members:
+			# dont send pre-prepare msg to self
+			if not self.identity.isEqual(nodeId):
+				nodeId.send(pre_preparemsg)
+			else:
+				pass
+		pass
+
 
 	def isFinalMember(self):
 		"""
