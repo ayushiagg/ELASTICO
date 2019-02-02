@@ -778,7 +778,7 @@ class Elastico:
 			verified = self.verify_pre_prepare(msg)
 			if verified:        
 				# Log the pre-prepare msgs!
-				# self.pre_prepareMsgLog = 
+				self.logPre_prepareMsg(msg)
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		pass
 
@@ -797,6 +797,17 @@ class Elastico:
 		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			return False
 		return True
+
+
+	def logPre_prepareMsg(self, msg):
+		"""
+			log the pre-prepare msg
+		"""
+		IP = msg["identity"]["IP"]
+		port = msg["identity"]["port"]
+		# create a socket
+		socket = IP + ":" + str(port)
+		self.pre_prepareMsgLog[socket] = msg
 
 
 	def verifyAndMergeConsensusData(self):
