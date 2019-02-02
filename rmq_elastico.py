@@ -1081,7 +1081,6 @@ class Elastico:
 					# compute Pow for good node
 					self.compute_PoW()
 				else:
-					logging.warning("wrong pow computing")
 					# compute Pow for bad node
 					self.compute_fakePoW()
 
@@ -1213,25 +1212,10 @@ class Elastico:
 				logging.info("ConnectionRefusedError at port : %s", str(self.port))
 			raise e
 
-	
-	def serve(self, nodeId, channel, connection):
-
-		try:
-			method_frame, header_frame, body = channel.basic_get(queue = 'hello' + str(self.port))        
-			if method_frame.NAME == 'Basic.GetEmpty':
-				# connection.close()
-				return ""
-			else:            
-				channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-				# connection.close() 
-				return body
-		except Exception as e:
-			logging.error('Error in consumer ', exc_info=e)
-			raise e		
 
 def executeSteps(nodeIndex, epochTxns , sharedObj):
 	"""
-		A process will execute the elastico node
+		A process will execute based on its state and then it will consume
 	"""
 	global network_nodes
 
@@ -1239,63 +1223,79 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 		for epoch in epochTxns:
 			node = network_nodes[nodeIndex]
 			
+			# delete the entry of the node for the next epoch
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
+
+			# epochTxn holds the txn for the current epoch
 			epochTxn = epochTxns[epoch]
+
 			while True:
 				# execute one step of elastico node
+
+				# execution of a node is done only when it has not done reset
 				if nodeIndex not in sharedObj:
 					response = node.execute(epochTxn)
+
 					if response == "reset":
 						# now reset the node
 						logging.warning("call for reset for  %s" , str(node.port))
 
 						if isinstance(node.identity, Identity):
-							# identity obj exists for this node
+						# if node has formed its identity
 							msg = {"type": "reset-all", "data" : node.identity.__dict__}
 							node.identity.send(msg)
 						else:
 							# this node has not computed its identity
-							print("illegal call")
+							
 							# calling reset explicitly for node
 							node.reset()
+						# adding the value reset for the node
 						sharedObj[nodeIndex] = "reset"
+
+				# All the elastico objects has done their reset
 				if len(sharedObj) == n:
 					break
 				else:
 					pass
 				
+				# process consume the msgs from the queue
+
 				# connect to rabbitmq server
 				connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 				# create a channel
 				channel = connection.channel()
-				# specify the queue 
+				# specify the queue name 
 				queue = channel.queue_declare( queue='hello' + str(node.port))
+				# count the number of messages that are in the queue
 				count = queue.method.message_count
+
+				# consume all the messages one by one
 				while count:
+					# get the message from the queue
 					method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
 					if method_frame:
 						channel.basic_ack(method_frame.delivery_tag)
 						data = pickle.loads(body)
+						# consume the msg by taking the action in receive
 						node.receive(data)
 					else:
 						logging.error('No message returned %s' , str(count))
 						logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
 					count -= 1
-			# ToDo: Ensure that all nodes are reset and sharedobj is not affect
+
+			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
 
 	except Exception as e:
 		# log any error raised in the above try block
 		logging.error('Error in  execute steps ', exc_info=e)
 		raise e
-	
-
 
 
 def Run(epochTxns):
 	"""
-		runs for one epoch
+		runs the epoch
 	"""
 	global network_nodes, ledger, commitmentSet, epochBlock
 	
@@ -1304,6 +1304,7 @@ def Run(epochTxns):
 			# network_nodes is the list of elastico objects
 			for i in range(n):
 				print( "---Running for processor number---" , i + 1)
+				# Add the elastico obj to the list 
 				network_nodes.append(Elastico())
 
 		# making some(5 here) nodes as malicious
@@ -1314,9 +1315,11 @@ def Run(epochTxns):
 			network_nodes[badNodeIndex].flag = False
 
 		epochBlock = set()
+		commitmentSet = set()
+
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
-		commitmentSet = set()
+		# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
 		sharedObj = manager.dict()
 		
 		# list of processes
@@ -1352,7 +1355,6 @@ def Run(epochTxns):
 		# Append the block in ledger
 		ledger.append(epochBlock)
 		print("ledger block" , ledger)
-		# input("ledger updated!!")
 	except Exception as e:
 		logging.error("error in run step" , exc_info=e)
 		raise e
@@ -1377,14 +1379,15 @@ if __name__ == "__main__":
 				txns.append(random_num)
 			epochTxns[i] = txns
 
-		# run all the epochs 
 		# for epoch in epochTxns:
 		# 	logging.info("epoch number :- %s started" , str(epoch + 1) )
 		# 	Run(epochTxns[epoch])
+
+		# run all the epochs 
 		Run(epochTxns)
 
 	except Exception as e:
 		# log the exception raised
 		logging.error('Error in  main ', exc_info=e)
 		raise e
-	
+
