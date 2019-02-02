@@ -176,7 +176,7 @@ class Identity:
 			if channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data, properties=pika.BasicProperties(delivery_mode=1)):
 				pass
 			else:
-				logging.error("messgae not published %s" , str(msg))	
+				logging.error("messgae not published %s" , str(msg))    
 
 			# close the connection
 			connection.close()
@@ -339,14 +339,14 @@ class Elastico:
 
 
 	# def get_socket(self):
-	# 	"""
-	# 	"""
-	# 	s = socket.socket()
-	# 	print ("Socket successfully created")
-	# 	# Modified 
-	# 	s.bind(('', self.port))
-	# 	print ("socket binded to %s" %(port) )
-	# 	return s
+	#   """
+	#   """
+	#   s = socket.socket()
+	#   print ("Socket successfully created")
+	#   # Modified 
+	#   s.bind(('', self.port))
+	#   print ("socket binded to %s" %(port) )
+	#   return s
 
 
 	def get_IP(self):
@@ -484,8 +484,8 @@ class Elastico:
 			# ToDo : check state assignment order
 			# if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
 			# if self.state == ELASTICO_STATES["Receiving Committee Members"]:
-			# 	msg = {"data" : self.identity ,"type" : "Committee full"}
-			# 	BroadcastTo_Network(msg["data"] , msg["type"])
+			#   msg = {"data" : self.identity ,"type" : "Committee full"}
+			#   BroadcastTo_Network(msg["data"] , msg["type"])
 			if self.state != ELASTICO_STATES["Receiving Committee Members"]: 
 				self.state = ELASTICO_STATES["Formed Committee"]
 				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
@@ -569,7 +569,7 @@ class Elastico:
 								flag = False
 								break
 						if flag:
-							self.cur_directory.add(idenobj)		
+							self.cur_directory.add(idenobj)     
 						# self.cur_directory.add(identityobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
@@ -696,7 +696,7 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))	
+				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))    
 				if self.verify_PoW(identityobj):
 					# verify the signatures
 					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj["PK"]):
@@ -711,12 +711,12 @@ class Elastico:
 						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
 						# to verify the number of txn blocks received from each committee
 						# if identityobj["committee_id"] not in self.ConsensusMsgCount:
-						# 	self.ConsensusMsgCount[identityobj.committee_id ] = 1
+						#   self.ConsensusMsgCount[identityobj.committee_id ] = 1
 						# else:
-						# 	self.ConsensusMsgCount[identityobj.committee_id] += 1
-						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))	
+						#   self.ConsensusMsgCount[identityobj.committee_id] += 1
+						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))   
 					else:
-						logging.error("signature invalid for intra committee block")		
+						logging.error("signature invalid for intra committee block")        
 				else:
 					logging.error("pow invalid for intra committee block")
 			# ToDo: add verify of pows if reqd in below ifs
@@ -775,8 +775,8 @@ class Elastico:
 		"""
 		if msg["type"] == "pre-prepare":
 			# verify the pre-prepare message
-            verified = self.verify_pre_prepare(msg)
-            if verified:		
+			verified = self.verify_pre_prepare(msg)
+			if verified:        
 				# Log the pre-prepare msgs!
 				# self.pre_prepareMsgLog = 
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
@@ -784,19 +784,19 @@ class Elastico:
 
 
 	def verify_pre_prepare(self, msg):
-        """
-            Verify pre-prepare msgs
-        """
-        # verify Pow
+		"""
+			Verify pre-prepare msgs
+		"""
+		# verify Pow
 		if not self.verify_PoW(msg["identity"]):
 			return False
-        # verify signatures of the received msg
+		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
 			return False
 		# verifying the digest of request msg
 		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			return False
-        return True
+		return True
 
 
 	def verifyAndMergeConsensusData(self):
@@ -830,16 +830,16 @@ class Elastico:
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		# txn_set = set()
 		# for txn in txnBlock:
-		# 	txn_set.add(txn)
+		#   txn_set.add(txn)
 		# # for final committee consensus 
 		# if instance == "final committee consensus":
-		# 	self.finalBlock["finalBlock"] = txn_set
-		# 	self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
+		#   self.finalBlock["finalBlock"] = txn_set
+		#   self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
 		# # for intra committee consensus 
 		# elif instance == "intra committee consensus":
-		# 	self.txn_block = txn_set
-		# 	logging.warning("%s changing state to pbft finished" , str(self.port))
-		# 	self.state = ELASTICO_STATES["PBFT Finished"]
+		#   self.txn_block = txn_set
+		#   logging.warning("%s changing state to pbft finished" , str(self.port))
+		#   self.state = ELASTICO_STATES["PBFT Finished"]
 
 	def construct_pre_prepare(self):
 		"""
@@ -847,7 +847,7 @@ class Elastico:
 		"""
 		txnBlockList = list(self.txn_block)
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents = 	OrderedDict({ "type" : "pre-prepare" , "viewId" : 1 , , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : 1 , , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 		return pre_preparemsg
@@ -920,7 +920,7 @@ class Elastico:
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
-		PK = self.key.publickey().exportKey().decode()	
+		PK = self.key.publickey().exportKey().decode()  
 		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
@@ -1399,14 +1399,14 @@ def Run(epochTxns):
 
 		# All processes are over. Computing response in each node to update ledger
 		# for nodeIndex in range(n):
-		# 	response = network_nodes[nodeIndex].response
-		# 	if len(response) > 0:
-		# 		logging.warning("taking response by member")
-		# 		for txnBlock in response:
-		# 			# ToDo: remove eval
-		# 			epochBlock |= eval(txnBlock)
-		# 		# reset the response 
-		# 		network_nodes[nodeIndex].response = []
+		#   response = network_nodes[nodeIndex].response
+		#   if len(response) > 0:
+		#       logging.warning("taking response by member")
+		#       for txnBlock in response:
+		#           # ToDo: remove eval
+		#           epochBlock |= eval(txnBlock)
+		#       # reset the response 
+		#       network_nodes[nodeIndex].response = []
 
 		# Append the block in ledger
 		ledger.append(epochBlock)
@@ -1436,8 +1436,8 @@ if __name__ == "__main__":
 			epochTxns[i] = txns
 
 		# for epoch in epochTxns:
-		# 	logging.info("epoch number :- %s started" , str(epoch + 1) )
-		# 	Run(epochTxns[epoch])
+		#   logging.info("epoch number :- %s started" , str(epoch + 1) )
+		#   Run(epochTxns[epoch])
 
 		# run all the epochs 
 		Run(epochTxns)
