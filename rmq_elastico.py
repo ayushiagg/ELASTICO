@@ -3,6 +3,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
+from collections import OrderedDict
 import socket
 import json, pika, threading, pickle
 # for creating logs
@@ -756,14 +757,7 @@ class Elastico:
 				self.reset()
 
 			elif msg["type"] == "pre-prepare":
-				if self.primary == False:
-					if self.verify_PoW(msg["identity"]) and self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
-						if self.hexdigest(msg["message"]) == msg["pre-prepareData"]["digest"]:
-							self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
-
-
-
-
+				self.pbft_process_message(msg)
 
 		except Exception as e:
 			# log the raised exception
@@ -771,6 +765,35 @@ class Elastico:
 			if isinstance(e, ConnectionRefusedError):
 				logging.info("ConnectionRefusedError at port : %s", "!")
 			raise e
+
+	def pbft_process_message(self, msg):
+		"""
+			Process the messages related to Pbft!
+		"""
+		if msg["type"] == "pre-prepare":
+			# verify the pre-prepare message
+            verified = self.verify_pre_prepare(msg)
+            if verified:		
+				# Log the pre-prepare msgs!
+				# self.pre_prepareMsgLog = 
+				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+		pass
+
+
+	def verify_pre_prepare(self, msg):
+        """
+            Verify pre-prepare msgs
+        """
+        # verify Pow
+		if not self.verify_PoW(msg["identity"]):
+			return False
+        # verify signatures of the received msg
+		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+			return False
+		# verifying the digest of request msg
+		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+			return False
+        return True
 
 
 	def verifyAndMergeConsensusData(self):
