@@ -217,6 +217,7 @@ class Elastico:
 			txn- transactions stored by the directory members
 			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
 			flag- to denote a bad or good node
+			pre_prepareMsgLog - Logs for the pre-prepare msgs
 	"""
 
 	def __init__(self):
@@ -259,6 +260,7 @@ class Elastico:
 		# self.serve = False
 		self.views = set()
 		self.primary = False
+		self.pre_prepareMsgLog = {}
 
 	def reset(self):
 		"""
@@ -305,6 +307,7 @@ class Elastico:
 			# self.serve = False
 			self.views = set()
 			self.primary = False
+			self.pre_prepareMsgLog = {}
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
 			raise e
@@ -1170,18 +1173,17 @@ class Elastico:
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
 				logging.warning("welcome to committee full - %s -- %s", str(self.port) , str(self.committee_id))
+				
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
 				
 				# Now The node should go for Intra committee consensus
 				if self.is_directory == False:
+					# initial state for the PBFT
 					self.state = ELASTICO_STATES["PBFT_NONE"]
-					self.runPBFT(self.txn_block, "intra committee consensus")
-				else:
-					# directory member should not change its state to committee full
-					logging.warning("directory member state changed to Committee full(unwanted state)")
-
+					# run PBFT for intra-committee consensus
+					self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
