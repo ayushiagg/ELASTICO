@@ -802,6 +802,7 @@ class Elastico:
 		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
 			return False
+		# ToDo: add other steps from paper 
 		# verifying the digest of request msg
 		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			return False
@@ -1204,6 +1205,15 @@ class Elastico:
 					self.state = ELASTICO_STATES["PBFT_NONE"]
 					# run PBFT for intra-committee consensus
 					self.runPBFT("intra committee consensus")
+
+			elif self.state == ELASTICO_STATES["PBFT_NONE"]:
+				pass
+
+			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+				self.runPBFT("intra committee consensus")
+				pass
+
+				
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
