@@ -774,12 +774,21 @@ class Elastico:
 			Process the messages related to Pbft!
 		"""
 		if msg["type"] == "pre-prepare":
-			# verify the pre-prepare message
-			verified = self.verify_pre_prepare(msg)
-			if verified:        
-				# Log the pre-prepare msgs!
-				self.logPre_prepareMsg(msg)
-				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+			self.process_pre_prepareMsg(msg)
+		else:
+			pass
+
+
+	def process_pre_prepareMsg(self, msg):
+		"""
+			Process Pre-Prepare msg
+		"""
+		# verify the pre-prepare message
+		verified = self.verify_pre_prepare(msg)
+		if verified:
+			# Log the pre-prepare msgs!
+			self.logPre_prepareMsg(msg)
+			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		pass
 
 
