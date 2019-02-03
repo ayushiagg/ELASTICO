@@ -860,6 +860,30 @@ class Elastico:
 					return False
 		return True
 
+	def log_prepareMsg(self, msg):
+		"""
+			log the prepare msg
+		"""
+		viewId = msg["prepareData"]["viewId"]
+		seqnum = msg["prepareData"]["seq"]
+		socketId = msg["prepareData"]["identity"]["IP"] +  ":" + str(msg["prepareData"]["identity"]["port"])
+		# add msgs for this view
+		if viewId not in self.prepareMsgLog:
+			self.prepareMsgLog[viewId] = dict()
+
+		# add msgs for this sequence num
+		if seqnum not in self.prepareMsgLog[viewId]:
+			self.prepareMsgLog[viewId][seqnum] = dict()
+
+		# add all msgs from this sender
+		if socketId not in self.prepareMsgLog[viewId][seqnum]:
+			self.prepareMsgLog[viewId][seqnum][socketId] = list()
+
+		# log only required details from the prepare msg
+		msgDetails = {"digest" : msg["prepareData"]["digest"], "identity" : msg["prepareData"]["identity"]}
+		# append msg
+		self.prepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
+
 
 	def logPre_prepareMsg(self, msg):
 		"""
