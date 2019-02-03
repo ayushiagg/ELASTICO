@@ -454,6 +454,7 @@ class Elastico:
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness,self.port)
 			# mapped identity object to the elastico object
 			identityNodeMap[self.identity] = self
+			# changed the state after identity formation
 			self.state = ELASTICO_STATES["Formed Identity"]
 			return self.identity
 
@@ -1295,6 +1296,7 @@ class Elastico:
 				pass
 
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+				# node enters the pre-prepare phase and now will multicast prepare msgs
 				self.runPBFT("intra committee consensus")
 				pass
 
@@ -1418,7 +1420,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 							node.identity.send(msg)
 						else:
 							# this node has not computed its identity
-							
 							# calling reset explicitly for node
 							node.reset()
 						# adding the value reset for the node
@@ -1511,17 +1512,6 @@ def Run(epochTxns):
 			processes[nodeIndex].join()
 
 		logging.warning("processes finished")
-
-		# All processes are over. Computing response in each node to update ledger
-		# for nodeIndex in range(n):
-		#   response = network_nodes[nodeIndex].response
-		#   if len(response) > 0:
-		#       logging.warning("taking response by member")
-		#       for txnBlock in response:
-		#           # ToDo: remove eval
-		#           epochBlock |= eval(txnBlock)
-		#       # reset the response 
-		#       network_nodes[nodeIndex].response = []
 
 		# Append the block in ledger
 		ledger.append(epochBlock)
