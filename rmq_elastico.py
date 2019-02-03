@@ -798,6 +798,9 @@ class Elastico:
 		"""
 		# verify the commit message
 		verified = self.verify_commit(msg)
+		if verified:
+			self.log_commitMsg(msg)
+		pass
 
 	def process_prepareMsg(self, msg):
 		"""
@@ -877,6 +880,7 @@ class Elastico:
 			return False
 
 
+
 	def verify_prepare(self, msg):
 		"""
 			Verify prepare msgs
@@ -947,6 +951,29 @@ class Elastico:
 		# append msg
 		self.prepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
 
+	def log_commitMsg(self, msg):
+		"""
+			log the commit msg
+		"""
+		viewId = msg["commitData"]["viewId"]
+		seqnum = msg["commitData"]["seq"]
+		socketId = msg["commitData"]["identity"]["IP"] +  ":" + str(msg["commitData"]["identity"]["port"])
+		# add msgs for this view
+		if viewId not in self.commitMsgLog:
+			self.commitMsgLog[viewId] = dict()
+
+		# add msgs for this sequence num
+		if seqnum not in self.commitMsgLog[viewId]:
+			self.commitMsgLog[viewId][seqnum] = dict()
+
+		# add all msgs from this sender
+		if socketId not in self.commitMsgLog[viewId][seqnum]:
+			self.commitMsgLog[viewId][seqnum][socketId] = list()
+
+		# log only required details from the commit msg
+		msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["commitData"]["identity"]}
+		# append msg
+		self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)		
 
 	def logPre_prepareMsg(self, msg):
 		"""
