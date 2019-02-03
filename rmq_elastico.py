@@ -265,6 +265,7 @@ class Elastico:
 		self.pre_prepareMsgLog = dict()
 		self.viewId = 0
 		self.prepareMsgLog = dict()
+		self.preparedData = dict()
 
 	def reset(self):
 		"""
@@ -314,6 +315,7 @@ class Elastico:
 			self.pre_prepareMsgLog = {}
 			self.viewId = 0
 			self.prepareMsgLog = dict()
+			self.preparedData = dict()
 
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
@@ -798,8 +800,7 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_prepareMsg(msg)
-			if self.isPrepared():
-				self.state = ELASTICO_STATES["PBFT_PREPARE"]
+
 		pass
 
 
@@ -807,6 +808,9 @@ class Elastico:
 		"""
 			Check if the state is prepared or not
 		"""
+		# collect prepared data
+		preparedData = dict()
+
 		# check for received request messages
 		for socket in self.pre_prepareMsgLog:
 			# In current View Id
@@ -927,8 +931,6 @@ class Elastico:
 		# create a socket
 		socket = IP + ":" + str(port)
 		self.pre_prepareMsgLog[socket] = msg
-		# add txn-block (request msg)
-		self.txn_block = set(msg["message"])
 
 
 	def verifyAndMergeConsensusData(self):
