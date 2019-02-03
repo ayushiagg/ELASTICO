@@ -1150,7 +1150,7 @@ class Elastico:
 					digest = self.hexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
-					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commit_contents" : commit_contents, "identity" : self.identity.__dict__}
+					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity.__dict__}
 					commitMsges.append(commitMsg)
 		return commitMsges
 
