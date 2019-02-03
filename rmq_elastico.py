@@ -810,6 +810,31 @@ class Elastico:
 		pass
 
 
+	def verify_prepare(self, msg):
+		"""
+			Verify prepare msgs
+		"""
+		prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
+		
+			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
+		# verify Pow
+		if not self.verify_PoW(msg["identity"]):
+			return False
+		# verify signatures of the received msg
+		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
+			return False
+
+		# verifying the digest of request msg
+		requestMsg = list(self.txn_block)
+		if self.hexdigest(requestMsg) != msg["prepareData"]["digest"]:
+			return False
+
+		# check the view is same or not
+		if msg["prepareData"]["viewId"] != self.viewId:
+			return False
+
+		return True
+
 	def verify_pre_prepare(self, msg):
 		"""
 			Verify pre-prepare msgs
