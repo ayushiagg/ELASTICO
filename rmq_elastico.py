@@ -219,6 +219,7 @@ class Elastico:
 			flag- to denote a bad or good node
 			pre_prepareMsgLog - Logs for the pre-prepare msgs
 			viewId - view number of the pbft
+			prepareMsgLog - Log of the prepare msgs
 	"""
 
 	def __init__(self):
@@ -261,9 +262,9 @@ class Elastico:
 		# self.serve = False
 		self.views = set()
 		self.primary = False
-		self.pre_prepareMsgLog = {}
+		self.pre_prepareMsgLog = dict()
 		self.viewId = 0
-
+		self.prepareMsgLog = dict()
 
 	def reset(self):
 		"""
@@ -312,6 +313,8 @@ class Elastico:
 			self.primary = False
 			self.pre_prepareMsgLog = {}
 			self.viewId = 0
+			self.prepareMsgLog = dict()
+
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
 			raise e
@@ -815,9 +818,6 @@ class Elastico:
 		"""
 			Verify prepare msgs
 		"""
-		prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
-		
-			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
 		# verify Pow
 		if not self.verify_PoW(msg["identity"]):
 			return False
