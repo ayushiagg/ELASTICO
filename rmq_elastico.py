@@ -967,6 +967,9 @@ class Elastico:
 				self.send_pre_prepare(pre_preparemsg)
 				# change the state of primary to pre-prepared 
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+				# primary will log the pre-prepare msg for itself
+				self.logPre_prepareMsg(pre_preparemsg)
+
 		elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
 			if not self.primary:
 				# construct prepare msg
