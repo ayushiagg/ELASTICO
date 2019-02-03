@@ -1032,10 +1032,29 @@ class Elastico:
 		return pre_preparemsg 
 
 
+	def send_commit(self, commitMsgList):
+		"""
+			send the commit msgs to the committee members
+		"""
+		for commitMsg in commitMsgList:
+			for nodeId in self.committee_Members:
+				nodeId.send(commitMsg)
+
+
 	def construct_commit(self):
 		"""
+			Construct commit msgs
 		"""
-		pass
+		commitMsges = []
+		for viewId in self.preparedData:
+			for seqnum in self.preparedData[viewId]:
+				for msg in self.preparedData[viewId][seqnum]:
+					digest = self.hexdigest(msg)
+					# make commit_contents Ordered Dict for signatures purpose
+					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
+					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commit_contents" : commit_contents, "identity" : self.identity.__dict__}
+					commitMsges.append(commitMsg)
+		return commitMsges
 
 	def send_pre_prepare(self, pre_preparemsg):
 		"""
