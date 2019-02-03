@@ -903,7 +903,7 @@ class Elastico:
 		"""
 		txnBlockList = list(self.txn_block)
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : 1  , "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 		return pre_preparemsg 
@@ -1238,6 +1238,8 @@ class Elastico:
 				if self.is_directory == False:
 					# initial state for the PBFT
 					self.state = ELASTICO_STATES["PBFT_NONE"]
+					# init viewId
+					self.viewId = 1
 					# run PBFT for intra-committee consensus
 					self.runPBFT("intra committee consensus")
 
