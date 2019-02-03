@@ -972,7 +972,12 @@ class Elastico:
 				# construct prepare msg
 				preparemsgList = self.construct_prepare()
 				self.send_prepare(preparemsgList)
-		elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+				self.state == ELASTICO_STATES["PBFT_PREPARE_SENT"]
+		elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"]:
+			if self.isPrepared():
+				self.state = ELASTICO_STATES["PBFT_PREPARED"]
+					
+		elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 			commitMsg = self.construct_commit()
 			self.send_commit(commitMsg)
 		# txn_set = set()
@@ -1001,10 +1006,10 @@ class Elastico:
 	def construct_prepare(self):
 		"""
 		"""
-		# make prepare_contents Ordered Dict for signatures purpose
 		prepareMsgList = []
 		for socketId in self.pre_prepareMsgLog:
 			msg = self.pre_prepareMsgLog[socketId]
+			# make prepare_contents Ordered Dict for signatures purpose
 			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
 		
 			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
@@ -1371,7 +1376,10 @@ class Elastico:
 				self.runPBFT("intra committee consensus")
 				pass
 
-			elif self.state == ELASTICO_STATES["PBFT_PREPARE"]:
+			elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"]:
+				self.runPBFT("intra committee consensus")
+
+			elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 				# node enters the prepare stage
 				self.runPBFT("intra committee consensus")
 
