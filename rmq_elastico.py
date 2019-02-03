@@ -764,7 +764,7 @@ class Elastico:
 				# reset the elastico node
 				self.reset()
 
-			elif msg["type"] == "pre-prepare":
+			elif msg["type"] == "pre-prepare" or msg["type"] == "prepare":
 				self.pbft_process_message(msg)
 
 		except Exception as e:
@@ -780,8 +780,21 @@ class Elastico:
 		"""
 		if msg["type"] == "pre-prepare":
 			self.process_pre_prepareMsg(msg)
+		elif msg["type"] == "prepare":
+			self.process_prepareMsg(msg)
 		else:
 			pass
+
+
+	def process_prepareMsg(self, msg):
+		"""
+		"""
+		# verify the prepare message
+		verified = self.verify_prepare(msg)
+		if verified:
+			# Log the prepare msgs!
+			self.log_prepareMsg(msg)
+		pass
 
 
 	def process_pre_prepareMsg(self, msg):
@@ -862,11 +875,11 @@ class Elastico:
 				self.send_pre_prepare(pre_preparemsg)
 				# change the state of primary to pre-prepared 
 				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
-		elif self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+		elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
 			if not self.primary:
 				# construct prepare msg
-				preparemsg = self.construct_prepare()
-				self.send_prepare(preparemsg)
+				preparemsgList = self.construct_prepare()
+				self.send_prepare(preparemsgList)
 
 		# txn_set = set()
 		# for txn in txnBlock:
@@ -881,19 +894,28 @@ class Elastico:
 		#   logging.warning("%s changing state to pbft finished" , str(self.port))
 		#   self.state = ELASTICO_STATES["PBFT Finished"]
 
+	def send_prepare(self, prepareMsgList):
+		"""
+			send the prepare msgs to the committee members
+		"""
+		# send prepare msg list to committee members
+		for preparemsg in prepareMsgList:
+			for nodeId in self.committee_Members:
+				nodeId.send(preparemsg)
+
+
 	def construct_prepare(self):
 		"""
 		"""
-		# ToDo: complete this
 		# make prepare_contents Ordered Dict for signatures purpose
+		prepareMsgList = []
 		for socketId in self.pre_prepareMsgLog:
 			msg = self.pre_prepareMsgLog[socketId]
-			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" :  msg["pre-prepareData"]["viewId"],  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
+			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
 		
 			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
-			 
-
-		pass
+			prepareMsgList.append(preparemsg)
+		return prepareMsgList
 
 
 	def construct_pre_prepare(self):
