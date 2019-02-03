@@ -807,10 +807,18 @@ class Elastico:
 		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
 			return False
-		# ToDo: add other steps from paper 
 		# verifying the digest of request msg
 		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			return False
+		# check the view is same or not
+		if msg["pre-prepareData"]["viewId"] != self.viewId:
+			return False
+		# check if already accepted a pre-prepare msg for view v and sequence num n with different digest
+		seqnum = msg["pre-prepareData"]["seq"]
+		for socket in self.pre_prepareMsgLog:
+			if self.pre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId and self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"] == seqnum:
+				if msg["pre-prepareData"]["digest"] != self.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]:
+					return False
 		return True
 
 
