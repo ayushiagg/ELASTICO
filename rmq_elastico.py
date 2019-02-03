@@ -884,9 +884,8 @@ class Elastico:
 	def construct_prepare(self):
 		"""
 		"""
-		# make prepare_contents Ordered Dict for signatures purpose
-
 		# ToDo: complete this
+		# make prepare_contents Ordered Dict for signatures purpose
 		for socketId in self.pre_prepareMsgLog:
 			msg = self.pre_prepareMsgLog[socketId]
 			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" :  msg["pre-prepareData"]["viewId"],  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
