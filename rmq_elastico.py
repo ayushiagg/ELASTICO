@@ -867,16 +867,16 @@ class Elastico:
 		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
 			return False
 
-		# verifying the digest of request msg
-		requestMsg = list(self.txn_block)
-		if self.hexdigest(requestMsg) != msg["prepareData"]["digest"]:
-			return False
-
 		# check the view is same or not
 		if msg["prepareData"]["viewId"] != self.viewId:
 			return False
 
-		return True
+		# verifying the digest of request msg
+		for socketId in self.pre_prepareMsgLog:
+			pre_prepareMsg = self.pre_prepareMsgLog[socketId]
+			if pre_prepareMsg["pre-prepareData"]["viewId"] == msg["prepareData"]["viewId"] and pre_prepareMsg["pre-prepareData"]["seq"] == msg["prepareData"]["seq"] and pre_prepareMsg["pre-prepareData"]["digest"] == msg["prepareData"]["digest"]:
+				return True
+		return False
 
 	def verify_pre_prepare(self, msg):
 		"""
