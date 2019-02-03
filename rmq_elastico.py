@@ -799,6 +799,7 @@ class Elastico:
 		# verify the commit message
 		verified = self.verify_commit(msg)
 		if verified:
+			# Log the commit msgs!
 			self.log_commitMsg(msg)
 		pass
 
@@ -1073,6 +1074,13 @@ class Elastico:
 		elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 			commitMsgList = self.construct_commit()
 			self.send_commit(commitMsgList)
+			self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]
+
+		elif self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]:
+			if self.isCommited():
+				self.state = ELASTICO_STATES["PBFT_COMMITTED"]
+			
+
 		# txn_set = set()
 		# for txn in txnBlock:
 		#   txn_set.add(txn)
@@ -1494,6 +1502,13 @@ class Elastico:
 			elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 				# node enters the prepare stage
 				self.runPBFT("intra committee consensus")
+
+			elif self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]:
+				# commit msges are sent , run PBFT to see if state is committed or not
+				self.runPBFT("intra committee consensus")
+
+			elif self.state == ELASTICO_STATES["PBFT_COMMITTED"]:
+				self.runPBFT("intra committee consensus")	
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
