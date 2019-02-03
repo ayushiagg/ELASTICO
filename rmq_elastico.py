@@ -869,6 +869,8 @@ class Elastico:
 		# create a socket
 		socket = IP + ":" + str(port)
 		self.pre_prepareMsgLog[socket] = msg
+		# add txn-block (request msg)
+		self.txn_block = set(msg["message"])
 
 
 	def verifyAndMergeConsensusData(self):
