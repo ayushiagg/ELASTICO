@@ -821,20 +821,25 @@ class Elastico:
 				digest = self.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
 				# get sequence number of this msg
 				seqnum = self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
-				# find Prepare msgs for this view
-				if self.viewId in self.prepareMsgLog:
-					# for this sequence number
-					if seqnum in self.prepareMsgLog[self.viewId]:
-						# need to find matching prepare msgs from different replicas atleast c//2 + 1
-						count = 0
-						for replicaId in self.prepareMsgLog[self.viewId][seqnum]:
-							for msg in self.prepareMsgLog[self.viewId][seqnum][replicaId]:
-								if msg["digest"] == digest:
-									count += 1
-									break
-						# condition for Prepared state
-						if count >= c//2 + 1:
-							return True
+				# find Prepare msgs for this view and sequence number
+				if self.viewId in self.prepareMsgLog and seqnum in self.prepareMsgLog[self.viewId]:
+					# need to find matching prepare msgs from different replicas atleast c//2 + 1
+					count = 0
+					for replicaId in self.prepareMsgLog[self.viewId][seqnum]:
+						for msg in self.prepareMsgLog[self.viewId][seqnum][replicaId]:
+							if msg["digest"] == digest:
+								count += 1
+								break
+					# condition for Prepared state
+					if count >= c//2 + 1:
+						if self.viewId not in preparedData:
+							preparedData[self.viewId] = dict()
+						if seqnum not in preparedData[self.viewId]:
+							preparedData[self.viewId][seqnum] = list()
+						preparedData[self.viewId][seqnum].append(requestMsg)
+		if len(preparedData) > 0:
+			self.preparedData = preparedData
+			return True
 		return False
 
 
