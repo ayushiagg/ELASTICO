@@ -965,7 +965,9 @@ class Elastico:
 				# construct prepare msg
 				preparemsgList = self.construct_prepare()
 				self.send_prepare(preparemsgList)
-
+		elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
+			commitMsg = self.construct_commit()
+			self.send_commit(commitMsg)
 		# txn_set = set()
 		# for txn in txnBlock:
 		#   txn_set.add(txn)
@@ -1014,6 +1016,11 @@ class Elastico:
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 		return pre_preparemsg 
 
+
+	def construct_commit(self):
+		"""
+		"""
+		pass
 
 	def send_pre_prepare(self, pre_preparemsg):
 		"""
@@ -1357,7 +1364,9 @@ class Elastico:
 				self.runPBFT("intra committee consensus")
 				pass
 
-				
+			elif self.state == ELASTICO_STATES["PBFT_PREPARE"]:
+				# node enters the prepare stage
+				self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
