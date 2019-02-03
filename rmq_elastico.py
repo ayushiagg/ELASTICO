@@ -770,7 +770,7 @@ class Elastico:
 				# reset the elastico node
 				self.reset()
 
-			elif msg["type"] == "pre-prepare" or msg["type"] == "prepare":
+			elif msg["type"] == "pre-prepare" or msg["type"] == "prepare"or msg["type"] == "commit":
 				self.pbft_process_message(msg)
 
 		except Exception as e:
@@ -788,9 +788,16 @@ class Elastico:
 			self.process_pre_prepareMsg(msg)
 		elif msg["type"] == "prepare":
 			self.process_prepareMsg(msg)
+		elif msg["type"] == "commit":
+			self.process_commitMsg(msg)	
 		else:
 			pass
 
+	def process_commitMsg(self, msg):
+		"""
+		"""
+		# verify the commit message
+		verified = self.verify_commit(msg)
 
 	def process_prepareMsg(self, msg):
 		"""
@@ -854,6 +861,20 @@ class Elastico:
 			self.logPre_prepareMsg(msg)
 			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		pass
+
+	def verify_commit(self, msg):
+		"""
+			verify commit msgs
+		"""
+		# verify Pow
+		if not self.verify_PoW(msg["identity"]):
+			return False
+		# verify signatures of the received msg
+		if not self.verify_sign(msg["sign"] , msg["commitData"] , msg["identity"]["PK"]):
+			return False
+		# check the view is same or not
+		if msg["commitData"]["viewId"] != self.viewId:
+			return False
 
 
 	def verify_prepare(self, msg):
@@ -981,8 +1002,8 @@ class Elastico:
 				self.state = ELASTICO_STATES["PBFT_PREPARED"]
 					
 		elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
-			commitMsg = self.construct_commit()
-			self.send_commit(commitMsg)
+			commitMsgList = self.construct_commit()
+			self.send_commit(commitMsgList)
 		# txn_set = set()
 		# for txn in txnBlock:
 		#   txn_set.add(txn)
