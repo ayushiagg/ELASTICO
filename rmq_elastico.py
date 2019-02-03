@@ -852,6 +852,48 @@ class Elastico:
 			return True
 		return False
 
+	def isCommited(self):
+		"""
+			Check if the state is committed or not
+		"""
+		# collect committed data
+		committedData = dict()
+
+		# check for received request messages
+		for socket in self.pre_prepareMsgLog:
+			# In current View Id
+			if self.pre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
+				# request msg of pre-prepare request
+				requestMsg = self.pre_prepareMsgLog[socket]["message"]
+				# digest of the message
+				digest = self.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
+				# get sequence number of this msg
+				seqnum = self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
+				if self.viewId in self.preparedData and seqnum in self.preparedData[self.viewId]:
+					for prepareMsg in self.preparedData[self.viewId][seqnum]:
+						if self.hexdigest(prepareMsg) == digest:
+							# pre-prepared matched and prepared is also true, check for commits
+							if self.viewId in self.commitMsgLog and seqnum in self.commitMsgLog[self.viewId]:
+								count = 0
+								for replicaId in self.commitMsgLog[self.viewId][seqnum]:
+									for msg in self.commitMsgLog[self.viewId][seqnum][replicaId]:
+										if msg["digest"] == digest:
+											count += 1
+											break
+								# ToDo: condition check 
+								if count >= c//2 + 1:
+									if self.viewId not in committedData:
+										committedData[self.viewId] = dict()
+									if seqnum not in committedData[self.viewId]:
+										committedData[self.viewId][seqnum] = list()
+									commitData[self.viewId][seqnum].append(requestMsg)
+
+		if len(commitData) > 0:
+			self.commitData = commitData
+			return True
+		return False
+
+
 
 	def process_pre_prepareMsg(self, msg):
 		"""
