@@ -218,6 +218,7 @@ class Elastico:
 			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
 			flag- to denote a bad or good node
 			pre_prepareMsgLog - Logs for the pre-prepare msgs
+			viewId - view number of the pbft
 	"""
 
 	def __init__(self):
@@ -261,6 +262,8 @@ class Elastico:
 		self.views = set()
 		self.primary = False
 		self.pre_prepareMsgLog = {}
+		self.viewId = 0
+
 
 	def reset(self):
 		"""
@@ -308,9 +311,11 @@ class Elastico:
 			self.views = set()
 			self.primary = False
 			self.pre_prepareMsgLog = {}
+			self.viewId = 0
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
 			raise e
+
 
 	def initER(self):
 		"""
