@@ -798,7 +798,40 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_prepareMsg(msg)
+			if self.isPrepared():
+				self.state = ELASTICO_STATES["PBFT_PREPARE"]
 		pass
+
+
+	def isPrepared(self):
+		"""
+			Check if the state is prepared or not
+		"""
+		# check for received request messages
+		for socket in self.pre_prepareMsgLog:
+			# In current View Id
+			if self.pre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
+				# request msg of pre-prepare request
+				requestMsg = self.pre_prepareMsgLog[socket]["message"]
+				# digest of the message
+				digest = self.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
+				# get sequence number of this msg
+				seqnum = self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
+				# find Prepare msgs for this view
+				if self.viewId in self.prepareMsgLog:
+					# for this sequence number
+					if seqnum in self.prepareMsgLog[self.viewId]:
+						# need to find matching prepare msgs from different replicas atleast c//2 + 1
+						count = 0
+						for replicaId in self.prepareMsgLog[self.viewId][seqnum]:
+							for msg in self.prepareMsgLog[self.viewId][seqnum][replicaId]:
+								if msg["digest"] == digest:
+									count += 1
+									break
+						# condition for Prepared state
+						if count >= c//2 + 1:
+							return True
+		return False
 
 
 	def process_pre_prepareMsg(self, msg):
