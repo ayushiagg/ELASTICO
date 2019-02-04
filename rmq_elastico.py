@@ -825,7 +825,7 @@ class Elastico:
 		"""
 		# collect prepared data
 		preparedData = dict()
-
+		f = (c - 1)//3
 		# check for received request messages
 		for socket in self.pre_prepareMsgLog:
 			# In current View Id
@@ -846,7 +846,7 @@ class Elastico:
 								count += 1
 								break
 					# condition for Prepared state
-					if count >= c//2 + 1:
+					if count >= 2*f:
 						if self.viewId not in preparedData:
 							preparedData[self.viewId] = dict()
 						if seqnum not in preparedData[self.viewId]:
@@ -863,7 +863,7 @@ class Elastico:
 		"""
 		# collect committed data
 		committedData = dict()
-
+		f = (c - 1)//3
 		# check for received request messages
 		for socket in self.pre_prepareMsgLog:
 			# In current View Id
@@ -886,7 +886,7 @@ class Elastico:
 											count += 1
 											break
 								# ToDo: condition check 
-								if count >= c//2 + 1:
+								if count >= 2*f + 1:
 									if self.viewId not in committedData:
 										committedData[self.viewId] = dict()
 									if seqnum not in committedData[self.viewId]:
