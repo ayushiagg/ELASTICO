@@ -846,6 +846,7 @@ class Elastico:
 								break
 					# condition for Prepared state
 					if count >= 2*f:
+
 						if self.viewId not in preparedData:
 							preparedData[self.viewId] = dict()
 						if seqnum not in preparedData[self.viewId]:
@@ -879,6 +880,7 @@ class Elastico:
 							# pre-prepared matched and prepared is also true, check for commits
 							if self.viewId in self.commitMsgLog and seqnum in self.commitMsgLog[self.viewId]:
 								count = 0
+								logging.warning("CHECK FOR COUNT IN COMMITTED BY PORT %s" , str(self.port))
 								for replicaId in self.commitMsgLog[self.viewId][seqnum]:
 									for msg in self.commitMsgLog[self.viewId][seqnum][replicaId]:
 										if msg["digest"] == digest:
@@ -891,8 +893,13 @@ class Elastico:
 									if seqnum not in committedData[self.viewId]:
 										committedData[self.viewId][seqnum] = list()
 									committedData[self.viewId][seqnum].append(requestMsg)
-
-		if len(commitData) > 0:
+						else:
+							logging.error("wrong digest in is committed")
+				else:
+					logging.error("view and seqnum not found in isCommitted")
+			else:
+				logging.error("wrong view in is committed")	
+		if len(committedData) > 0:
 			self.committedData = committedData
 			return True
 		return False
@@ -909,6 +916,8 @@ class Elastico:
 			# Log the pre-prepare msgs!
 			self.logPre_prepareMsg(msg)
 			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+		else:
+			logging.error("error in verification of process_pre_prepareMsg")
 		pass
 
 	def verify_commit(self, msg):
@@ -933,13 +942,16 @@ class Elastico:
 		"""
 		# verify Pow
 		if not self.verify_PoW(msg["identity"]):
+			logging.warning("wrong pow in verify prepares")
 			return False
 		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
+			logging.warning("wrong sign in verify prepares")
 			return False
 
 		# check the view is same or not
 		if msg["prepareData"]["viewId"] != self.viewId:
+			logging.warning("wrong view in verify prepares")
 			return False
 
 		# verifying the digest of request msg
@@ -955,15 +967,19 @@ class Elastico:
 		"""
 		# verify Pow
 		if not self.verify_PoW(msg["identity"]):
+			logging.warning("wrong pow in  verify pre-prepare")
 			return False
 		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+			logging.warning("wrong sign in  verify pre-prepare")
 			return False
 		# verifying the digest of request msg
 		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+			logging.warning("wrong digest in  verify pre-prepare")
 			return False
 		# check the view is same or not
 		if msg["pre-prepareData"]["viewId"] != self.viewId:
+			logging.warning("wrong view in  verify pre-prepare")
 			return False
 		# check if already accepted a pre-prepare msg for view v and sequence num n with different digest
 		seqnum = msg["pre-prepareData"]["seq"]
@@ -1002,25 +1018,29 @@ class Elastico:
 		"""
 			log the commit msg
 		"""
-		viewId = msg["commitData"]["viewId"]
-		seqnum = msg["commitData"]["seq"]
-		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
-		# add msgs for this view
-		if viewId not in self.commitMsgLog:
-			self.commitMsgLog[viewId] = dict()
+		try:
+			viewId = msg["commitData"]["viewId"]
+			seqnum = msg["commitData"]["seq"]
+			socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+			# add msgs for this view
+			if viewId not in self.commitMsgLog:
+				self.commitMsgLog[viewId] = dict()
 
-		# add msgs for this sequence num
-		if seqnum not in self.commitMsgLog[viewId]:
-			self.commitMsgLog[viewId][seqnum] = dict()
+			# add msgs for this sequence num
+			if seqnum not in self.commitMsgLog[viewId]:
+				self.commitMsgLog[viewId][seqnum] = dict()
 
-		# add all msgs from this sender
-		if socketId not in self.commitMsgLog[viewId][seqnum]:
-			self.commitMsgLog[viewId][seqnum][socketId] = list()
+			# add all msgs from this sender
+			if socketId not in self.commitMsgLog[viewId][seqnum]:
+				self.commitMsgLog[viewId][seqnum][socketId] = list()
 
-		# log only required details from the commit msg
-		msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["identity"]}
-		# append msg
-		self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)		
+			# log only required details from the commit msg
+			msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["identity"]}
+			# append msg
+			logging.warning("Log committed msg for view %s, seqnum %s", str(viewId), str(seqnum))
+			self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)		
+		except Exception as e:
+			raise e
 
 	def logPre_prepareMsg(self, msg):
 		"""
@@ -1074,21 +1094,26 @@ class Elastico:
 				if not self.primary:
 					# construct prepare msg
 					preparemsgList = self.construct_prepare()
+					logging.warning("constructing prepares with port %s" , str(self.port))
 					self.send_prepare(preparemsgList)
-					self.state == ELASTICO_STATES["PBFT_PREPARE_SENT"]
+					self.state = ELASTICO_STATES["PBFT_PREPARE_SENT"]
 
 			# ToDo: primary has not changed its state to "PBFT_PREPARE_SENT"
 			elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
+				logging.warning("prepared check by %s" , str(self.port))
 				if self.isPrepared():
+					logging.warning("prepared done by %s" , str(self.port))
 					self.state = ELASTICO_STATES["PBFT_PREPARED"]
 
 			elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 				commitMsgList = self.construct_commit()
+				logging.warning("constructing commit with port %s" , str(self.port))
 				self.send_commit(commitMsgList)
-				self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]
+				self.state = ELASTICO_STATES["PBFT_COMMIT_SENT"]
 
 			elif self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]:
 				if self.isCommitted():
+					logging.warning("committed done by %s" , str(self.port))
 					self.state = ELASTICO_STATES["PBFT_COMMITTED"]
 				pass
 		except Exception as e:
@@ -1506,11 +1531,11 @@ class Elastico:
 					# initial state for the PBFT
 					self.state = ELASTICO_STATES["PBFT_NONE"]
 					# init viewId
-					self.viewId = 1
 					# run PBFT for intra-committee consensus
 					self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["PBFT_NONE"]:
+				self.runPBFT("intra committee consensus")
 				pass
 
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
@@ -1674,6 +1699,8 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				# count the number of messages that are in the queue
 				count = queue.method.message_count
 
+				if node.state == ELASTICO_STATES["PBFT_PREPARED"]:
+					logging.warning("port- %s, count - %s" , str(node.port) , str(count))
 				# consume all the messages one by one
 				while count:
 					# get the message from the queue
