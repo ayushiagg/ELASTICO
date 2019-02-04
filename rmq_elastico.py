@@ -857,7 +857,7 @@ class Elastico:
 			return True
 		return False
 
-	def isCommited(self):
+	def isCommitted(self):
 		"""
 			Check if the state is committed or not
 		"""
@@ -894,7 +894,7 @@ class Elastico:
 									commitData[self.viewId][seqnum].append(requestMsg)
 
 		if len(commitData) > 0:
-			self.commitData = commitData
+			self.committedData = commitData
 			return True
 		return False
 
@@ -993,9 +993,10 @@ class Elastico:
 		if socketId not in self.prepareMsgLog[viewId][seqnum]:
 			self.prepareMsgLog[viewId][seqnum][socketId] = list()
 
+		# ToDo: check that the msg appended is dupicate or not
 		# log only required details from the prepare msg
 		msgDetails = {"digest" : msg["prepareData"]["digest"], "identity" : msg["prepareData"]["identity"]}
-		# append msg
+		# append msg to prepare msg log
 		self.prepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
 
 	def log_commitMsg(self, msg):
@@ -1059,9 +1060,10 @@ class Elastico:
 			if self.primary:
 				# construct pre-prepare msg
 				pre_preparemsg = self.construct_pre_prepare()
+				# multicasts the pre-prepare msg to replicas
 				self.send_pre_prepare(pre_preparemsg)
 				# change the state of primary to pre-prepared 
-				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+				self.state = ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]
 				# primary will log the pre-prepare msg for itself
 				self.logPre_prepareMsg(pre_preparemsg)
 
@@ -1071,17 +1073,19 @@ class Elastico:
 				preparemsgList = self.construct_prepare()
 				self.send_prepare(preparemsgList)
 				self.state == ELASTICO_STATES["PBFT_PREPARE_SENT"]
-		elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"]:
+
+		# ToDo: primary has not changed its state to "PBFT_PREPARE_SENT"
+		elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
 			if self.isPrepared():
 				self.state = ELASTICO_STATES["PBFT_PREPARED"]
-					
+
 		elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
 			commitMsgList = self.construct_commit()
 			self.send_commit(commitMsgList)
 			self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]
 
 		elif self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]:
-			if self.isCommited():
+			if self.isCommitted():
 				self.state = ELASTICO_STATES["PBFT_COMMITTED"]
 			
 
@@ -1110,6 +1114,7 @@ class Elastico:
 
 	def construct_prepare(self):
 		"""
+			construct prepare msg in the prepare phase
 		"""
 		prepareMsgList = []
 		for socketId in self.pre_prepareMsgLog:
@@ -1124,7 +1129,7 @@ class Elastico:
 
 	def construct_pre_prepare(self):
 		"""
-			construct pre-prepare msg
+			construct pre-prepare msg , done by primary
 		"""
 		txnBlockList = list(self.txn_block)
 		# make pre_prepare_contents Ordered Dict for signatures purpose
