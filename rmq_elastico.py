@@ -90,10 +90,11 @@ def BroadcastTo_Network(data, type_):
 
 	msg = { "data" : data , "type" : type_ }
 
+	connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+	channel = connection.channel()
+	 
 	for node in network_nodes:
 		try:
-			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-			channel = connection.channel()
 
 			port = node.port
 
@@ -102,15 +103,13 @@ def BroadcastTo_Network(data, type_):
 			
 			serialized_data = pickle.dumps(msg)
 			channel.basic_publish(exchange='', routing_key='hello' + str(port), body=serialized_data)
-			
-			# close the connection
-			connection.close()
-
 		except Exception as e:
 			logging.error("error in broadcast to network" , exc_info=e)
 			if isinstance(e, ConnectionRefusedError):
 				logging.error("ConnectionRefusedError at port : %s", str(node.port))
 			raise e
+	channel.close()		
+	connection.close()
 
 
 def MulticastCommittee(commList, identityobj_dict, txns):
@@ -163,9 +162,8 @@ class Identity:
 		"""
 		try:
 			logging.info("sending msg - %s" , str(msg))
-
-			# establish a connection with RabbitMQ server
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+			# establish a connection with RabbitMQ server
 			channel = connection.channel()
 
 			port = self.port
@@ -178,7 +176,7 @@ class Identity:
 			else:
 				logging.error("messgae not published %s" , str(msg))    
 
-			# close the connection
+			channel.close()
 			connection.close()
 		except Exception as e:
 			logging.error("error at send msg ", exc_info=e)
@@ -224,6 +222,7 @@ class Elastico:
 
 	def __init__(self):
 		print("---Constructor of elastico class---")
+		self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 		self.IP = self.get_IP()
 		self.port = self.get_port()
 		self.key = self.get_key()
@@ -1658,10 +1657,9 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				
 				# process consume the msgs from the queue
 
-				# connect to rabbitmq server
-				connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+				# # connect to rabbitmq server
 				# create a channel
-				channel = connection.channel()
+				channel = node.connection.channel()
 				# specify the queue name 
 				queue = channel.queue_declare( queue='hello' + str(node.port))
 				# count the number of messages that are in the queue
@@ -1680,7 +1678,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						logging.error('No message returned %s' , str(count))
 						logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
 					count -= 1
-
+				channel.close()
 			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
 
