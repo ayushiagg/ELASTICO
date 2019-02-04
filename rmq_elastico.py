@@ -16,11 +16,11 @@ global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, le
 
 lock = Lock()
 # n : number of nodes
-n = 30
+n = 64
 # s - where 2^s is the number of committees
 s = 2
 # c - size of committee
-c = 2
+c = 4
 # D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 D = 3
 # r - number of bits in random string 
