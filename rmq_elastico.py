@@ -265,7 +265,9 @@ class Elastico:
 		self.pre_prepareMsgLog = dict()
 		self.viewId = 0
 		self.prepareMsgLog = dict()
+		self.commitMsgLog = dict()
 		self.preparedData = dict()
+		self.committedData = dict()
 
 	def reset(self):
 		"""
@@ -312,10 +314,12 @@ class Elastico:
 			# self.serve = False
 			self.views = set()
 			self.primary = False
-			self.pre_prepareMsgLog = {}
+			self.pre_prepareMsgLog = dict()
 			self.viewId = 0
 			self.prepareMsgLog = dict()
+			self.commitMsgLog = dict()
 			self.preparedData = dict()
+			self.committedData = dict()
 
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
