@@ -1253,8 +1253,11 @@ class Elastico:
 			Each committee member sends the signed value(txn block after intra committee consensus)
 			along with signatures to final committee
 		"""
-		PK = self.key.publickey().exportKey().decode()
 
+		PK = self.key.publickey().exportKey().decode()
+		for socket in self.committedData:
+			msg = self.committedData[socket]
+			self.txn_block |= set(msg["message"])
 		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
 		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
@@ -1525,7 +1528,8 @@ class Elastico:
 				# nodes who are not the part of any committee
 				pass
 
-			elif self.state == ELASTICO_STATES["PBFT Finished"]:
+
+			elif self.state == ELASTICO_STATES["PBFT_COMMITTED"]:
 				# send pbft consensus blocks to final committee members
 				logging.warning("pbft finished by memebrs %s" , str(self.port))
 				self.SendtoFinal()
