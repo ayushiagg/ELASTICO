@@ -1291,6 +1291,8 @@ class Elastico:
 			returns the digest for a msg
 		"""
 		commitment = SHA256.new()
+		if type(msg) is not str:
+			msg = str(msg)
 		commitment.update(msg.encode())
 		return commitment.hexdigest()
 
