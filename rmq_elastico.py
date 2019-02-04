@@ -1517,7 +1517,10 @@ class Elastico:
 				self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["PBFT_COMMITTED"]:
-				self.runPBFT("intra committee consensus")	
+				self.runPBFT("intra committee consensus")
+
+			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
+				self.runPBFT("intra committee consensus")				
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
