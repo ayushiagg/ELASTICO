@@ -622,7 +622,7 @@ class Elastico:
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
 
-				if txns in msg["data"]:
+				if "txns" in msg["data"]:
 					# update the txn block
 					self.txn_block |= set(msg["data"]["txns"])
 					self.primary =  True
@@ -980,7 +980,7 @@ class Elastico:
 		"""
 		viewId = msg["prepareData"]["viewId"]
 		seqnum = msg["prepareData"]["seq"]
-		socketId = msg["prepareData"]["identity"]["IP"] +  ":" + str(msg["prepareData"]["identity"]["port"])
+		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
 		# add msgs for this view
 		if viewId not in self.prepareMsgLog:
 			self.prepareMsgLog[viewId] = dict()
@@ -995,7 +995,7 @@ class Elastico:
 
 		# ToDo: check that the msg appended is dupicate or not
 		# log only required details from the prepare msg
-		msgDetails = {"digest" : msg["prepareData"]["digest"], "identity" : msg["prepareData"]["identity"]}
+		msgDetails = {"digest" : msg["prepareData"]["digest"], "identity" : msg["identity"]}
 		# append msg to prepare msg log
 		self.prepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
 
@@ -1005,7 +1005,7 @@ class Elastico:
 		"""
 		viewId = msg["commitData"]["viewId"]
 		seqnum = msg["commitData"]["seq"]
-		socketId = msg["commitData"]["identity"]["IP"] +  ":" + str(msg["commitData"]["identity"]["port"])
+		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
 		# add msgs for this view
 		if viewId not in self.commitMsgLog:
 			self.commitMsgLog[viewId] = dict()
@@ -1019,7 +1019,7 @@ class Elastico:
 			self.commitMsgLog[viewId][seqnum][socketId] = list()
 
 		# log only required details from the commit msg
-		msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["commitData"]["identity"]}
+		msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["identity"]}
 		# append msg
 		self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)		
 
