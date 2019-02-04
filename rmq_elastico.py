@@ -891,10 +891,10 @@ class Elastico:
 										committedData[self.viewId] = dict()
 									if seqnum not in committedData[self.viewId]:
 										committedData[self.viewId][seqnum] = list()
-									commitData[self.viewId][seqnum].append(requestMsg)
+									committedData[self.viewId][seqnum].append(requestMsg)
 
 		if len(commitData) > 0:
-			self.committedData = commitData
+			self.committedData = committedData
 			return True
 		return False
 
@@ -1516,8 +1516,7 @@ class Elastico:
 				# commit msges are sent , run PBFT to see if state is committed or not
 				self.runPBFT("intra committee consensus")
 
-			elif self.state == ELASTICO_STATES["PBFT_COMMITTED"]:
-				self.runPBFT("intra committee consensus")
+
 
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
 				self.runPBFT("intra committee consensus")				
