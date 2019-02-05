@@ -1490,6 +1490,19 @@ class Elastico:
 			prepareMsgList.append(preparemsg)
 		return prepareMsgList
 
+	def construct_Finalprepare(self):
+		"""
+			construct prepare msg in the prepare phase
+		"""
+		FinalprepareMsgList = []
+		for socketId in self.Finalpre_prepareMsgLog:
+			msg = self.Finalpre_prepareMsgLog[socketId]
+			# make prepare_contents Ordered Dict for signatures purpose
+			prepare_contents =  OrderedDict({ "type" : "Finalprepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
+		
+			preparemsg = {"type" : "Finalprepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
+			FinalprepareMsgList.append(preparemsg)
+		return FinalprepareMsgList
 
 	def construct_pre_prepare(self):
 		"""
@@ -1501,6 +1514,18 @@ class Elastico:
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 		return pre_preparemsg 
+
+	def Finalconstruct_pre_prepare(self):
+		"""
+			construct pre-prepare msg , done by primary final
+		"""
+		txnBlockList = self.mergedBlock
+		# make pre_prepare_contents Ordered Dict for signatures purpose
+		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		
+		pre_preparemsg = {"type" : "Finalpre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
+		return pre_preparemsg 
+
 
 
 	def send_commit(self, commitMsgList):
@@ -1527,6 +1552,23 @@ class Elastico:
 					commitMsges.append(commitMsg)
 
 		return commitMsges
+
+	def construct_Finalcommit(self):
+		"""
+			Construct commit msgs
+		"""
+		commitMsges = []
+		for viewId in self.FinalpreparedData:
+			for seqnum in self.FinalpreparedData[viewId]:
+				for msg in self.FinalpreparedData[viewId][seqnum]:
+					digest = self.hexdigest(msg)
+					# make commit_contents Ordered Dict for signatures purpose
+					commit_contents = OrderedDict({"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
+					commitMsg = {"type" : "Finalcommit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity.__dict__}
+					commitMsges.append(commitMsg)
+
+		return commitMsges
+
 
 	def send_pre_prepare(self, pre_preparemsg):
 		"""
