@@ -1314,6 +1314,7 @@ class Elastico:
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
 			txnBlock = list(self.txn_block)
+			txnBlock = sorted(txnBlock)
 			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity.__dict__}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
