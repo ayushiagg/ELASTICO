@@ -12,7 +12,7 @@ import logging
 from multiprocessing import Process, Lock, Manager
 import time, base64
 
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger,  epochBlock, port, lock
+global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, port, lock
 
 lock = Lock()
 # n : number of nodes
@@ -714,11 +714,6 @@ class Elastico:
 
 						# add signatures for the txn block 
 						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
-						# to verify the number of txn blocks received from each committee
-						# if identityobj["committee_id"] not in self.ConsensusMsgCount:
-						#   self.ConsensusMsgCount[identityobj.committee_id ] = 1
-						# else:
-						#   self.ConsensusMsgCount[identityobj.committee_id] += 1
 						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))   
 					else:
 						logging.error("signature invalid for intra committee block")        
@@ -1601,7 +1596,6 @@ class Elastico:
 			verify whether signature is valid or not 
 			if public key is not key object then create a key object
 		"""
-		# print("---verify_sign func---")
 		# decode the signature before verifying
 		signature = base64.b64decode(signature)
 		if type(publickey) is str:
@@ -2123,7 +2117,7 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, commitmentSet, epochBlock
+	global network_nodes, ledger, commitmentSet
 	
 	try:
 		if len(network_nodes) == 0:
@@ -2140,7 +2134,6 @@ def Run(epochTxns):
 			# set the flag false for bad nodes
 			network_nodes[badNodeIndex].flag = False
 
-		epochBlock = set()
 		commitmentSet = set()
 
 		# Manager for managing the shared variable among the processes
