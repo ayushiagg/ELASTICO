@@ -1970,9 +1970,10 @@ class Elastico:
 				# final committee member runs final pbft
 				logging.warning("merged consensus data")
 				self.state = ELASTICO_STATES["FinalPBFT_NONE"]
+
 				self.runFinalPBFT("final committee consensus")
 
-			elif self.isFinalMember() and self.state == ELASTICO_STATES["PBFT Finished-FinalCommittee"]:
+			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalPBFT_COMMITTED"]:
 				# send the commitment to other final committee members
 				logging.warning("pbft finished by final committee %s" , str(self.port))
 				self.sendCommitment()
@@ -2172,7 +2173,7 @@ if __name__ == "__main__":
 			# txns is the list of the transactions in one epoch to which the committees will agree on
 			txns = []
 			# number of transactions in each epoch
-			numOfTxns = 200
+			numOfTxns = 20
 			for j in range(numOfTxns):
 				random_num = random_gen()
 				txns.append(random_num)
