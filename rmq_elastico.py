@@ -1120,6 +1120,32 @@ class Elastico:
 				return True
 		return False
 
+
+	def verify_Finalprepare(self, msg):
+		"""
+			Verify final prepare msgs
+		"""
+		# verify Pow
+		if not self.verify_PoW(msg["identity"]):
+			logging.warning("wrong pow in verify final prepares")
+			return False
+		# verify signatures of the received msg
+		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
+			logging.warning("wrong sign in verify final prepares")
+			return False
+
+		# check the view is same or not
+		if msg["prepareData"]["viewId"] != self.viewId:
+			logging.warning("wrong view in verify final prepares")
+			return False
+
+		# verifying the digest of request msg
+		for socketId in self.Finalpre_prepareMsgLog:
+			pre_prepareMsg = self.Finalpre_prepareMsgLog[socketId]
+			if pre_prepareMsg["pre-prepareData"]["viewId"] == msg["prepareData"]["viewId"] and pre_prepareMsg["pre-prepareData"]["seq"] == msg["prepareData"]["seq"] and pre_prepareMsg["pre-prepareData"]["digest"] == msg["prepareData"]["digest"]:
+				return True
+		return False
+
 	def verify_pre_prepare(self, msg):
 		"""
 			Verify pre-prepare msgs
