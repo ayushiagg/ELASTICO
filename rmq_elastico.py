@@ -906,6 +906,45 @@ class Elastico:
 			return True
 		return False
 
+	def isFinalPrepared(self):
+		"""
+			Check if the state is prepared or not
+		"""
+		# collect prepared data
+		preparedData = dict()
+		f = (c - 1)//3
+		# check for received request messages
+		for socket in self.Finalpre_prepareMsgLog:
+			# In current View Id
+			if self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
+				# request msg of pre-prepare request
+				requestMsg = self.Finalpre_prepareMsgLog[socket]["message"]
+				# digest of the message
+				digest = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
+				# get sequence number of this msg
+				seqnum = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
+				# find Prepare msgs for this view and sequence number
+				if self.viewId in self.FinalprepareMsgLog and seqnum in self.FinalprepareMsgLog[self.viewId]:
+					# need to find matching prepare msgs from different replicas atleast c//2 + 1
+					count = 0
+					for replicaId in self.FinalprepareMsgLog[self.viewId][seqnum]:
+						for msg in self.FinalprepareMsgLog[self.viewId][seqnum][replicaId]:
+							if msg["digest"] == digest:
+								count += 1
+								break
+					# condition for Prepared state
+					if count >= 2*f:
+
+						if self.viewId not in preparedData:
+							preparedData[self.viewId] = dict()
+						if seqnum not in preparedData[self.viewId]:
+							preparedData[self.viewId][seqnum] = list()
+						preparedData[self.viewId][seqnum].append(requestMsg)
+		if len(preparedData) > 0:
+			self.FinalpreparedData = preparedData
+			return True
+		return False	
+
 	def isCommitted(self):
 		"""
 			Check if the state is committed or not
