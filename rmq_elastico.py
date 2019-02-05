@@ -938,7 +938,7 @@ class Elastico:
 		# check the view is same or not
 		if msg["commitData"]["viewId"] != self.viewId:
 			return False
-
+		return True
 
 
 	def verify_prepare(self, msg):
