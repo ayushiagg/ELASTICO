@@ -344,13 +344,12 @@ class Elastico:
 		"""
 			initialise r-bit epoch random string
 		"""
-				# minor comment: this must be cryptographically secure, but this is not.
-				# might want to replace this with reads from /dev/urandom.
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
 	def get_port(self):
 		"""
+			get port number for the process
 		"""
 		try:
 			lock.acquire()
@@ -361,20 +360,7 @@ class Elastico:
 			raise e
 		finally:
 			lock.release()
-			return port 
-		
-		
-
-
-	# def get_socket(self):
-	#   """
-	#   """
-	#   s = socket.socket()
-	#   print ("Socket successfully created")
-	#   # Modified 
-	#   s.bind(('', self.port))
-	#   print ("socket binded to %s" %(port) )
-	#   return s
+			return port
 
 
 	def get_IP(self):
@@ -385,8 +371,6 @@ class Elastico:
 		# ips = check_output(['hostname', '--all-ip-addresses'])
 		# ips = ips.decode()
 		# return ips.split(' ')[0]
-
-		print("---get IP address---")
 		ip=""
 		for i in range(4):
 			ip += str(random_gen(8))
@@ -408,7 +392,6 @@ class Elastico:
 		"""
 			returns hash which satisfies the difficulty challenge(D) : PoW["hash"]
 		"""
-		# print("---PoW computation started---")
 		if self.state == ELASTICO_STATES["NONE"]:
 			PK = self.key.publickey().exportKey().decode()
 			IP = self.IP
@@ -416,13 +399,7 @@ class Elastico:
 			# otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
-				# logging.warning("set of Rs greater than zero")
 				self.epoch_randomness, randomset_R = self.xor_R()
-							# minor comment: create a sha256 object by calling hashlib.sha256()
-							# then repeatedly call sha256.update(...) with the things that need to be hashed together.
-							# finally extract digest by calling sha256.digest()
-							# don't convert to json and then to string
-							# bug is possible in this, find and fix it.
 			digest = SHA256.new()
 			digest.update(IP.encode())
 			digest.update(PK.encode())
@@ -432,7 +409,6 @@ class Elastico:
 			if hash_val.startswith('0' * D):
 				nonce = self.PoW["nonce"]
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
-				# print("---PoW computation end---")
 				self.state = ELASTICO_STATES["PoW Computed"]
 				return hash_val
 			self.PoW["nonce"] += 1
