@@ -1938,7 +1938,7 @@ class Elastico:
 
 
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
-				self.runPBFT("intra committee consensus")				
+				self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["Formed Committee"]:
 				# nodes who are not the part of any committee
@@ -1976,6 +1976,32 @@ class Elastico:
 				self.state = ELASTICO_STATES["FinalPBFT_NONE"]
 
 				self.runFinalPBFT("final committee consensus")
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_NONE"]:
+				self.runFinalPBFT("final committee consensus")
+				pass
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]:
+				# node enters the pre-prepare phase and now will multicast prepare msgs
+				self.runFinalPBFT("final committee consensus")
+				pass
+
+			elif self.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"]:
+				self.runFinalPBFT("final committee consensus")
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_PREPARED"]:
+				# node enters the prepare stage
+				self.runFinalPBFT("final committee consensus")
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]:
+				# commit msges are sent , run PBFT to see if state is committed or not
+				self.runFinalPBFT("final committee consensus")
+
+
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]:
+				self.runFinalPBFT("final committee consensus")
+
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalPBFT_COMMITTED"]:
 				# send the commitment to other final committee members
