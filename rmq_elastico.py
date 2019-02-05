@@ -1145,6 +1145,11 @@ class Elastico:
 		#   logging.warning("%s changing state to pbft finished" , str(self.port))
 		#   self.state = ELASTICO_STATES["PBFT Finished"]
 
+	def is_pre_prepared(self):
+		"""
+		"""
+		return len(self.pre_prepareMsgLog) > 0
+
 	def send_prepare(self, prepareMsgList):
 		"""
 			send the prepare msgs to the committee members
