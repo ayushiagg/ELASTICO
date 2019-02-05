@@ -920,7 +920,7 @@ class Elastico:
 		if verified:
 			# Log the pre-prepare msgs!
 			self.logPre_prepareMsg(msg)
-			self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+			# self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		else:
 			logging.error("error in verification of process_pre_prepareMsg")
 		pass
@@ -1094,6 +1094,11 @@ class Elastico:
 					self.state = ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]
 					# primary will log the pre-prepare msg for itself
 					self.logPre_prepareMsg(pre_preparemsg)
+				else:
+					# for non-primary members
+					if self.is_pre_prepared():
+						self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+
 
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
 				if not self.primary:
