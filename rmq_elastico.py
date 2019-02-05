@@ -878,21 +878,26 @@ class Elastico:
 					for prepareMsg in self.preparedData[self.viewId][seqnum]:
 						if self.hexdigest(prepareMsg) == digest:
 							# pre-prepared matched and prepared is also true, check for commits
-							if self.viewId in self.commitMsgLog and seqnum in self.commitMsgLog[self.viewId]:
-								count = 0
-								logging.warning("CHECK FOR COUNT IN COMMITTED BY PORT %s" , str(self.port))
-								for replicaId in self.commitMsgLog[self.viewId][seqnum]:
-									for msg in self.commitMsgLog[self.viewId][seqnum][replicaId]:
-										if msg["digest"] == digest:
-											count += 1
-											break
-								# ToDo: condition check 
-								if count >= 2*f + 1:
-									if self.viewId not in committedData:
-										committedData[self.viewId] = dict()
-									if seqnum not in committedData[self.viewId]:
-										committedData[self.viewId][seqnum] = list()
-									committedData[self.viewId][seqnum].append(requestMsg)
+							if self.viewId in self.commitMsgLog:
+								if seqnum in self.commitMsgLog[self.viewId]:
+									count = 0
+									logging.warning("CHECK FOR COUNT IN COMMITTED BY PORT %s" , str(self.port))
+									for replicaId in self.commitMsgLog[self.viewId][seqnum]:
+										for msg in self.commitMsgLog[self.viewId][seqnum][replicaId]:
+											if msg["digest"] == digest:
+												count += 1
+												break
+									# ToDo: condition check 
+									if count >= 2*f + 1:
+										if self.viewId not in committedData:
+											committedData[self.viewId] = dict()
+										if seqnum not in committedData[self.viewId]:
+											committedData[self.viewId][seqnum] = list()
+										committedData[self.viewId][seqnum].append(requestMsg)
+								else:
+									logging.error("no seqnum found in commit msg log")
+							else:
+								logging.error("no view id found in commit msg log")
 						else:
 							logging.error("wrong digest in is committed")
 				else:
