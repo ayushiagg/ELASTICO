@@ -2136,7 +2136,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 
 def Run(epochTxns):
 	"""
-		runs the epoch
+		runs all the epochs
 	"""
 	global network_nodes, ledger, commitmentSet, epochBlock
 	
@@ -2208,10 +2208,6 @@ if __name__ == "__main__":
 				random_num = random_gen()
 				txns.append(random_num)
 			epochTxns[i] = txns
-
-		# for epoch in epochTxns:
-		#   logging.info("epoch number :- %s started" , str(epoch + 1) )
-		#   Run(epochTxns[epoch])
 
 		# run all the epochs 
 		Run(epochTxns)
