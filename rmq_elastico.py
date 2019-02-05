@@ -834,6 +834,16 @@ class Elastico:
 			self.log_commitMsg(msg)
 		pass
 
+	def process_FinalcommitMsg(self, msg):
+		"""
+		"""
+		# verify the commit message
+		verified = self.verify_commit(msg)
+		if verified:
+			# Log the commit msgs!
+			self.log_FinalcommitMsg(msg)
+		pass
+
 	def process_prepareMsg(self, msg):
 		"""
 		"""
@@ -842,6 +852,17 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_prepareMsg(msg)
+
+		pass
+
+	def process_FinalprepareMsg(self, msg):
+		"""
+		"""
+		# verify the prepare message
+		verified = self.verify_Finalprepare(msg)
+		if verified:
+			# Log the prepare msgs!
+			self.log_FinalprepareMsg(msg)
 
 		pass
 
@@ -951,6 +972,20 @@ class Elastico:
 			# self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		else:
 			logging.error("error in verification of process_pre_prepareMsg")
+		pass
+
+	def process_Finalpre_prepareMsg(self, msg):
+		"""
+			Process Final Pre-Prepare msg
+		"""
+		# verify the Final pre-prepare message
+		verified = self.verify_Finalpre_prepare(msg)
+		if verified:
+			# Log the final pre-prepare msgs!
+			self.logFinalPre_prepareMsg(msg)
+			# self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+		else:
+			logging.error("error in verification of Final process_pre_prepareMsg")
 		pass
 
 	def verify_commit(self, msg):
