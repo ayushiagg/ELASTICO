@@ -1400,21 +1400,61 @@ class Elastico:
 		except Exception as e:
 			logging.error("error at run pbft", exc_info=e)
 			raise e
-		
-			
 
-		# txn_set = set()
-		# for txn in txnBlock:
-		#   txn_set.add(txn)
-		# # for final committee consensus 
-		# if instance == "final committee consensus":
-		#   self.finalBlock["finalBlock"] = txn_set
-		#   self.state = ELASTICO_STATES["PBFT Finished-FinalCommittee"]
-		# # for intra committee consensus 
-		# elif instance == "intra committee consensus":
-		#   self.txn_block = txn_set
-		#   logging.warning("%s changing state to pbft finished" , str(self.port))
-		#   self.state = ELASTICO_STATES["PBFT Finished"]
+
+	def runFinalPBFT(self , instance):
+		"""
+			Run PBFT by final committee members
+		"""
+		try:
+			if self.state == ELASTICO_STATES["FinalPBFT_NONE"]:
+				if self.primary:
+					# construct pre-prepare msg
+					finalpre_preparemsg = self.Finalconstruct_pre_prepare()
+					# multicasts the pre-prepare msg to replicas
+					self.send_pre_prepare(finalpre_preparemsg)
+
+					logging.warning("final primary constructing pre-prepares with port %s" , str(self.port))
+					
+					# change the state of primary to pre-prepared 
+					self.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]
+					# primary will log the pre-prepare msg for itself
+					self.logFinalPre_prepareMsg(finalpre_preparemsg)
+				else:
+					# for non-primary members
+					if self.is_Finalpre_prepared():
+						self.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]
+
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]:
+				if not self.primary:
+					# construct prepare msg
+					FinalpreparemsgList = self.construct_Finalprepare()
+					logging.warning("constructing final prepares with port %s" , str(self.port))
+					self.send_prepare(FinalpreparemsgList)
+					self.state = ELASTICO_STATES["FinalPBFT_PREPARE_SENT"]
+
+			# ToDo: primary has not changed its state to "FinalPBFT_PREPARE_SENT"
+			elif self.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]:
+				logging.warning("final prepared check by %s" , str(self.port))
+				if self.isFinalPrepared():
+					logging.warning("final prepared done by %s" , str(self.port))
+					self.state = ELASTICO_STATES["FinalPBFT_PREPARED"]
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_PREPARED"]:
+				commitMsgList = self.construct_Finalcommit()
+				logging.warning("constructing final commit with port %s" , str(self.port))
+				self.send_commit(commitMsgList)
+				self.state = ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]
+
+			elif self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]:
+				if self.isFinalCommitted():
+					logging.warning("final committed done by %s" , str(self.port))
+					self.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
+				pass
+		except Exception as e:
+			logging.error("error at run pbft", exc_info=e)
+			raise e
 
 	def is_pre_prepared(self):
 		"""
