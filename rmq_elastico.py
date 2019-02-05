@@ -1461,6 +1461,11 @@ class Elastico:
 		"""
 		return len(self.pre_prepareMsgLog) > 0
 
+	def is_Finalpre_prepared(self):
+		"""
+		"""
+		return len(self.Finalpre_prepareMsgLog) > 0	
+
 	def send_prepare(self, prepareMsgList):
 		"""
 			send the prepare msgs to the committee members
