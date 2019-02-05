@@ -1414,7 +1414,7 @@ class Elastico:
 			if self.state == ELASTICO_STATES["FinalPBFT_NONE"]:
 				if self.primary:
 					# construct pre-prepare msg
-					finalpre_preparemsg = self.Finalconstruct_pre_prepare()
+					finalpre_preparemsg = self.construct_Finalpre_prepare()
 					# multicasts the pre-prepare msg to replicas
 					self.send_pre_prepare(finalpre_preparemsg)
 
@@ -1519,7 +1519,7 @@ class Elastico:
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
 		return pre_preparemsg 
 
-	def Finalconstruct_pre_prepare(self):
+	def construct_Finalpre_prepare(self):
 		"""
 			construct pre-prepare msg , done by primary final
 		"""
