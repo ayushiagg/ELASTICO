@@ -2167,13 +2167,23 @@ def Run(epochTxns):
 
 		logging.warning("processes finished")
 
-		# Append the block in ledger
-		ledger.append(epochBlock)
-		print("ledger block" , ledger)
 	except Exception as e:
 		logging.error("error in run step" , exc_info=e)
 		raise e
 
+
+def createTxns():
+	"""
+		create txns for an epoch
+	"""
+	# txns is the list of the transactions in one epoch to which the committees will agree on
+	txns = []
+	# number of transactions in each epoch
+	numOfTxns = 20
+	for j in range(numOfTxns):
+		random_num = random_gen()
+		txns.append(random_num)
+	return txns
 
 if __name__ == "__main__":
 	try:
@@ -2184,16 +2194,8 @@ if __name__ == "__main__":
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
 		numOfEpochs = 1
-		for i in range(numOfEpochs):
-			# txns is the list of the transactions in one epoch to which the committees will agree on
-			txns = []
-			# number of transactions in each epoch
-			numOfTxns = 20
-			for j in range(numOfTxns):
-				random_num = random_gen()
-				txns.append(random_num)
-			epochTxns[i] = txns
-
+		for i in range(numOfEpochs):	
+			epochTxns[i] = createTxns()
 		# run all the epochs 
 		Run(epochTxns)
 
