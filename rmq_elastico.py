@@ -1227,6 +1227,32 @@ class Elastico:
 		# append msg to prepare msg log
 		self.prepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
 
+
+	def log_FinalprepareMsg(self, msg):
+		"""
+			log the prepare msg
+		"""
+		viewId = msg["prepareData"]["viewId"]
+		seqnum = msg["prepareData"]["seq"]
+		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+		# add msgs for this view
+		if viewId not in self.FinalprepareMsgLog:
+			self.FinalprepareMsgLog[viewId] = dict()
+
+		# add msgs for this sequence num
+		if seqnum not in self.FinalprepareMsgLog[viewId]:
+			self.FinalprepareMsgLog[viewId][seqnum] = dict()
+
+		# add all msgs from this sender
+		if socketId not in self.FinalprepareMsgLog[viewId][seqnum]:
+			self.FinalprepareMsgLog[viewId][seqnum][socketId] = list()
+
+		# ToDo: check that the msg appended is dupicate or not
+		# log only required details from the prepare msg
+		msgDetails = {"digest" : msg["prepareData"]["digest"], "identity" : msg["identity"]}
+		# append msg to prepare msg log
+		self.FinalprepareMsgLog[viewId][seqnum][socketId].append(msgDetails)
+
 	def log_commitMsg(self, msg):
 		"""
 			log the commit msg
@@ -1255,6 +1281,34 @@ class Elastico:
 		except Exception as e:
 			raise e
 
+	def log_FinalcommitMsg(self, msg):
+		"""
+			log the final commit msg
+		"""
+		try:
+			viewId = msg["commitData"]["viewId"]
+			seqnum = msg["commitData"]["seq"]
+			socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+			# add msgs for this view
+			if viewId not in self.FinalcommitMsgLog:
+				self.FinalcommitMsgLog[viewId] = dict()
+
+			# add msgs for this sequence num
+			if seqnum not in self.FinalcommitMsgLog[viewId]:
+				self.FinalcommitMsgLog[viewId][seqnum] = dict()
+
+			# add all msgs from this sender
+			if socketId not in self.FinalcommitMsgLog[viewId][seqnum]:
+				self.FinalcommitMsgLog[viewId][seqnum][socketId] = list()
+
+			# log only required details from the commit msg
+			msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["identity"]}
+			# append msg
+			logging.warning("Log committed msg for view %s, seqnum %s", str(viewId), str(seqnum))
+			self.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)		
+		except Exception as e:
+			raise e
+
 	def logPre_prepareMsg(self, msg):
 		"""
 			log the pre-prepare msg
@@ -1265,6 +1319,15 @@ class Elastico:
 		socket = IP + ":" + str(port)
 		self.pre_prepareMsgLog[socket] = msg
 
+	def logFinalPre_prepareMsg(self, msg):
+		"""
+			log the pre-prepare msg
+		"""
+		IP = msg["identity"]["IP"]
+		port = msg["identity"]["port"]
+		# create a socket
+		socket = IP + ":" + str(port)
+		self.Finalpre_prepareMsgLog[socket] = msg
 
 	def verifyAndMergeConsensusData(self):
 		"""
