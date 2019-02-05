@@ -1174,6 +1174,34 @@ class Elastico:
 					return False
 		return True
 
+	def verify_Finalpre_prepare(self, msg):
+		"""
+			Verify final pre-prepare msgs
+		"""
+		# verify Pow
+		if not self.verify_PoW(msg["identity"]):
+			logging.warning("wrong pow in  verify final pre-prepare")
+			return False
+		# verify signatures of the received msg
+		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+			logging.warning("wrong sign in  verify final pre-prepare")
+			return False
+		# verifying the digest of request msg
+		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+			logging.warning("wrong digest in  verify final pre-prepare")
+			return False
+		# check the view is same or not
+		if msg["pre-prepareData"]["viewId"] != self.viewId:
+			logging.warning("wrong view in  verify final pre-prepare")
+			return False
+		# check if already accepted a pre-prepare msg for view v and sequence num n with different digest
+		seqnum = msg["pre-prepareData"]["seq"]
+		for socket in self.Finalpre_prepareMsgLog:
+			if self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId and self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"] == seqnum:
+				if msg["pre-prepareData"]["digest"] != self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["digest"]:
+					return False
+		return True
+
 	def log_prepareMsg(self, msg):
 		"""
 			log the prepare msg
