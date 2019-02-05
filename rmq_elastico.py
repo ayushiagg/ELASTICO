@@ -256,7 +256,7 @@ class Elastico:
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
-		self.finalBlock = {"sent" : False, "finalBlock" : [] }
+		self.finalBlock = {"sent" : False, "finalBlock" : set() }
 		self.RcommitmentSet = ""
 		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
@@ -1430,6 +1430,15 @@ class Elastico:
 			elif self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]:
 				if self.isFinalCommitted():
 					logging.warning("final committed done by %s" , str(self.port))
+					for viewId in self.FinalcommittedData:
+						for seqnum in self.FinalcommittedData[viewId]:
+							msgList = self.FinalcommittedData[viewId][seqnum]
+							for msg in msgList:
+								self.finalBlock["finalBlock"] |= set(msg)
+					finalTxnBlock = self.finalBlock["finalBlock"]
+					finalTxnBlock = list(finalTxnBlock)
+					# order them! Reason : to avoid errors in signatures as sets are unordered
+					self.finalBlock["finalBlock"] = sorted(finalTxnBlock)
 					self.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
 				pass
 		except Exception as e:
