@@ -1209,6 +1209,7 @@ class Elastico:
 					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
 					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity.__dict__}
 					commitMsges.append(commitMsg)
+
 		return commitMsges
 
 	def send_pre_prepare(self, pre_preparemsg):
@@ -1303,9 +1304,11 @@ class Elastico:
 		"""
 
 		PK = self.key.publickey().exportKey().decode()
-		for socket in self.committedData:
-			msg = self.committedData[socket]
-			self.txn_block |= set(msg["message"])
+		for viewId in self.committedData:
+			for seqnum in self.committedData[viewId]:
+				msgList = self.committedData[viewId][seqnum]
+				for msg in msgList:
+					self.txn_block |= set(msg)
 		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
 		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
@@ -1601,6 +1604,7 @@ class Elastico:
 								break
 				if flag == False:
 					# when sufficient number of blocks from each committee are received
+					logging.warning("good going for verify and merge")
 					self.verifyAndMergeConsensusData()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
@@ -1669,7 +1673,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 		for epoch in epochTxns:
 			node = network_nodes[nodeIndex]
 			
-			# delete the entry of the node for the next epoch
+			# delete the entry of the node in sharedobj for the next epoch
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
 
