@@ -787,6 +787,9 @@ class Elastico:
 			elif msg["type"] == "pre-prepare" or msg["type"] == "prepare"or msg["type"] == "commit":
 				self.pbft_process_message(msg)
 
+			elif msg["type"] == "Finalpre-prepare" or msg["type"] == "Finalprepare" or msg["type"] == "Finalcommit":
+				self.Finalpbft_process_message(msg)
+
 		except Exception as e:
 			# log the raised exception
 			logging.error('Error at receive step ', exc_info=e)
@@ -804,6 +807,20 @@ class Elastico:
 			self.process_prepareMsg(msg)
 		elif msg["type"] == "commit":
 			self.process_commitMsg(msg)	
+		else:
+			pass
+
+
+	def Finalpbft_process_message(self, msg):
+		"""
+			Process the messages related to Pbft!
+		"""
+		if msg["type"] == "Finalpre-prepare":
+			self.process_Finalpre_prepareMsg(msg)
+		elif msg["type"] == "Finalprepare":
+			self.process_FinalprepareMsg(msg)
+		elif msg["type"] == "Finalcommit":
+			self.process_FinalcommitMsg(msg)	
 		else:
 			pass
 
