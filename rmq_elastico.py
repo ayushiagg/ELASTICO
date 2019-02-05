@@ -186,24 +186,24 @@ class Elastico:
 	"""
 		class members: 
 			node - single processor
+			connection - rabbitmq connection
+			IP - IP address of a node
+			port - unique number for a process
+			key - public key and private key pair for a node
+			PoW - dict containing 256 bit hash computed by the node, set of Rs needed for epoch randomness, and a nonce
+			cur_directory - list of directory members in view of the node
 			identity - identity consists of Public key, an IP, PoW, committee id, epoch randomness, port
-			txn_block - block of txns that the committee will agree on(intra committee consensus block)
+			committee_id - integer value to represent the committee to which the node belongs
 			committee_list - list of nodes in all committees
-			final_committee - list of nodes in the final committee
+			committee_Members - set of committee members in its own committee
 			is_directory - whether the node belongs to directory committee or not
 			is_final - whether the node belongs to final committee or not
 			epoch_randomness - r-bit random string generated at the end of previous epoch
-			committee_Members - set of committee members in its own committee
-			IP - IP address of a node
-			key - public key and private key pair for a node
-			cur_directory - list of directory members in view of the node
-			PoW - dict containing 256 bit hash computed by the node, set of Rs needed for epoch randomness, and a nonce
 			Ri - r-bit random string
 			commitments - set of H(Ri) received by final committee node members and H(Ri) is sent by the final committee node only
+			txn_block - block of txns that the committee will agree on(intra committee consensus block)
 			set_of_Rs - set of Ris obtained from the final committee of previous epoch
 			newset_of_Rs - In the present epoch, set of Ris obtained from the final committee
-			committee_id - integer value to represent the committee to which the node belongs
-			final_committee_id - committee id of final committee
 			CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
 			finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
 			state - state in which a node is running
@@ -213,15 +213,24 @@ class Elastico:
 			newRcommitmentSet - For the present it contains the set of H(Ri)s received from the final committee after the consistency protocol
 			finalCommitteeMembers - members of the final committee received from the directory committee
 			txn- transactions stored by the directory members
-			ConsensusMsgCount - count of intra consensus blocks of each committee received by the final committee
+			response - final block to be received by the client
 			flag- to denote a bad or good node
-			pre_prepareMsgLog - Logs for the pre-prepare msgs
+			views - stores the ports of processes from which committee member views have been received
+			primary- boolean to denote the primary node in the committee for PBFT run
 			viewId - view number of the pbft
-			prepareMsgLog - Log of the prepare msgs
+			pre_prepareMsgLog - log of pre-prepare msgs received during PBFT
+			prepareMsgLog - log of prepare msgs received during PBFT
+			commitMsgLog - log of commit msgs received during PBFT
+			preparedData - data after prepared state
+			committedData - data after committed state
+			Finalpre_prepareMsgLog - log of pre-prepare msgs received during PBFT run by final committee
+			FinalprepareMsgLog - log of prepare msgs received during PBFT run by final committee
+			FinalcommitMsgLog - log of commit msgs received during PBFT run by final committee
+			FinalpreparedData - data after prepared state in final pbft run
+			FinalcommittedData - data after committed state in final pbft run
 	"""
 
 	def __init__(self):
-		print("---Constructor of elastico class---")
 		self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 		self.IP = self.get_IP()
 		self.port = self.get_port()
@@ -251,14 +260,10 @@ class Elastico:
 		self.RcommitmentSet = ""
 		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
-		# only when this node is the member of final committee
-		self.ConsensusMsgCount = dict()
 		# only when this is the member of the directory committee
 		self.txn = dict()
-		# self.socketConn = self.get_socket()
 		self.response = []
 		self.flag = True
-		# self.serve = False
 		self.views = set()
 		self.primary = False
 		self.viewId = 0
@@ -281,10 +286,13 @@ class Elastico:
 		try:
 			self.IP = self.get_IP()
 			self.key = self.get_key()
+
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 			channel = connection.channel()
+			# to delete the queue in rabbitmq for next epoch
 			channel.queue_delete(queue='hello' + str(self.port))
 			connection.close()
+
 			self.port = self.get_port()
 			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 			self.cur_directory = set()
@@ -310,13 +318,9 @@ class Elastico:
 			self.RcommitmentSet = self.newRcommitmentSet
 			self.newRcommitmentSet = ""
 			self.finalCommitteeMembers = set()
-			# only when this node is the member of final committee
-			self.ConsensusMsgCount = dict()
 			# only when this is the member of the directory committee
 			self.txn = dict()
-			# self.socketConn = self.get_socket()
 			self.flag = True
-			# self.serve = False
 			self.views = set()
 			self.primary = False
 			self.pre_prepareMsgLog = dict()
