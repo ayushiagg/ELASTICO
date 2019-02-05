@@ -1832,6 +1832,7 @@ class Elastico:
 		self.state = ELASTICO_STATES["PoW Computed"]
 
 
+
 	def execute(self, epochTxn):
 		"""
 			executing the functions based on the running state
@@ -1875,13 +1876,11 @@ class Elastico:
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 
 			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				logging.warning("changing to committee full %s" , str(self.port))
 				self.state = ELASTICO_STATES["Committee full"]
 			
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Committee full"]:
 				logging.warning("welcome to committee full - %s -- %s", str(self.port) , str(self.committee_id))
-				
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
@@ -1890,45 +1889,18 @@ class Elastico:
 				if self.is_directory == False:
 					# initial state for the PBFT
 					self.state = ELASTICO_STATES["PBFT_NONE"]
-					# init viewId
 					# run PBFT for intra-committee consensus
 					self.runPBFT("intra committee consensus")
 
-			elif self.state == ELASTICO_STATES["PBFT_NONE"]:
+			elif self.state == ELASTICO_STATES["PBFT_NONE"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PREPARED"] or self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"] or self.state == ELASTICO_STATES["Formed Committee"]:
+				# run pbft for intra consensus
 				self.runPBFT("intra committee consensus")
-				pass
-
-			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
-				# node enters the pre-prepare phase and now will multicast prepare msgs
-				self.runPBFT("intra committee consensus")
-				pass
-
-			elif self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"]:
-				self.runPBFT("intra committee consensus")
-
-			elif self.state == ELASTICO_STATES["PBFT_PREPARED"]:
-				# node enters the prepare stage
-				self.runPBFT("intra committee consensus")
-
-			elif self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]:
-				# commit msges are sent , run PBFT to see if state is committed or not
-				self.runPBFT("intra committee consensus")
-
-
-
-			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
-				self.runPBFT("intra committee consensus")
-
-			elif self.state == ELASTICO_STATES["Formed Committee"]:
-				# nodes who are not the part of any committee
-				pass
-
 
 			elif self.state == ELASTICO_STATES["PBFT_COMMITTED"]:
 				# send pbft consensus blocks to final committee members
-				logging.warning("pbft finished by memebrs %s" , str(self.port))
+				logging.warning("pbft finished by members %s" , str(self.port))
 				self.SendtoFinal()
-			
+
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 				# final committee node will collect blocks and merge them
 				logging.warning("final member sent the block to final")
@@ -2042,7 +2014,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	try:
 		for epoch in epochTxns:
 			node = network_nodes[nodeIndex]
-			
 			# delete the entry of the node in sharedobj for the next epoch
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
@@ -2060,16 +2031,14 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 					if response == "reset":
 						# now reset the node
 						logging.warning("call for reset for  %s" , str(node.port))
-
 						if isinstance(node.identity, Identity):
 						# if node has formed its identity
 							msg = {"type": "reset-all", "data" : node.identity.__dict__}
 							node.identity.send(msg)
 						else:
-							# this node has not computed its identity
-							# calling reset explicitly for node
+							# this node has not computed its identity,calling reset explicitly for node
 							node.reset()
-						# adding the value reset for the node
+						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
 
 				# All the elastico objects has done their reset
@@ -2080,7 +2049,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				
 				# process consume the msgs from the queue
 
-				# # connect to rabbitmq server
 				# create a channel
 				channel = node.connection.channel()
 				# specify the queue name 
@@ -2088,8 +2056,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				# count the number of messages that are in the queue
 				count = queue.method.message_count
 
-				if node.state == ELASTICO_STATES["PBFT_PREPARED"]:
-					logging.warning("port- %s, count - %s" , str(node.port) , str(count))
 				# consume all the messages one by one
 				while count:
 					# get the message from the queue
@@ -2099,10 +2065,11 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						data = pickle.loads(body)
 						# consume the msg by taking the action in receive
 						node.receive(data)
-					else:
-						logging.error('No message returned %s' , str(count))
-						logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
+					# else:
+					# 	logging.error('No message returned %s' , str(count))
+					# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
 					count -= 1
+				# close the channel 
 				channel.close()
 			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
