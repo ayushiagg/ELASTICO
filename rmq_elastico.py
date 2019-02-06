@@ -16,7 +16,7 @@ global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, le
 
 lock = Lock()
 # n : number of nodes
-n = 64
+n = 66
 # s - where 2^s is the number of committees
 s = 2
 # c - size of committee
@@ -1808,14 +1808,16 @@ class Elastico:
 			bad node generates the fake PoW
 		"""
 		logging.info("computing fake POW")
-		# random fakeness
-		index = random_gen(32)%2
+		# random fakeness 
+		index = random_gen(32)%3
 		if index == 0:
+			# Random hash with initial D hex digits 0s
 			digest = SHA256.new()
 			ranHash = digest.hexdigest()
 			self.PoW["hash"] = D*'0' + ranHash[D:]
-		# todo : fix this
+
 		elif index == 1:
+			# computing an invalid PoW
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
 				self.epoch_randomness, randomset_R = self.xor_R()    
@@ -1828,6 +1830,15 @@ class Elastico:
 					self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
 					break
 				self.PoW["nonce"] += 1
+
+		elif index == 2:
+			# computing a random PoW
+			randomset_R = set()
+			if len(self.set_of_Rs) > 0:
+				self.epoch_randomness, randomset_R = self.xor_R()    
+			digest = SHA256.new()
+			ranHash = digest.hexdigest()
+			self.PoW = {"hash" : ranHash, "set_of_Rs" : randomset_R, "nonce" : random_gen()}
 
 		self.state = ELASTICO_STATES["PoW Computed"]
 
