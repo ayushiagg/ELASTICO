@@ -228,6 +228,7 @@ class Elastico:
 			FinalcommitMsgLog - log of commit msgs received during PBFT run by final committee
 			FinalpreparedData - data after prepared state in final pbft run
 			FinalcommittedData - data after committed state in final pbft run
+			faulty - Flag denotes whether this node is faulty or not
 	"""
 
 	def __init__(self):
@@ -277,6 +278,7 @@ class Elastico:
 		self.FinalcommitMsgLog = dict()
 		self.FinalpreparedData = dict()
 		self.FinalcommittedData = dict()
+		self.faulty = False
 
 
 	def reset(self):
@@ -334,6 +336,7 @@ class Elastico:
 			self.FinalcommitMsgLog = dict()
 			self.FinalpreparedData = dict()
 			self.FinalcommittedData = dict()
+			self.faulty = False
 
 		except Exception as e:
 			logging.error("error in reset", exc_info=e)
@@ -1807,7 +1810,6 @@ class Elastico:
 		"""
 			bad node generates the fake PoW
 		"""
-		logging.info("computing fake POW")
 		# random fakeness 
 		index = random_gen(32)%3
 		if index == 0:
@@ -1840,6 +1842,7 @@ class Elastico:
 			ranHash = digest.hexdigest()
 			self.PoW = {"hash" : ranHash, "set_of_Rs" : randomset_R, "nonce" : random_gen()}
 
+		logging.warning("computed fake POW %s" , str(index))
 		self.state = ELASTICO_STATES["PoW Computed"]
 
 
@@ -2052,6 +2055,8 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
 
+				if node.faulty == True:
+					break
 				# All the elastico objects has done their reset
 				if len(sharedObj) == n:
 					break
@@ -2105,12 +2110,19 @@ def Run(epochTxns):
 				# Add the elastico obj to the list 
 				network_nodes.append(Elastico())
 
-		# making some(5 here) nodes as malicious
+		# making some(4 here) nodes as malicious
 		malicious_count = 0
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
 			network_nodes[badNodeIndex].flag = False
+
+		# making some(4 here) nodes as faulty
+		faulty_count = 4
+		for i in range(faulty_count):
+			faultyNodeIndex = random_gen(32)%n
+			# set the flag false for bad nodes
+			network_nodes[faultyNodeIndex].faulty = True
 
 		commitmentSet = set()
 
