@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	// "crypto/sha256"
+	"crypto/rsa"
+	"crypto/rand"
+	// "reflect"
 )	
 
 type Elastico struct{
