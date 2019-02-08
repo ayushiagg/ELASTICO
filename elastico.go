@@ -59,6 +59,28 @@ type Elastico struct{
 	*/
 
 }
+func (e *Elastico) get_key(){
+	/*
+		for each node, it will set key as public pvt key pair
+	*/
+	var err error
+	e.key, err = rsa.GenerateKey(rand.Reader, 2048)
+	if err!= nil{
+		fmt.Println(err.Error)
+	}
+}
+func (e *Elastico)get_IP(){
+	/*
+		for each node(processor) , get IP addr
+	*/
+	count := 4
+	byteArray := make([]byte, count)
+	_, err := rand.Read(byteArray)
+	if err != nil {
+		fmt.Println("error:", err.Error)
+	}
+	e.IP= fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
+}
 func main(){
 
 }
