@@ -121,6 +121,7 @@ def MulticastCommittee(commList, identityobj_dict, txns):
 		for committee_id in commList:
 			commMembers = commList[committee_id]
 			# find the primary identity, Take the first identity
+			# ToDo: fix this, many nodes can be primary
 			primaryId = commMembers[0]
 			for memberId in commMembers:
 				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "identity" : identityobj_dict}
@@ -2034,7 +2035,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 
 			# epochTxn holds the txn for the current epoch
 			epochTxn = epochTxns[epoch]
-
+			startTime = time.time()
 			while True:
 				# execute one step of elastico node
 
@@ -2055,7 +2056,8 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
 
-				if node.faulty == True:
+				if node.faulty == True and time.time() - startTime >= 60:
+					logging.warning("bye bye!")
 					break
 				# All the elastico objects has done their reset
 				if len(sharedObj) == n:
@@ -2111,7 +2113,7 @@ def Run(epochTxns):
 				network_nodes.append(Elastico())
 
 		# making some(4 here) nodes as malicious
-		malicious_count = 0
+		malicious_count = 1
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
