@@ -38,7 +38,6 @@ network_nodes = []
 # final block in an epoch
 epochBlock = []
 # port - avaliable ports start from here
-port = 49152 
 
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARED" : 22, "PBFT_COMMITTED" : 23, "PBFT_PREPARE_SENT" : 24 , "PBFT_COMMIT_SENT" : 25, "PBFT_PRE_PREPARE_SENT"  :26 , "FinalPBFT_NONE" : 27,  "FinalPBFT_PRE_PREPARE" : 28, "FinalPBFT_PREPARED" : 29, "FinalPBFT_COMMITTED" : 30, "FinalPBFT_PREPARE_SENT" : 31 , "FinalPBFT_COMMIT_SENT" : 32, "FinalPBFT_PRE_PREPARE_SENT"  :33}
@@ -358,13 +357,13 @@ class Elastico:
 		try:
 			lock.acquire()
 			global port
-			port += 1
+			port.value += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
 			lock.release()
-			return port
+			return port.value
 
 
 	def get_IP(self):
@@ -2026,9 +2025,9 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	"""
 	global network_nodes
 
+	node = network_nodes[nodeIndex]
 	try:
 		for epoch in epochTxns:
-			node = network_nodes[nodeIndex]
 			# delete the entry of the node in sharedobj for the next epoch
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
@@ -2102,9 +2101,13 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, commitmentSet
+	global network_nodes, ledger, commitmentSet, port
 	
 	try:
+		# Manager for managing the shared variable among the processes
+		manager = Manager()
+		# share global port between processes
+		port = manager.Value('i', 49152)
 		if len(network_nodes) == 0:
 			# network_nodes is the list of elastico objects
 			for i in range(n):
@@ -2128,8 +2131,6 @@ def Run(epochTxns):
 
 		commitmentSet = set()
 
-		# Manager for managing the shared variable among the processes
-		manager = Manager()
 		# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
 		sharedObj = manager.dict()
 		
@@ -2178,7 +2179,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 1
+		numOfEpochs = 2
 		for i in range(numOfEpochs):	
 			epochTxns[i] = createTxns()
 		# run all the epochs 
