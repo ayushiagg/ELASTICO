@@ -294,7 +294,7 @@ class Elastico:
 			channel.queue_delete(queue='hello' + str(self.port))
 			channel.close()
 
-			self.port = self.get_port()
+			# self.port = self.get_port()
 			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 			self.cur_directory = set()
 			self.identity = ""
