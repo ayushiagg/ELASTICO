@@ -2067,16 +2067,16 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				
 				# process consume the msgs from the queue
 
-				# create a channel
-				channel = node.connection.channel()
-				# specify the queue name 
-				queue = channel.queue_declare( queue='hello' + str(node.port))
-				# count the number of messages that are in the queue
-				count = queue.method.message_count
+				try:
+					# create a channel
+					channel = node.connection.channel()
+					# specify the queue name 
+					queue = channel.queue_declare( queue='hello' + str(node.port))
+					# count the number of messages that are in the queue
+					count = queue.method.message_count
 
-				# consume all the messages one by one
-				while count:
-					try:
+					# consume all the messages one by one
+					while count:
 						# get the message from the queue
 						method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
 						if method_frame:
@@ -2088,11 +2088,11 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						# 	logging.error('No message returned %s' , str(count))
 						# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
 						count -= 1
-					except Exception as e:
-						logging.warning("error in basic get %s",str(count),exc_info=e)
-						break
-				# close the channel 
-				channel.close()
+					# close the channel 
+					channel.close()
+				except Exception as e:
+					logging.warning("error in basic get %s",str(count),exc_info=e)
+					break
 			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
 
