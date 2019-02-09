@@ -314,7 +314,7 @@ class Elastico:
 			self.finalBlockbyFinalCommittee = dict()
 			self.state = ELASTICO_STATES["NONE"]
 			self.mergedBlock = []
-			self.finalBlock = {"sent" : False, "finalBlock" : [] }
+			self.finalBlock = {"sent" : False, "finalBlock" : set() }
 			self.RcommitmentSet = self.newRcommitmentSet
 			self.newRcommitmentSet = ""
 			self.finalCommitteeMembers = set()
@@ -2076,17 +2076,21 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 
 				# consume all the messages one by one
 				while count:
-					# get the message from the queue
-					method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
-					if method_frame:
-						channel.basic_ack(method_frame.delivery_tag)
-						data = pickle.loads(body)
-						# consume the msg by taking the action in receive
-						node.receive(data)
-					# else:
-					# 	logging.error('No message returned %s' , str(count))
-					# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
-					count -= 1
+					try:
+						# get the message from the queue
+						method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+						if method_frame:
+							channel.basic_ack(method_frame.delivery_tag)
+							data = pickle.loads(body)
+							# consume the msg by taking the action in receive
+							node.receive(data)
+						# else:
+						# 	logging.error('No message returned %s' , str(count))
+						# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
+						count -= 1
+					except Exception as e:
+						logging.warning("error in basic get %s",str(count),exc_info=e)
+						break
 				# close the channel 
 				channel.close()
 			# Ensuring that all nodes are reset and sharedobj is not affected
