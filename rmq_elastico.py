@@ -14,7 +14,6 @@ import time, base64
 
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, port, lock
 
-lock = Lock()
 # n : number of nodes
 n = 66
 # s - where 2^s is the number of committees
@@ -361,8 +360,9 @@ class Elastico:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
+			returnValue = port.value
 			lock.release()
-			return port.value
+			return returnValue
 
 
 	def get_IP(self):
@@ -2100,13 +2100,14 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, commitmentSet, port
+	global network_nodes, ledger, commitmentSet, port, lock
 	
 	try:
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
 		# share global port between processes
 		port = manager.Value('i', 49152)
+		lock=manager.Lock()
 		if len(network_nodes) == 0:
 			# network_nodes is the list of elastico objects
 			for i in range(n):
@@ -2115,14 +2116,14 @@ def Run(epochTxns):
 				network_nodes.append(Elastico())
 
 		# making some(4 here) nodes as malicious
-		malicious_count = 1
+		malicious_count = 0
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
 			network_nodes[badNodeIndex].flag = False
 
 		# making some(4 here) nodes as faulty
-		faulty_count = 4
+		faulty_count = 0
 		for i in range(faulty_count):
 			faultyNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
