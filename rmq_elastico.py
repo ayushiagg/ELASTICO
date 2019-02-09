@@ -664,12 +664,12 @@ class Elastico:
 
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
-					received_commitmentSet = data["commitmentSet"]
+					received_commitmentSetList = data["commitmentSet"]
 					PK = identityobj["PK"]
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
-					if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
@@ -690,7 +690,7 @@ class Elastico:
 						if self.newRcommitmentSet == "":
 							self.newRcommitmentSet = set()
 						# union of commitments 
-						self.newRcommitmentSet |= received_commitmentSet
+						self.newRcommitmentSet |= set(received_commitmentSetList)
 						logging.warning("new r commit set %s", str(self.newRcommitmentSet))
 
 					else:
@@ -1622,8 +1622,10 @@ class Elastico:
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
+		# 
+		commitmentList = list(S)	
 		PK = self.key.publickey().exportKey().decode()  
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
+		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
