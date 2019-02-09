@@ -289,11 +289,10 @@ class Elastico:
 			self.IP = self.get_IP()
 			self.key = self.get_key()
 
-			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-			channel = connection.channel()
+			channel = self.connection.channel()
 			# to delete the queue in rabbitmq for next epoch
 			channel.queue_delete(queue='hello' + str(self.port))
-			connection.close()
+			channel.close()
 
 			self.port = self.get_port()
 			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
