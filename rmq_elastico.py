@@ -1916,7 +1916,32 @@ class Elastico:
 	def appendToLedger(self):
 		"""
 		"""
+		# transactions, prevBlockHash, timestamp, numAncestorBlocks, txnCount
+		if len(self.response) == 1:
+			transactions = self.response[0]
+
+			rootHash = self.createMerkleRootHash(transactions)
+			
+			txnCount = len(transactions)
+			if len(ledger) > 0:
+				LastBlock = ledger[-1]
+				prevBlockHash = LastBlock.hexdigest()
+			else:
+				prevBlockHash = ""
+			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount)
+			
+
+		elif len(self.response) > 1:
+			logging.error("Multiple Blocks coming!")
 		pass
+
+	def createMerkleRootHash(self, transactions):
+		"""
+			create a merkle tree and return the root hash
+		"""
+		merkleTree = MerkleTree(transactions)
+		merkleTree.create_tree()
+		return merkleTree.Get_Root_leaf()
 
 	def compute_fakePoW(self):
 		"""
