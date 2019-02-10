@@ -2145,6 +2145,13 @@ class Elastico:
 					logging.warning("wrong state of final committee member")
 
 			elif self.state == ELASTICO_STATES["ReceivedR"]:
+				self.state = ELASTICO_STATES["AppendToLedger"]
+
+			elif self.state == ELASTICO_STATES["AppendToLedger"]:
+				self.appendToLedger()
+				self.state = ELASTICO_STATES["LedgerUpdated"]
+
+			elif self.state == ELASTICO_STATES["LedgerUpdated"]:
 				# Now, the node can be reset
 				logging.warning("call for reset BY %s - %s" , str(self.port), str(self.committee_id))
 				return "reset"
