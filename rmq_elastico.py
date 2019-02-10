@@ -4,7 +4,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from secrets import SystemRandom
 from collections import OrderedDict
-import socket
+import ast
 import json, pika, threading, pickle
 # for creating logs
 import logging
@@ -1985,7 +1985,8 @@ class Elastico:
 				# Todo : check this send to client
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
-						self.response.append(txnBlock)
+						TxnsList = ast.literal_eval(txnBlock)
+						self.response.append(TxnsList)
 						logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 					else:
 						logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
