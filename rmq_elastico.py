@@ -182,12 +182,13 @@ class Identity:
 class Block:
 	"""
 	"""
-	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount):
+	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount, rootHash):
 		self.transactions = transactions
 		self.prevBlockHash = prevBlockHash
 		self.timestamp = time.Now
 		self.numAncestorBlocks = numAncestorBlocks
 		self.txnCount = txnCount
+		self.rootHash = rootHash
 
 	def verifyBlock(self):
 		"""
@@ -203,6 +204,7 @@ class Block:
 		timestamp = self.timestamp
 		numAncestorBlocks = self.numAncestorBlocks
 		txnCount = self.txnCount
+		rootHash = self.rootHash
 		if type(transactions) is not str:
 			transactions = str(transactions)
 		if type(prevBlockHash) is not str:
@@ -212,13 +214,16 @@ class Block:
 		if type(numAncestorBlocks) is not str:
 			numAncestorBlocks = str(numAncestorBlocks)
 		if type(txnCount) is not str:
-			txnCount = str(txnCount)		
+			txnCount = str(txnCount)
+		if type(rootHash) is not str:
+			rootHash = str(rootHash)
 
 		digest.update(transactions.encode())
 		digest.update(prevBlockHash.encode())
 		digest.update(timestamp.encode())
 		digest.update(numAncestorBlocks.encode())
 		digest.update(txnCount.encode())
+		digest.update(rootHash.encode())
 		hash_val = digest.hexdigest()
 		return hash_val
 
@@ -1928,7 +1933,7 @@ class Elastico:
 				prevBlockHash = LastBlock.hexdigest()
 			else:
 				prevBlockHash = ""
-			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount)
+			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, rootHash)
 			
 
 		elif len(self.response) > 1:
