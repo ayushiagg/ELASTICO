@@ -14,7 +14,6 @@ import time, base64
 
 global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, port, lock
 
-lock = Lock()
 # n : number of nodes
 n = 66
 # s - where 2^s is the number of committees
@@ -38,7 +37,6 @@ network_nodes = []
 # final block in an epoch
 epochBlock = []
 # port - avaliable ports start from here
-port = 49152 
 
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARED" : 22, "PBFT_COMMITTED" : 23, "PBFT_PREPARE_SENT" : 24 , "PBFT_COMMIT_SENT" : 25, "PBFT_PRE_PREPARE_SENT"  :26 , "FinalPBFT_NONE" : 27,  "FinalPBFT_PRE_PREPARE" : 28, "FinalPBFT_PREPARED" : 29, "FinalPBFT_COMMITTED" : 30, "FinalPBFT_PREPARE_SENT" : 31 , "FinalPBFT_COMMIT_SENT" : 32, "FinalPBFT_PRE_PREPARE_SENT"  :33}
@@ -290,13 +288,12 @@ class Elastico:
 			self.IP = self.get_IP()
 			self.key = self.get_key()
 
-			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-			channel = connection.channel()
+			channel = self.connection.channel()
 			# to delete the queue in rabbitmq for next epoch
 			channel.queue_delete(queue='hello' + str(self.port))
-			connection.close()
+			channel.close()
 
-			self.port = self.get_port()
+			# self.port = self.get_port()
 			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
 			self.cur_directory = set()
 			self.identity = ""
@@ -317,7 +314,7 @@ class Elastico:
 			self.finalBlockbyFinalCommittee = dict()
 			self.state = ELASTICO_STATES["NONE"]
 			self.mergedBlock = []
-			self.finalBlock = {"sent" : False, "finalBlock" : [] }
+			self.finalBlock = {"sent" : False, "finalBlock" : set() }
 			self.RcommitmentSet = self.newRcommitmentSet
 			self.newRcommitmentSet = ""
 			self.finalCommitteeMembers = set()
@@ -358,13 +355,14 @@ class Elastico:
 		try:
 			lock.acquire()
 			global port
-			port += 1
+			port.value += 1
 		except Exception as e:
 			logging.error("error in acquiring port lock" , exc_info=e)
 			raise e
 		finally:
+			returnValue = port.value
 			lock.release()
-			return port
+			return returnValue
 
 
 	def get_IP(self):
@@ -666,12 +664,12 @@ class Elastico:
 
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
-					received_commitmentSet = data["commitmentSet"]
+					received_commitmentSetList = data["commitmentSet"]
 					PK = identityobj["PK"]
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
-					if self.verify_sign(sign, received_commitmentSet, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
@@ -692,7 +690,7 @@ class Elastico:
 						if self.newRcommitmentSet == "":
 							self.newRcommitmentSet = set()
 						# union of commitments 
-						self.newRcommitmentSet |= received_commitmentSet
+						self.newRcommitmentSet |= set(received_commitmentSetList)
 						logging.warning("new r commit set %s", str(self.newRcommitmentSet))
 
 					else:
@@ -1624,8 +1622,10 @@ class Elastico:
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
+		# 
+		commitmentList = list(S)	
 		PK = self.key.publickey().exportKey().decode()  
-		data = {"commitmentSet" : S, "signature" : self.sign(S) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
+		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -2026,9 +2026,9 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 	"""
 	global network_nodes
 
+	node = network_nodes[nodeIndex]
 	try:
 		for epoch in epochTxns:
-			node = network_nodes[nodeIndex]
 			# delete the entry of the node in sharedobj for the next epoch
 			if nodeIndex in sharedObj:
 				sharedObj.pop(nodeIndex)
@@ -2067,28 +2067,32 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				
 				# process consume the msgs from the queue
 
-				# create a channel
-				channel = node.connection.channel()
-				# specify the queue name 
-				queue = channel.queue_declare( queue='hello' + str(node.port))
-				# count the number of messages that are in the queue
-				count = queue.method.message_count
+				try:
+					# create a channel
+					channel = node.connection.channel()
+					# specify the queue name 
+					queue = channel.queue_declare( queue='hello' + str(node.port))
+					# count the number of messages that are in the queue
+					count = queue.method.message_count
 
-				# consume all the messages one by one
-				while count:
-					# get the message from the queue
-					method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
-					if method_frame:
-						channel.basic_ack(method_frame.delivery_tag)
-						data = pickle.loads(body)
-						# consume the msg by taking the action in receive
-						node.receive(data)
-					# else:
-					# 	logging.error('No message returned %s' , str(count))
-					# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
-					count -= 1
-				# close the channel 
-				channel.close()
+					# consume all the messages one by one
+					while count:
+						# get the message from the queue
+						method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+						if method_frame:
+							channel.basic_ack(method_frame.delivery_tag)
+							data = pickle.loads(body)
+							# consume the msg by taking the action in receive
+							node.receive(data)
+						# else:
+						# 	logging.error('No message returned %s' , str(count))
+						# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
+						count -= 1
+					# close the channel 
+					channel.close()
+				except Exception as e:
+					logging.warning("error in basic get %s",str(count),exc_info=e)
+					break
 			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
 
@@ -2102,9 +2106,14 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, commitmentSet
+	global network_nodes, ledger, commitmentSet, port, lock
 	
 	try:
+		# Manager for managing the shared variable among the processes
+		manager = Manager()
+		# share global port between processes
+		port = manager.Value('i', 49152)
+		lock=manager.Lock()
 		if len(network_nodes) == 0:
 			# network_nodes is the list of elastico objects
 			for i in range(n):
@@ -2113,14 +2122,14 @@ def Run(epochTxns):
 				network_nodes.append(Elastico())
 
 		# making some(4 here) nodes as malicious
-		malicious_count = 1
+		malicious_count = 0
 		for i in range(malicious_count):
 			badNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
 			network_nodes[badNodeIndex].flag = False
 
 		# making some(4 here) nodes as faulty
-		faulty_count = 4
+		faulty_count = 0
 		for i in range(faulty_count):
 			faultyNodeIndex = random_gen(32)%n
 			# set the flag false for bad nodes
@@ -2128,8 +2137,6 @@ def Run(epochTxns):
 
 		commitmentSet = set()
 
-		# Manager for managing the shared variable among the processes
-		manager = Manager()
 		# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
 		sharedObj = manager.dict()
 		
@@ -2178,7 +2185,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 1
+		numOfEpochs = 2
 		for i in range(numOfEpochs):	
 			epochTxns[i] = createTxns()
 		# run all the epochs 
