@@ -223,6 +223,74 @@ class Block:
 		return hash_val
 
 
+class MerkleTree:
+	"""
+	"""
+	def __init__(self, transactions):
+		self.past_transaction = OrderedDict()
+		self.listoftransaction = transactions
+
+	# Create the Merkle Tree  
+	def create_tree(self):
+
+		listoftransaction = self.listoftransaction
+		past_transaction = self.past_transaction
+		temp_transaction = []
+
+		# Loop until the list finishes
+		for index in range(0,len(listoftransaction),2):
+
+			# Get the most left element 
+			current = listoftransaction[index]
+
+			# If there is still index left get the right of the left most element
+			if index+1 != len(listoftransaction):
+				current_right = listoftransaction[index+1]
+
+			# If we reached the limit of the list then make a empty string
+			else:
+				current_right = ''
+
+			# Apply the Hash 256 function to the current values
+			current_hash = hexdigest(current)
+
+			# If the current right hash is not a '' <- empty string
+			if current_right != '':
+				current_right_hash = hexdigest(current_right)
+
+			# Add the Transaction to the dictionary 
+			past_transaction[listoftransaction[index]] = current_hash
+
+			# If the next right is not empty
+			if current_right != '':
+				past_transaction[listoftransaction[index+1]] = current_right_hash
+
+			# Create the new list of transaction
+			if current_right != '':
+				temp_transaction.append(current_hash + current_right_hash)
+
+			#  If the left most is an empty string then only add the current value
+			else:
+				temp_transaction.append(current_hash)
+
+		#  Update the variables and rerun the function again 
+		if len(listoftransaction) != 1:
+			self.listoftransaction = temp_transaction
+			self.past_transaction = past_transaction
+
+			#  Call the function repeatly again and again until we get the root 
+			self.create_tree()
+
+
+	# Return the past Transaction 
+	def Get_past_transacion(self):
+		return self.past_transaction
+
+	# Get the root of the transaction
+	def Get_Root_leaf(self):
+		last_key = self.past_transaction.keys()[-1]
+		return self.past_transaction[last_key]
+
 
 class Elastico:
 	"""
