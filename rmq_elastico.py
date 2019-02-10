@@ -30,8 +30,6 @@ fin_num = 0
 identityNodeMap = dict()
 # commitmentSet - set of commitments S
 commitmentSet = set()
-# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
-ledger = []
 # network_nodes - list of all nodes 
 network_nodes = []
 # final block in an epoch
@@ -2115,6 +2113,9 @@ def Run(epochTxns):
 		# share global port between processes
 		port = manager.Value('i', 49152)
 		lock=manager.Lock()
+		# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
+		ledger = manager.list()
+
 		if len(network_nodes) == 0:
 			# network_nodes is the list of elastico objects
 			for i in range(n):
