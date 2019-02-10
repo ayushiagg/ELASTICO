@@ -2246,6 +2246,17 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 		raise e
 
 
+def hexdigest(msg):
+	"""
+		returns the digest for a msg
+	"""
+	commitment = SHA256.new()
+	if type(msg) is not str:
+		msg = str(msg)
+	commitment.update(msg.encode())
+	return commitment.hexdigest()
+
+
 def Run(epochTxns):
 	"""
 		runs all the epochs
