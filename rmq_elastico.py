@@ -179,6 +179,51 @@ class Identity:
 			logging.error("error at send msg ", exc_info=e)
 			raise e
 
+class Block:
+	"""
+	"""
+	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount):
+		self.transactions = transactions
+		self.prevBlockHash = prevBlockHash
+		self.timestamp = time.Now
+		self.numAncestorBlocks = numAncestorBlocks
+		self.txnCount = txnCount
+
+	def verifyBlock(self):
+		"""
+		"""
+		pass
+
+	def hexdigest(self):
+		"""
+		"""
+		digest = SHA256.new()
+		transactions = self.transactions
+		prevBlockHash = self.prevBlockHash
+		timestamp = self.timestamp
+		numAncestorBlocks = self.numAncestorBlocks
+		txnCount = self.txnCount
+		if type(transactions) is not str:
+			transactions = str(transactions)
+		if type(prevBlockHash) is not str:
+			prevBlockHash = str(prevBlockHash)
+		if type(timestamp) is not str:
+			timestamp = str(timestamp)
+		if type(numAncestorBlocks) is not str:
+			numAncestorBlocks = str(numAncestorBlocks)
+		if type(txnCount) is not str:
+			txnCount = str(txnCount)		
+
+		digest.update(transactions.encode())
+		digest.update(prevBlockHash.encode())
+		digest.update(timestamp.encode())
+		digest.update(numAncestorBlocks.encode())
+		digest.update(txnCount.encode())
+		hash_val = digest.hexdigest()
+		return hash_val
+
+
+
 class Elastico:
 	"""
 		class members: 
