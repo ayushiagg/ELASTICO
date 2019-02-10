@@ -1360,7 +1360,7 @@ class Elastico:
 				for txnBlock in self.CommitteeConsensusData[committeeid]:
 					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
 						if len(txnBlock) > 0:
-							set_of_txns = eval(txnBlock)
+							set_of_txns = ast.literal_eval(txnBlock)
 							self.mergedBlock.extend(set_of_txns)
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
