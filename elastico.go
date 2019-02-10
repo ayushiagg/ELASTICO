@@ -65,6 +65,7 @@ func (e *Elastico) get_key(){
 		for each node, it will set key as public pvt key pair
 	*/
 	var err error
+	// generate the public-pvt key pair
 	e.key, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err!= nil{
 		fmt.Println(err.Error)
@@ -75,23 +76,32 @@ func (e *Elastico)get_IP(){
 		for each node(processor) , get IP addr
 	*/
 	count := 4
+	// construct the byte array of size 4
 	byteArray := make([]byte, count)
+	// Assigning random values to the byte array
 	_, err := rand.Read(byteArray)
 	if err != nil {
 		fmt.Println("error:", err.Error)
 	}
+	// setting the IP addr from the byte array
 	e.IP= fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
 }
-func random_gen(r int64) (*big.Int){
+func random_gen(r int64) (*big.Int) {
+	/*
+		generate a random integer
+	*/
+	// n is the base, e is the exponent, creating big.Int variables
 	var n,e = big.NewInt(2) , big.NewInt(r)
+	// taking the exponent n to the power e, and storing the result in n
 	n.Exp(n, e, nil)
+	// generates the random num in the range[0,n)
 	randomNum, err := rand.Int(rand.Reader, n)
+
 	if err != nil {
 		fmt.Println("error:", err.Error)
 	}
 	return randomNum
 }
 func main(){
-	a:= random_gen(2)
-	fmt.Println(a)
+	
 }
