@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/rand"
 	"math/big"
+	"strconv"
 	// "reflect"
 )	
 
@@ -14,6 +15,7 @@ type Elastico struct{
 	IP string
 	port uint
 	key *rsa.PrivateKey
+	epoch_randomness string
 	// PoW map[string]
 	// cur_directory = set()
 	// identity = ""
@@ -24,7 +26,6 @@ type Elastico struct{
 	// committee_Members = set()
 	// is_directory bool
 	// is_final bool
-	// epoch_randomness string
 	// Ri string
 	// // only when this node is the member of final committee
 	// commitments = set()
@@ -60,6 +61,9 @@ type Elastico struct{
 	*/
 
 }
+
+
+var r int64 = 4
 func (e *Elastico) get_key(){
 	/*
 		for each node, it will set key as public pvt key pair
@@ -71,6 +75,8 @@ func (e *Elastico) get_key(){
 		fmt.Println(err.Error)
 	}
 }
+
+
 func (e *Elastico)get_IP(){
 	/*
 		for each node(processor) , get IP addr
@@ -86,6 +92,19 @@ func (e *Elastico)get_IP(){
 	// setting the IP addr from the byte array
 	e.IP= fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
 }
+
+
+func (e *Elastico) initER(){
+		/*
+			initialise r-bit epoch random string
+		*/
+
+		randomnum := random_gen(r)
+		// set r-bit binary string to epoch randomness
+		e.epoch_randomness = fmt.Sprintf("%0"+ strconv.FormatInt(r, 10) + "b\n", randomnum)
+}
+
+
 func random_gen(r int64) (*big.Int) {
 	/*
 		generate a random integer
@@ -102,6 +121,8 @@ func random_gen(r int64) (*big.Int) {
 	}
 	return randomNum
 }
+
+
 func main(){
-	
+
 }
