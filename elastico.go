@@ -5,6 +5,7 @@ import (
 	// "crypto/sha256"
 	"crypto/rsa"
 	"crypto/rand"
+	"math/big"
 	// "reflect"
 )	
 
@@ -81,6 +82,16 @@ func (e *Elastico)get_IP(){
 	}
 	e.IP= fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
 }
+func random_gen(r int64) (*big.Int){
+	var n,e = big.NewInt(2) , big.NewInt(r)
+	n.Exp(n, e, nil)
+	randomNum, err := rand.Int(rand.Reader, n)
+	if err != nil {
+		fmt.Println("error:", err.Error)
+	}
+	return randomNum
+}
 func main(){
-
+	a:= random_gen(2)
+	fmt.Println(a)
 }
