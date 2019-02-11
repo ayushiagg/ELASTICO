@@ -216,6 +216,11 @@ class Block:
 		self.data = BlockData(transactions, merkleTree)
 		self.signatures = BlockSign()
 
+	def getRootHash(self):
+		"""
+		"""
+		return self.header.rootHash
+
 	def addSign(self, data):
 		"""
 		"""
