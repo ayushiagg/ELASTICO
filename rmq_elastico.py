@@ -232,34 +232,34 @@ class Block:
 	def hexdigest(self):
 		"""
 		"""
-		digest = SHA256.new()
-		transactions = self.transactions
-		prevBlockHash = self.prevBlockHash
-		timestamp = self.timestamp
-		numAncestorBlocks = self.numAncestorBlocks
-		txnCount = self.txnCount
-		rootHash = self.rootHash
-		if type(transactions) is not str:
-			transactions = str(transactions)
-		if type(prevBlockHash) is not str:
-			prevBlockHash = str(prevBlockHash)
-		if type(timestamp) is not str:
-			timestamp = str(timestamp)
-		if type(numAncestorBlocks) is not str:
-			numAncestorBlocks = str(numAncestorBlocks)
-		if type(txnCount) is not str:
-			txnCount = str(txnCount)
-		if type(rootHash) is not str:
-			rootHash = str(rootHash)
+		# digest = SHA256.new()
+		# transactions = self.data.transactions
+		# prevBlockHash = self.header.prevBlockHash
+		# timestamp = self.timestamp
+		# numAncestorBlocks = self.numAncestorBlocks
+		# txnCount = self.txnCount
+		# rootHash = self.rootHash
+		# if type(transactions) is not str:
+		# 	transactions = str(transactions)
+		# if type(prevBlockHash) is not str:
+		# 	prevBlockHash = str(prevBlockHash)
+		# if type(timestamp) is not str:
+		# 	timestamp = str(timestamp)
+		# if type(numAncestorBlocks) is not str:
+		# 	numAncestorBlocks = str(numAncestorBlocks)
+		# if type(txnCount) is not str:
+		# 	txnCount = str(txnCount)
+		# if type(rootHash) is not str:
+		# 	rootHash = str(rootHash)
 
-		digest.update(transactions.encode())
-		digest.update(prevBlockHash.encode())
-		digest.update(timestamp.encode())
-		digest.update(numAncestorBlocks.encode())
-		digest.update(txnCount.encode())
-		digest.update(rootHash.encode())
-		hash_val = digest.hexdigest()
-		return hash_val
+		# digest.update(transactions.encode())
+		# digest.update(prevBlockHash.encode())
+		# digest.update(timestamp.encode())
+		# digest.update(numAncestorBlocks.encode())
+		# digest.update(txnCount.encode())
+		# digest.update(rootHash.encode())
+		# hash_val = digest.hexdigest()
+		# return hash_val
 
 
 class MerkleTree:
