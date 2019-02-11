@@ -1945,20 +1945,20 @@ class Elastico:
 				prevBlockHash = LastBlock.hexdigest()
 			else:
 				prevBlockHash = ""
-			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, rootHash)
+			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
 			
 
 		elif len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
 		pass
 
-	def createMerkleRootHash(self, transactions):
+	def createMerkleTree(self, transactions):
 		"""
 			create a merkle tree and return the root hash
 		"""
 		merkleTree = MerkleTree(transactions)
 		merkleTree.create_tree()
-		return merkleTree.Get_Root_leaf()
+		return merkleTree
 
 	def compute_fakePoW(self):
 		"""
