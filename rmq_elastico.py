@@ -183,7 +183,7 @@ class BlockHeader:
 	"""
 	def __init__(self, rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount):
 		self.prevBlockHash = prevBlockHash
-		self.timestamp = time.Now
+		self.timestamp = timestamp
 		self.numAncestorBlocks = numAncestorBlocks
 		self.txnCount = txnCount
 		self.rootHash = rootHash
