@@ -507,6 +507,7 @@ class Elastico:
 			get port number for the process
 		"""
 		try:
+			# acquire the lock
 			lock.acquire()
 			global port
 			port.value += 1
@@ -515,6 +516,7 @@ class Elastico:
 			raise e
 		finally:
 			returnValue = port.value
+			# release the lock
 			lock.release()
 			return returnValue
 
@@ -556,6 +558,7 @@ class Elastico:
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
 				self.epoch_randomness, randomset_R = self.xor_R()
+			# compute the digest 
 			digest = SHA256.new()
 			digest.update(IP.encode())
 			digest.update(PK.encode())
@@ -563,10 +566,13 @@ class Elastico:
 			digest.update(str(self.PoW["nonce"]).encode())
 			hash_val = digest.hexdigest()
 			if hash_val.startswith('0' * D):
+				# hash starts with leading D 0's
 				nonce = self.PoW["nonce"]
 				self.PoW = {"hash" : hash_val, "set_of_Rs" : randomset_R, "nonce" : nonce}
+				# change the state after solving the puzzle
 				self.state = ELASTICO_STATES["PoW Computed"]
 				return hash_val
+			# try for other nonce 
 			self.PoW["nonce"] += 1
 
 
@@ -1985,7 +1991,7 @@ class Elastico:
 			self.PoW["hash"] = D*'0' + ranHash[D:]
 
 		elif index == 1:
-			# computing an invalid PoW
+			# computing an invalid PoW using less number of values in digest
 			randomset_R = set()
 			if len(self.set_of_Rs) > 0:
 				self.epoch_randomness, randomset_R = self.xor_R()    
@@ -2287,13 +2293,14 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, commitmentSet, port, lock
+	global network_nodes, ledger, port, lock
 	
 	try:
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
-		# share global port between processes
+		# share global port among processes
 		port = manager.Value('i', 49152)
+		# shared lock among processes
 		lock=manager.Lock()
 		# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
 		ledger = manager.list()
@@ -2319,8 +2326,6 @@ def Run(epochTxns):
 			# set the flag false for bad nodes
 			network_nodes[faultyNodeIndex].faulty = True
 
-		commitmentSet = set()
-
 		# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
 		sharedObj = manager.dict()
 		
@@ -2342,6 +2347,7 @@ def Run(epochTxns):
 			processes[nodeIndex].join()
 
 		logging.warning("processes finished")
+		logging.warning("LEDGER %s",str(ledger))
 
 	except Exception as e:
 		logging.error("error in run step" , exc_info=e)
@@ -2363,7 +2369,6 @@ def createTxns():
 
 if __name__ == "__main__":
 	try:
-		
 		# logging module configured, will log in elastico.log file for each execution
 		logging.basicConfig(filename='elastico.log',filemode='w',level=logging.WARNING)
 
