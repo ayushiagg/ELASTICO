@@ -188,6 +188,42 @@ class BlockHeader:
 		self.txnCount = txnCount
 		self.rootHash = rootHash
 
+
+class BlockData:
+	"""
+	"""
+	def __init__(self, transactions, merkleTree):
+		self.transactions = transactions
+		self.merkleTree = merkleTree
+
+
+class BlockSign:
+	"""
+	"""
+	def __init__(self):
+		self.signatures = set()
+
+	def addSign(self, sign):
+		self.signatures.add(sign)
+
+
+class Block:
+	"""
+	"""
+	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount, merkleTree):
+		rootHash = merkleTree.Get_Root_leaf()
+		self.header = BlockHeader(rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount)
+		self.data = BlockData(transactions, merkleTree)
+		self.signatures = BlockSign()
+
+	def addSign(self, data):
+		"""
+		"""
+		verified = True
+		if verified:
+			self.signatures.addSign(data)
+		pass
+
 	def verifyBlock(self):
 		"""
 		"""
