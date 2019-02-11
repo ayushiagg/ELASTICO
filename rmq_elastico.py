@@ -83,8 +83,9 @@ def BroadcastTo_Network(data, type_):
 	global network_nodes
 
 	msg = { "data" : data , "type" : type_ }
-
+	# establish a connection with RabbitMQ server
 	connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+	# create a channel
 	channel = connection.channel()
 	 
 	for node in network_nodes:
@@ -102,11 +103,13 @@ def BroadcastTo_Network(data, type_):
 			if isinstance(e, ConnectionRefusedError):
 				logging.error("ConnectionRefusedError at port : %s", str(node.port))
 			raise e
-	channel.close()		
+	# close the channel
+	channel.close()
+	# close the connection
 	connection.close()
 
 
-def MulticastCommittee(commList, identityobj_dict, txns):
+def MulticastCommittee(commList, identityobj, txns):
 	"""
 		each node getting views of its committee members from directory members
 	"""
@@ -118,7 +121,7 @@ def MulticastCommittee(commList, identityobj_dict, txns):
 			# ToDo: fix this, many nodes can be primary
 			primaryId = commMembers[0]
 			for memberId in commMembers:
-				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "identity" : identityobj_dict}
+				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "identity" : identityobj}
 				# give txns only to the primary node
 				if memberId == primaryId:
 					data["txns"] = txns[committee_id]
@@ -139,7 +142,6 @@ class Identity:
 		self.committee_id = committee_id
 		self.PoW = PoW
 		self.epoch_randomness = epoch_randomness
-		self.partOfNtw = False
 		self.port = port
 
 
@@ -148,7 +150,7 @@ class Identity:
 			checking two objects of Identity class are equal or not
 		"""
 		return self.IP == identityobj.IP and self.PK == identityobj.PK and self.committee_id == identityobj.committee_id \
-		and self.PoW == identityobj.PoW and self.epoch_randomness == identityobj.epoch_randomness and self.partOfNtw == identityobj.partOfNtw and self.port == identityobj.port
+		and self.PoW == identityobj.PoW and self.epoch_randomness == identityobj.epoch_randomness and self.port == identityobj.port
 
 
 	def send(self, msg):
@@ -157,8 +159,9 @@ class Identity:
 		"""
 		try:
 			logging.info("sending msg - %s" , str(msg))
-			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 			# establish a connection with RabbitMQ server
+			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+			# create a channel
 			channel = connection.channel()
 
 			port = self.port
@@ -169,9 +172,10 @@ class Identity:
 			if channel.basic_publish(exchange='', routing_key='hello' + str(port), body= serialized_data, properties=pika.BasicProperties(delivery_mode=1)):
 				pass
 			else:
-				logging.error("messgae not published %s" , str(msg))    
-
+				logging.error("messgae not published %s" , str(msg))
+			# close the channel
 			channel.close()
+			# close the connection
 			connection.close()
 		except Exception as e:
 			logging.error("error at send msg ", exc_info=e)
@@ -502,6 +506,7 @@ class Elastico:
 		randomnum = random_gen(r)
 		return ("{:0" + str(r) +  "b}").format(randomnum)
 
+
 	def get_port(self):
 		"""
 			get port number for the process
@@ -677,7 +682,6 @@ class Elastico:
 				self.notify_finalCommittee()
 				MulticastCommittee(commList, self.identity, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
-				# ToDo: transition of state to committee full 
 
 
 	def unionViews(self, nodeData, incomingData):
@@ -697,7 +701,7 @@ class Elastico:
 				nodeData.add(data)
 		return nodeData
 
-						
+
 
 	def receive(self, msg):
 		"""
@@ -745,9 +749,9 @@ class Elastico:
 					logging.error("PoW not valid in adding new node")
 
 			# union of committe members views
-			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False and msg["data"]["identity"]["port"] not in self.views:
+			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False and msg["data"]["identity"].port not in self.views:
 				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
-				self.views.add(msg["data"]["identity"]["port"])
+				self.views.add(msg["data"]["identity"].port)
 				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
@@ -803,7 +807,7 @@ class Elastico:
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSetList = data["commitmentSet"]
-					PK = identityobj["PK"]
+					PK = identityobj.PK
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
@@ -841,20 +845,20 @@ class Elastico:
 				data = msg["data"]
 				identityobj = data["identity"]
 
-				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj["committee_id"]) , str(identityobj["port"]))    
+				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj.committee_id) , str(identityobj.port))    
 				if self.verify_PoW(identityobj):
 					# verify the signatures
-					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj["PK"]):
-						if identityobj["committee_id"] not in self.CommitteeConsensusData:
-							self.CommitteeConsensusData[identityobj["committee_id"]] = dict()
+					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj.PK):
+						if identityobj.committee_id not in self.CommitteeConsensusData:
+							self.CommitteeConsensusData[identityobj.committee_id] = dict()
 						# txnBlock sent was converted as a list
 						data["txnBlock"] = set(data["txnBlock"])
-						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj["committee_id"]]:
-							self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ] = set()
+						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
+							self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
 
 						# add signatures for the txn block 
-						self.CommitteeConsensusData[identityobj["committee_id"]][ str(data["txnBlock"]) ].add( data["sign"] )
-						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj["committee_id"]) , str(identityobj["port"]) , str(self.port))   
+						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj.committee_id) , str(identityobj.port) , str(self.port))   
 					else:
 						logging.error("signature invalid for intra committee block")        
 				else:
@@ -921,7 +925,7 @@ class Elastico:
 		elif msg["type"] == "prepare":
 			self.process_prepareMsg(msg)
 		elif msg["type"] == "commit":
-			self.process_commitMsg(msg)	
+			self.process_commitMsg(msg)
 		else:
 			pass
 
@@ -935,7 +939,7 @@ class Elastico:
 		elif msg["type"] == "Finalprepare":
 			self.process_FinalprepareMsg(msg)
 		elif msg["type"] == "Finalcommit":
-			self.process_FinalcommitMsg(msg)	
+			self.process_FinalcommitMsg(msg)
 		else:
 			pass
 
@@ -967,7 +971,6 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_prepareMsg(msg)
-
 		pass
 
 	def process_FinalprepareMsg(self, msg):
@@ -1058,7 +1061,7 @@ class Elastico:
 		if len(preparedData) > 0:
 			self.FinalpreparedData = preparedData
 			return True
-		return False	
+		return False
 
 	def isCommitted(self):
 		"""
@@ -1106,7 +1109,7 @@ class Elastico:
 				else:
 					logging.error("view and seqnum not found in isCommitted")
 			else:
-				logging.error("wrong view in is committed")	
+				logging.error("wrong view in is committed")
 		if len(committedData) > 0:
 			self.committedData = committedData
 			return True
@@ -1158,7 +1161,7 @@ class Elastico:
 				else:
 					logging.error("view and seqnum not found in isCommitted")
 			else:
-				logging.error("wrong view in is committed")	
+				logging.error("wrong view in is committed")
 		if len(committedData) > 0:
 			self.FinalcommittedData = committedData
 			return True
@@ -1202,7 +1205,7 @@ class Elastico:
 		if not self.verify_PoW(msg["identity"]):
 			return False
 		# verify signatures of the received msg
-		if not self.verify_sign(msg["sign"] , msg["commitData"] , msg["identity"]["PK"]):
+		if not self.verify_sign(msg["sign"] , msg["commitData"] , msg["identity"].PK):
 			return False
 		# check the view is same or not
 		if msg["commitData"]["viewId"] != self.viewId:
@@ -1219,7 +1222,7 @@ class Elastico:
 			logging.warning("wrong pow in verify prepares")
 			return False
 		# verify signatures of the received msg
-		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
+		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"].PK):
 			logging.warning("wrong sign in verify prepares")
 			return False
 
@@ -1245,7 +1248,7 @@ class Elastico:
 			logging.warning("wrong pow in verify final prepares")
 			return False
 		# verify signatures of the received msg
-		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"]["PK"]):
+		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"].PK):
 			logging.warning("wrong sign in verify final prepares")
 			return False
 
@@ -1270,7 +1273,7 @@ class Elastico:
 			logging.warning("wrong pow in  verify pre-prepare")
 			return False
 		# verify signatures of the received msg
-		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"].PK):
 			logging.warning("wrong sign in  verify pre-prepare")
 			return False
 		# verifying the digest of request msg
@@ -1298,7 +1301,7 @@ class Elastico:
 			logging.warning("wrong pow in  verify final pre-prepare")
 			return False
 		# verify signatures of the received msg
-		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"]["PK"]):
+		if not self.verify_sign(msg["sign"] , msg["pre-prepareData"] , msg["identity"].PK):
 			logging.warning("wrong sign in  verify final pre-prepare")
 			return False
 		# verifying the digest of request msg
@@ -1317,13 +1320,14 @@ class Elastico:
 					return False
 		return True
 
+
 	def log_prepareMsg(self, msg):
 		"""
 			log the prepare msg
 		"""
 		viewId = msg["prepareData"]["viewId"]
 		seqnum = msg["prepareData"]["seq"]
-		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+		socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
 		# add msgs for this view
 		if viewId not in self.prepareMsgLog:
 			self.prepareMsgLog[viewId] = dict()
@@ -1349,7 +1353,7 @@ class Elastico:
 		"""
 		viewId = msg["prepareData"]["viewId"]
 		seqnum = msg["prepareData"]["seq"]
-		socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+		socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
 		# add msgs for this view
 		if viewId not in self.FinalprepareMsgLog:
 			self.FinalprepareMsgLog[viewId] = dict()
@@ -1375,7 +1379,7 @@ class Elastico:
 		try:
 			viewId = msg["commitData"]["viewId"]
 			seqnum = msg["commitData"]["seq"]
-			socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+			socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
 			# add msgs for this view
 			if viewId not in self.commitMsgLog:
 				self.commitMsgLog[viewId] = dict()
@@ -1403,7 +1407,7 @@ class Elastico:
 		try:
 			viewId = msg["commitData"]["viewId"]
 			seqnum = msg["commitData"]["seq"]
-			socketId = msg["identity"]["IP"] +  ":" + str(msg["identity"]["port"])
+			socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
 			# add msgs for this view
 			if viewId not in self.FinalcommitMsgLog:
 				self.FinalcommitMsgLog[viewId] = dict()
@@ -1428,8 +1432,8 @@ class Elastico:
 		"""
 			log the pre-prepare msg
 		"""
-		IP = msg["identity"]["IP"]
-		port = msg["identity"]["port"]
+		IP = msg["identity"].IP
+		port = msg["identity"].port
 		# create a socket
 		socket = IP + ":" + str(port)
 		self.pre_prepareMsgLog[socket] = msg
@@ -1438,8 +1442,8 @@ class Elastico:
 		"""
 			log the pre-prepare msg
 		"""
-		IP = msg["identity"]["IP"]
-		port = msg["identity"]["port"]
+		IP = msg["identity"].IP
+		port = msg["identity"].port
 		# create a socket
 		socket = IP + ":" + str(port)
 		self.Finalpre_prepareMsgLog[socket] = msg
