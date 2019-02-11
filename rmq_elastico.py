@@ -583,7 +583,7 @@ class Elastico:
 
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
-			data = {"identity" : self.identity.__dict__}
+			data = {"identity" : self.identity}
 			msg = {"data" : data , "type" : "notify final member"}
 			finalMember.send(msg)
 
@@ -634,7 +634,9 @@ class Elastico:
 		if len(self.cur_directory) < c:
 			self.is_directory = True
 			# ToDo: do all broadcast asynchronously
-			BroadcastTo_Network(self.identity.__dict__, "directoryMember")
+			# broadcast the identity to whole ntw
+			BroadcastTo_Network(self.identity, "directoryMember")
+			# change the state as it is the directory member
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
 			self.Send_to_Directory()
@@ -648,7 +650,7 @@ class Elastico:
 		# Add the new processor in particular committee list of directory committee nodes
 		print("---Send to directory---")
 		for nodeId in self.cur_directory:
-			msg = {"data" : self.identity.__dict__, "type" : "newNode"}
+			msg = {"data" : self.identity, "type" : "newNode"}
 			nodeId.send(msg)
 
 
@@ -673,7 +675,7 @@ class Elastico:
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
 				self.notify_finalCommittee()
-				MulticastCommittee(commList, self.identity.__dict__, self.txn)
+				MulticastCommittee(commList, self.identity, self.txn)
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 				# ToDo: transition of state to committee full 
 
@@ -708,14 +710,13 @@ class Elastico:
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
-						idenobj = Identity(identityobj["IP"] , identityobj["PK"] , identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
 						flag = True
 						for obj in self.cur_directory:
-							if idenobj.isEqual(obj):
+							if identityobj.isEqual(obj):
 								flag = False
 								break
 						if flag:
-							self.cur_directory.add(idenobj)
+							self.cur_directory.add(identityobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
@@ -723,22 +724,21 @@ class Elastico:
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
 				if self.verify_PoW(identityobj):
-					idenobj = Identity(identityobj["IP"] , identityobj["PK"] ,identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
-					if identityobj["committee_id"] not in self.committee_list:
+					if identityobj.committee_id not in self.committee_list:
 						# Add the identity in committee
-						self.committee_list[identityobj["committee_id"]] = [idenobj]
+						self.committee_list[identityobj.committee_id] = [identityobj]
 
-					elif len(self.committee_list[identityobj["committee_id"]]) < c:
+					elif len(self.committee_list[identityobj.committee_id]) < c:
 						# Add the identity in committee
 						flag = True
-						for obj in self.committee_list[identityobj["committee_id"]]:
-							if idenobj.isEqual(obj):
+						for obj in self.committee_list[identityobj.committee_id]:
+							if identityobj.isEqual(obj):
 								flag = False
 								break
 						if flag:
-							# self.cur_directory.add(idenobj)
-							self.committee_list[identityobj["committee_id"]].append(idenobj)
-							if len(self.committee_list[identityobj["committee_id"]]) == c:
+							# self.cur_directory.add(identityobj)
+							self.committee_list[identityobj.committee_id].append(identityobj)
+							if len(self.committee_list[identityobj.committee_id]) == c:
 								# check that if all committees are full
 								self.checkCommitteeFull()
 				else:
@@ -1610,7 +1610,7 @@ class Elastico:
 			# make prepare_contents Ordered Dict for signatures purpose
 			prepare_contents =  OrderedDict({ "type" : "prepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
 		
-			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
+			preparemsg = {"type" : "prepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity}
 			prepareMsgList.append(preparemsg)
 		return prepareMsgList
 
@@ -1624,7 +1624,7 @@ class Elastico:
 			# make prepare_contents Ordered Dict for signatures purpose
 			prepare_contents =  OrderedDict({ "type" : "Finalprepare" , "viewId" : self.viewId,  "seq" : msg["pre-prepareData"]["seq"] , "digest" : msg["pre-prepareData"]["digest"]})
 		
-			preparemsg = {"type" : "Finalprepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity.__dict__}
+			preparemsg = {"type" : "Finalprepare",  "prepareData" : prepare_contents, "sign" : self.sign(prepare_contents) , "identity" : self.identity}
 			FinalprepareMsgList.append(preparemsg)
 		return FinalprepareMsgList
 
@@ -1636,7 +1636,7 @@ class Elastico:
 		# make pre_prepare_contents Ordered Dict for signatures purpose
 		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
-		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
+		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
 
 	def construct_Finalpre_prepare(self):
@@ -1647,7 +1647,7 @@ class Elastico:
 		# make pre_prepare_contents Ordered Dict for signatures purpose
 		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
-		pre_preparemsg = {"type" : "Finalpre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity.__dict__}
+		pre_preparemsg = {"type" : "Finalpre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
 
 
@@ -1672,7 +1672,7 @@ class Elastico:
 					digest = self.hexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
-					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity.__dict__}
+					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
 					commitMsges.append(commitMsg)
 
 		return commitMsges
@@ -1688,7 +1688,7 @@ class Elastico:
 					digest = self.hexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
-					commitMsg = {"type" : "Finalcommit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity.__dict__}
+					commitMsg = {"type" : "Finalcommit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
 					commitMsges.append(commitMsg)
 
 		return commitMsges
@@ -1763,7 +1763,7 @@ class Elastico:
 		# 
 		commitmentList = list(S)	
 		PK = self.key.publickey().exportKey().decode()  
-		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity.__dict__ , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
+		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
@@ -1798,7 +1798,7 @@ class Elastico:
 			# here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
 			txnBlock = list(self.txn_block)
 			txnBlock = sorted(txnBlock)
-			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity.__dict__}
+			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
@@ -1854,7 +1854,7 @@ class Elastico:
 			Hash_Ri = self.getCommitment()
 			for nodeId in self.committee_Members:
 				logging.warning("sent the commitment by %s" , str(self.port))
-				data = {"identity" : self.identity.__dict__ , "Hash_Ri"  : Hash_Ri}
+				data = {"identity" : self.identity , "Hash_Ri"  : Hash_Ri}
 				msg = {"data" : data , "type" : "hash"}
 				nodeId.send(msg)
 			self.state = ELASTICO_STATES["CommitmentSentToFinal"]
@@ -1874,7 +1874,7 @@ class Elastico:
 			broadcast Ri to all the network, final member will do this
 		"""
 		if self.isFinalMember():
-			data = {"Ri" : self.Ri, "identity" : self.identity.__dict__}
+			data = {"Ri" : self.Ri, "identity" : self.identity}
 			msg = {"data" : data , "type" : "RandomStringBroadcast"}
 			self.state = ELASTICO_STATES["BroadcastedR"]
 			BroadcastTo_Network(data, "RandomStringBroadcast")
@@ -1899,7 +1899,7 @@ class Elastico:
 		"""
 			verify the PoW of the node identityobj
 		"""
-		PoW = identityobj["PoW"]
+		PoW = identityobj.PoW
 
 		# length of hash in hex
 		if len(PoW["hash"]) != 64:
@@ -1913,11 +1913,10 @@ class Elastico:
 		for Ri in PoW["set_of_Rs"]:
 			digest = self.hexdigest(Ri)
 			if digest not in self.RcommitmentSet:
-				print("pow failed due to RcommitmentSet")
 				return False
 
 		# reconstruct epoch randomness
-		epoch_randomness = identityobj["epoch_randomness"]
+		epoch_randomness = identityobj.epoch_randomness
 		if len(PoW["set_of_Rs"]) > 0:
 			xor_val = 0
 			for R in PoW["set_of_Rs"]:
@@ -1925,8 +1924,8 @@ class Elastico:
 			epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
 
 		# recompute PoW 
-		PK = identityobj["PK"]
-		IP = identityobj["IP"]
+		PK = identityobj.PK
+		IP = identityobj.IP
 		nonce = PoW["nonce"]
 
 		digest = SHA256.new()
@@ -1954,7 +1953,7 @@ class Elastico:
 				LastBlock = ledger[-1]
 				if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
 					# ToDo: Add signs here
-					LastBlock.addSign(self.identity.__dict__)
+					LastBlock.addSign(self.identity)
 					return 
 				else:
 					prevBlockHash = LastBlock.hexdigest()
@@ -1962,7 +1961,7 @@ class Elastico:
 			else:
 				prevBlockHash = ""
 			newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
-			newBlock.addSign(self.identity.__dict__)			
+			newBlock.addSign(self.identity)			
 			ledger.append(newBlock)
 
 
@@ -2227,7 +2226,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						logging.warning("call for reset for  %s" , str(node.port))
 						if isinstance(node.identity, Identity):
 						# if node has formed its identity
-							msg = {"type": "reset-all", "data" : node.identity.__dict__}
+							msg = {"type": "reset-all", "data" : node.identity}
 							node.identity.send(msg)
 						else:
 							# this node has not computed its identity,calling reset explicitly for node
