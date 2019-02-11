@@ -177,11 +177,11 @@ class Identity:
 			logging.error("error at send msg ", exc_info=e)
 			raise e
 
-class Block:
+
+class BlockHeader:
 	"""
 	"""
-	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount, rootHash):
-		self.transactions = transactions
+	def __init__(self, rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount):
 		self.prevBlockHash = prevBlockHash
 		self.timestamp = time.Now
 		self.numAncestorBlocks = numAncestorBlocks
