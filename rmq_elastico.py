@@ -12,7 +12,7 @@ import logging
 from multiprocessing import Process, Lock, Manager
 import time, base64
 
-global network_nodes, n, s, c, D, r, identityNodeMap, fin_num, commitmentSet, ledger, port, lock
+global network_nodes, n, s, c, D, r, fin_num, commitmentSet, ledger, port, lock
 
 # n : number of nodes
 n = 66
@@ -26,8 +26,6 @@ D = 3
 r = 5
 # fin_num - final committee id
 fin_num = 0
-# identityNodeMap- mapping of identity object to Elastico node
-identityNodeMap = dict()
 # commitmentSet - set of commitments S
 commitmentSet = set()
 # network_nodes - list of all nodes 
@@ -560,7 +558,6 @@ class Elastico:
 			identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
 		"""
 		if self.state == ELASTICO_STATES["PoW Computed"]:
-			global identityNodeMap
 			
 			# export public key
 			PK = self.key.publickey().exportKey().decode()
@@ -569,8 +566,6 @@ class Elastico:
 			self.committee_id = self.get_committeeid(self.PoW["hash"])
 			
 			self.identity = Identity(self.IP, PK, self.committee_id, self.PoW, self.epoch_randomness,self.port)
-			# mapped identity object to the elastico object
-			identityNodeMap[self.identity] = self
 			# changed the state after identity formation
 			self.state = ELASTICO_STATES["Formed Identity"]
 			return self.identity
@@ -591,28 +586,14 @@ class Elastico:
 			the directory members
 		""" 
 		if len(self.cur_directory) < c:
-
 			self.is_directory = True
-			# logging.warning( "checking %s - %s" , str(self.IP) , str(self.identity.IP) )
-
-			# logging.warning(" %s - %s - %s -  %s- not seen c members yet, so broadcast to ntw---" , str(self.port)  ,str(self.identity) , str(self.committee_id) , str(self.IP))
 			# ToDo: do all broadcast asynchronously
 			BroadcastTo_Network(self.identity.__dict__, "directoryMember")
 			self.state = ELASTICO_STATES["RunAsDirectory"]
 		else:
-			# track previous state before adding in committee
-			# prevState = self.state
-			
 			self.Send_to_Directory()
-			# ToDo : check state assignment order
-			# if prevState == ELASTICO_STATES["Formed Identity"] and self.state == ELASTICO_STATES["Receiving Committee Members"]:
-			# if self.state == ELASTICO_STATES["Receiving Committee Members"]:
-			#   msg = {"data" : self.identity ,"type" : "Committee full"}
-			#   BroadcastTo_Network(msg["data"] , msg["type"])
 			if self.state != ELASTICO_STATES["Receiving Committee Members"]: 
 				self.state = ELASTICO_STATES["Formed Committee"]
-				# broadcast committee full state notification to all nodes when the present state is "Received Committee members"
-
 
 	def Send_to_Directory(self):
 		"""
@@ -674,17 +655,13 @@ class Elastico:
 		"""
 			method to recieve messages for a node as per the type of a msg
 		"""
-		logging.info("call to receive method with type - %s ",str(msg["type"]))
 		try:
 			# new node is added in directory committee if not yet formed
 			if msg["type"] == "directoryMember":
 				identityobj = msg["data"]
-				# logging.warning("directory member to be appended %s" , str(identityobj))
-				# logging.warning(" %s - %s - %s -  %s- directory member to get appended" , str(identityobj.port)  ,str(identityobj) , str(identityobj.committee_id) , str(identityobj.IP) )
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
-						logging.info("incoming receive call with msg type %s" , str(msg["type"]))
 						idenobj = Identity(identityobj["IP"] , identityobj["PK"] , identityobj["committee_id"], identityobj["PoW"], identityobj["epoch_randomness"] , identityobj["port"])
 						flag = True
 						for obj in self.cur_directory:
@@ -692,8 +669,7 @@ class Elastico:
 								flag = False
 								break
 						if flag:
-							self.cur_directory.add(idenobj)     
-						# self.cur_directory.add(identityobj)
+							self.cur_directory.add(idenobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
@@ -1925,7 +1901,7 @@ class Elastico:
 		if len(self.response) == 1:
 			transactions = self.response[0]
 
-			rootHash = self.createMerkleRootHash(transactions)
+			merkleTree = self.createMerkleTree(transactions)
 			
 			txnCount = len(transactions)
 			if len(ledger) > 0:
@@ -2233,9 +2209,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 							data = pickle.loads(body)
 							# consume the msg by taking the action in receive
 							node.receive(data)
-						# else:
-						# 	logging.error('No message returned %s' , str(count))
-						# 	logging.warning("%s - method_frame , %s - header frame , %s - body" , str(method_frame)  , str(header_frame) , str(body))
 						count -= 1
 					# close the channel 
 					channel.close()
@@ -2349,7 +2322,7 @@ if __name__ == "__main__":
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
 		numOfEpochs = 2
-		for i in range(numOfEpochs):	
+		for i in range(numOfEpochs):
 			epochTxns[i] = createTxns()
 		# run all the epochs 
 		Run(epochTxns)
