@@ -237,7 +237,7 @@ class Block:
 	def hexdigest(self):
 		"""
 		"""
-		# digest = SHA256.new()
+		digest = SHA256.new()
 		# transactions = self.data.transactions
 		# prevBlockHash = self.header.prevBlockHash
 		# timestamp = self.timestamp
@@ -263,8 +263,8 @@ class Block:
 		# digest.update(numAncestorBlocks.encode())
 		# digest.update(txnCount.encode())
 		# digest.update(rootHash.encode())
-		# hash_val = digest.hexdigest()
-		# return hash_val
+		hash_val = digest.hexdigest()
+		return hash_val
 
 
 class MerkleTree:
