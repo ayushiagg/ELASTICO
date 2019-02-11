@@ -332,9 +332,8 @@ class MerkleTree:
 
 	# Get the root of the transaction
 	def Get_Root_leaf(self):
-		last_key = self.past_transaction.keys()[-1]
-		return self.past_transaction[last_key]
-
+		last_value = list(self.past_transaction.values())[-1]
+		return last_value
 
 class Elastico:
 	"""
