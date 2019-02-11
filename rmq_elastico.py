@@ -1947,11 +1947,19 @@ class Elastico:
 			txnCount = len(transactions)
 			if len(ledger) > 0:
 				LastBlock = ledger[-1]
-				prevBlockHash = LastBlock.hexdigest()
+				if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
+					# ToDo: Add signs here
+					LastBlock.addSign(self.identity.__dict__)
+					return 
+				else:
+					prevBlockHash = LastBlock.hexdigest()
+
 			else:
 				prevBlockHash = ""
-			b = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
-			
+			newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
+			newBlock.addSign(self.identity.__dict__)			
+			ledger.append(newBlock)
+
 
 		elif len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
