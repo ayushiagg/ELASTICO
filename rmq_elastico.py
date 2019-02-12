@@ -221,20 +221,26 @@ class Block:
 		rootHash = merkleTree.Get_Root_leaf()
 		self.header = BlockHeader(rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount)
 		self.data = BlockData(transactions, merkleTree)
-		self.signatures = BlockSign()
+		self.IdentitiesAndSignature = []
 
 	def getRootHash(self):
 		"""
 		"""
 		return self.header.rootHash
 
-	def addSign(self, data):
+	def addSignAndIdentities(self, data):
 		"""
 		"""
 		verified = True
 		if verified:
-			self.signatures.addSign(data)
-		pass
+			for newobj in data:
+				flag = False
+				for obj in IdentitiesAndSignatures:
+					if newobj.isEqual(obj):
+						flag = True
+						break
+				if flag == False:		
+					self.IdentitiesAndSignatures.append(newobj)
 
 	def verifyBlock(self):
 		"""
