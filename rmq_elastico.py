@@ -772,7 +772,6 @@ class Elastico:
 			elif msg["type"] == "committee members views" and self.verify_PoW(msg["data"]["identity"]) and self.is_directory == False and msg["data"]["identity"].port not in self.views:
 				# logging.warning("committee member views taken by committee id - %s" , str(self.committee_id))
 				self.views.add(msg["data"]["identity"].port)
-				logging.warning("receiving views")
 				commMembers = msg["data"]["committee members"]
 				finalMembers  = msg["data"]["final Committee members"]
 
@@ -904,7 +903,7 @@ class Elastico:
 
 			elif msg["type"] == "notify final member":
 				logging.warning("notifying final member %s" , str(self.port))
-				if self.verify_PoW(msg["data"]["identity"]):
+				if self.verify_PoW(msg["data"]["identity"]) and self.committeeid == fin_num:
 					self.is_final = True
 
 			elif msg["type"] == "Broadcast Ri":
@@ -1489,6 +1488,7 @@ class Elastico:
 					# construct pre-prepare msg
 					pre_preparemsg = self.construct_pre_prepare()
 					# multicasts the pre-prepare msg to replicas
+					# ToDo: what if primary does not send the pre-prepare to one of the nodes
 					self.send_pre_prepare(pre_preparemsg)
 
 					logging.warning("primary constructing pre-prepares with port %s" , str(self.port))
@@ -1506,6 +1506,7 @@ class Elastico:
 			elif self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]:
 				if not self.primary:
 					# construct prepare msg
+					# ToDo: verify whether the pre-prepare msg comes from various primaries or not
 					preparemsgList = self.construct_prepare()
 					logging.warning("constructing prepares with port %s" , str(self.port))
 					self.send_prepare(preparemsgList)
@@ -1599,6 +1600,7 @@ class Elastico:
 
 	def is_pre_prepared(self):
 		"""
+			if the node received the pre-prepare msg from the primary
 		"""
 		return len(self.pre_prepareMsgLog) > 0
 
