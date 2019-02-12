@@ -347,12 +347,7 @@ class MerkleTree:
 	def Get_Root_leaf(self):
 		last_value = list(self.past_transaction.values())[-1]
 		return last_value
-class IdentityAndSign:
-	"""
-	"""
-	def __init__(self, sign, identityobj):
-		self.sign = sign
-		self.identityobj = identityobj
+
 
 
 class FinalCommittedBlock:
@@ -822,7 +817,7 @@ class Elastico:
 			elif msg["type"] == "finalTxnBlock":
 				data = msg["data"]
 				identityobj = data["identity"]
-
+				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					sign = data["signature"]
 					received_commitmentSetList = data["commitmentSet"]
@@ -835,9 +830,13 @@ class Elastico:
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = []
 						
+						# creating the object that contains the identity and signature of the final member
 						identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
+						
+						# appending the identity and sign of final member 
 						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].append(identityAndSign)
 
+						# block is signed by sufficient final members 
 						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
 							logging.warning("condition fulfilled")
 							# for final members, their state is updated only when they have also sent the finalblock
@@ -1633,6 +1632,7 @@ class Elastico:
 			construct prepare msg in the prepare phase
 		"""
 		prepareMsgList = []
+		# loop over all pre-prepare msgs
 		for socketId in self.pre_prepareMsgLog:
 			msg = self.pre_prepareMsgLog[socketId]
 			# make prepare_contents Ordered Dict for signatures purpose
@@ -2154,12 +2154,14 @@ class Elastico:
 					self.BroadcastFinalTxn()
 
 			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and self.isFinalMember():
-				# collect final blocks sent by final committee and send to client.
-				# Todo : check this send to client
+				# collect final blocks sent by final committee and add the blocks to the response
+				logging.warning("receiving multiple final blocks %s", str(self.finalBlockbyFinalCommittee))
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						TxnsList = ast.literal_eval(txnBlock)
+						# create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
 						finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
+						# add the block to the response
 						self.response.append(finalCommittedBlock)
 						logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 					else:
