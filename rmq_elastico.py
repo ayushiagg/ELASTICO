@@ -30,9 +30,6 @@ fin_num = 0
 commitmentSet = set()
 # network_nodes - list of all nodes 
 network_nodes = []
-# final block in an epoch
-epochBlock = []
-# port - avaliable ports start from here
 
 # ELASTICO_STATES - states reperesenting the running state of the node
 ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARED" : 22, "PBFT_COMMITTED" : 23, "PBFT_PREPARE_SENT" : 24 , "PBFT_COMMIT_SENT" : 25, "PBFT_PRE_PREPARE_SENT"  :26 , "FinalPBFT_NONE" : 27,  "FinalPBFT_PRE_PREPARE" : 28, "FinalPBFT_PREPARED" : 29, "FinalPBFT_COMMITTED" : 30, "FinalPBFT_PREPARE_SENT" : 31 , "FinalPBFT_COMMIT_SENT" : 32, "FinalPBFT_PRE_PREPARE_SENT"  :33, "AppendToLedger" : 34, "LedgerUpdated" : 35}
@@ -90,9 +87,7 @@ def BroadcastTo_Network(data, type_):
 	 
 	for node in network_nodes:
 		try:
-
 			port = node.port
-
 			# create a hello queue to which the message will be delivered
 			channel.queue_declare( queue= 'hello' + str(port) )
 			
@@ -114,6 +109,7 @@ def MulticastCommittee(commList, identityobj, txns):
 		each node getting views of its committee members from directory members
 	"""
 	try:
+		# get the final committee members with the fixed committee id
 		finalCommitteeMembers = commList[fin_num]
 		for committee_id in commList:
 			commMembers = commList[committee_id]
@@ -160,12 +156,10 @@ class Identity:
 			send the msg to node based on their identity
 		"""
 		try:
-			logging.info("sending msg - %s" , str(msg))
 			# establish a connection with RabbitMQ server
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 			# create a channel
 			channel = connection.channel()
-
 			port = self.port
 
 			# create a hello queue to which the message will be delivered
@@ -196,6 +190,7 @@ class Transaction:
 
 class BlockHeader:
 	"""
+		class for block header
 	"""
 	def __init__(self, rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount):
 		self.prevBlockHash = prevBlockHash
@@ -207,6 +202,7 @@ class BlockHeader:
 
 class BlockData:
 	"""
+		class for block data consists of txns and merkle tree
 	"""
 	def __init__(self, transactions, merkleTree):
 		self.transactions = transactions
@@ -215,17 +211,22 @@ class BlockData:
 
 class IdentityAndSign:
 	"""
+		for signature and its identity which can be used for verification
 	"""
 	def __init__(self, sign, identityobj):
 		self.sign = sign
 		self.identityobj = identityobj
 
 	def isEqual(self, data):
+		"""
+			compare two objects of this class
+		"""
 		return self.sign == data.sign and self.identityobj.isEqual(data.identityobj)
 
 
 class Block:
 	"""
+		create a block of txns with fields as header , data , identities and signatures
 	"""
 	def __init__(self, transactions,  prevBlockHash, timestamp, numAncestorBlocks, txnCount, merkleTree):
 		rootHash = merkleTree.Get_Root_leaf()
@@ -235,15 +236,18 @@ class Block:
 
 	def getRootHash(self):
 		"""
+			get the root hash of the merkle tree
 		"""
 		return self.header.rootHash
 
 	def addSignAndIdentities(self, data):
 		"""
+			add signatures and identities for the block
 		"""
 		verified = True
 		if verified:
 			for newobj in data:
+				# Add the identity and sign only if not present
 				flag = False
 				for obj in self.IdentitiesAndSignatures:
 					if newobj.isEqual(obj):
@@ -259,6 +263,7 @@ class Block:
 
 	def hexdigest(self):
 		"""
+			computes the digest for the block
 		"""
 		digest = SHA256.new()
 		# transactions = self.data.transactions
@@ -292,6 +297,7 @@ class Block:
 
 class MerkleTree:
 	"""
+		construct the merkle tree of txns
 	"""
 	def __init__(self, transactions):
 		self.past_transaction = OrderedDict()
@@ -362,6 +368,7 @@ class MerkleTree:
 
 class FinalCommittedBlock:
 	"""
+		final committed block that consists of txns and list of signatures and identities
 	"""
 	def __init__(self, txnList, listSignaturesAndIdentityobjs):
 		self.txnList = txnList
@@ -459,11 +466,14 @@ class Elastico:
 		self.commitMsgLog = dict()
 		self.preparedData = dict()
 		self.committedData = dict()
+
+		# only when this is the part of final committee
 		self.Finalpre_prepareMsgLog = dict()
 		self.FinalprepareMsgLog = dict()
 		self.FinalcommitMsgLog = dict()
 		self.FinalpreparedData = dict()
 		self.FinalcommittedData = dict()
+
 		self.faulty = False
 
 
@@ -517,11 +527,14 @@ class Elastico:
 			self.commitMsgLog = dict()
 			self.preparedData = dict()
 			self.committedData = dict()
+
+			# only when this is the part of final committee
 			self.Finalpre_prepareMsgLog = dict()
 			self.FinalprepareMsgLog = dict()
 			self.FinalcommitMsgLog = dict()
 			self.FinalpreparedData = dict()
 			self.FinalcommittedData = dict()
+
 			self.faulty = False
 
 		except Exception as e:
@@ -576,7 +589,6 @@ class Elastico:
 		"""
 			for each node, it will return public pvt key pair
 		"""
-		print("---get public pvt key pair---")
 		key = RSA.generate(2048)
 		return key
 
@@ -619,6 +631,7 @@ class Elastico:
 		finalCommList = self.committee_list[fin_num]
 		for finalMember in finalCommList:
 			data = {"identity" : self.identity}
+			# construct the msg
 			msg = {"data" : data , "type" : "notify final member"}
 			finalMember.send(msg)
 
@@ -702,10 +715,6 @@ class Elastico:
 				break
 		if flag == 0:
 			logging.warning("committees full  - good")
-			if self.state == ELASTICO_STATES["RunAsDirectory"]:
-				logging.error("directory member has not yet received the epochTxn")
-				# directory member has not yet received the epochTxn
-				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
 				# notify the final members
 				self.notify_finalCommittee()
