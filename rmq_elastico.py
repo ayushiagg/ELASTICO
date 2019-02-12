@@ -340,6 +340,21 @@ class MerkleTree:
 	def Get_Root_leaf(self):
 		last_value = list(self.past_transaction.values())[-1]
 		return last_value
+class IdentityAndSign:
+	"""
+	"""
+	def __init__(self, sign, identityobj):
+		self.sign = sign
+		self.identityobj = identityobj
+
+
+class FinalCommittedBlock:
+	"""
+	"""
+	def __init__(self, txnList, listSignaturesAndIdentityobjs):
+		self.txnList = txnList
+		self.listSignaturesAndIdentityobjs = listSignaturesAndIdentityobjs
+
 
 class Elastico:
 	"""
