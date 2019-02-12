@@ -2388,6 +2388,20 @@ def createNodes():
 			network_nodes.append(Elastico())
 
 
+def manageSharedData(manager):
+	"""
+		make shared variables
+	"""
+	global ledger, port, lock
+	# share global port among processes
+	port = manager.Value('i', 49152)
+	# shared lock among processes
+	lock=manager.Lock()
+	# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
+	ledger = manager.list()
+	# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
+	sharedObj = manager.dict()
+	return sharedObj
 
 
 
