@@ -2142,7 +2142,25 @@ class Elastico:
 		self.verifyAndMergeConsensusData()
 
 
-	
+	def checkCountForFinalData(self):
+		"""
+			check the sufficient counts for final data
+		"""
+		# collect final blocks sent by final committee and add the blocks to the response
+		for txnBlock in self.finalBlockbyFinalCommittee:
+			if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
+				TxnsList = ast.literal_eval(txnBlock)
+				# create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
+				finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
+				# add the block to the response
+				self.response.append(finalCommittedBlock)
+			else:
+				logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
+
+		if len(self.response) > 0:
+			logging.warning("final block sent the block to client by %s", str(self.port))
+			self.state = ELASTICO_STATES["FinalBlockSentToClient"]
+
 
 	def execute(self, epochTxn):
 		"""
