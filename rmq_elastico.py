@@ -203,14 +203,15 @@ class BlockData:
 		self.merkleTree = merkleTree
 
 
-class BlockSign:
+class IdentityAndSign:
 	"""
 	"""
-	def __init__(self):
-		self.signatures = set()
+	def __init__(self, sign, identityobj):
+		self.sign = sign
+		self.identityobj = identityobj
 
-	def addSign(self, sign):
-		self.signatures.add(sign)
+	def isEqual(self, data):
+		return self.sign == data.sign and self.identityobj.isEqual(data.identityobj)
 
 
 class Block:
