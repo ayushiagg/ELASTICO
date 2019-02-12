@@ -2259,6 +2259,20 @@ class Elastico:
 				logging.info("ConnectionRefusedError at port : %s", str(self.port))
 			raise e
 
+	def executeReset(self):
+		"""
+			call for reset
+		"""
+		# now reset the node
+		logging.warning("call for reset for  %s" , str(self.port))
+		if isinstance(self.identity, Identity):
+		# if node has formed its identity
+			msg = {"type": "reset-all", "data" : self.identity}
+			self.identity.send(msg)
+		else:
+			# this node has not computed its identity,calling reset explicitly for node
+			self.reset()
+
 
 def executeSteps(nodeIndex, epochTxns , sharedObj):
 	"""
