@@ -2335,6 +2335,21 @@ def createProcesses(epochTxns, sharedObj):
 	return processes
 
 
+def startAndJoinProcesses(processes):
+	"""
+		start and joins the processes
+	"""
+	for nodeIndex in range(n):
+		print("process number" , nodeIndex , "started")
+		# start the process
+		processes[nodeIndex].start()
+
+	for nodeIndex in range(n):
+		# waits for the process to finish
+		processes[nodeIndex].join()
+
+
+
 
 def Run(epochTxns):
 	"""
