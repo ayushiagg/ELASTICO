@@ -2172,12 +2172,7 @@ class Elastico:
 
 			# initial state of elastico node
 			if self.state == ELASTICO_STATES["NONE"]:
-				if self.flag == True:
-					# compute Pow for good node
-					self.compute_PoW()
-				else:
-					# compute Pow for bad node
-					self.compute_fakePoW()
+				self.executePoW()				
 
 			elif self.state == ELASTICO_STATES["PoW Computed"]:
 				# form identity, when PoW computed
@@ -2189,22 +2184,10 @@ class Elastico:
 
 			elif self.is_directory and self.state == ELASTICO_STATES["RunAsDirectory"]:
 				logging.warning("%s is the directory member" , str(self.port))
-				# directory node will receive transactions
-				# Receive txns from client for an epoch
-				k = 0
-				num = len(epochTxn) // pow(2,s) 
-				# loop in sorted order of committee ids
-				for iden in range(pow(2,s)):
-					if iden == pow(2,s)-1:
-						# give all the remaining txns to the last committee
-						self.txn[iden] = epochTxn[ k : ]
-					else:
-						self.txn[iden] = epochTxn[ k : k + num]
-					k = k + num
+				self.receiveTxns(epochTxn)
 				# directory member has received the txns for all committees 
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 
-			
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				if self.flag == False:
@@ -2212,11 +2195,10 @@ class Elastico:
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
 				
 				# Now The node should go for Intra committee consensus
-				if self.is_directory == False:
-					# initial state for the PBFT
-					self.state = ELASTICO_STATES["PBFT_NONE"]
-					# run PBFT for intra-committee consensus
-					self.runPBFT("intra committee consensus")
+				# initial state for the PBFT
+				self.state = ELASTICO_STATES["PBFT_NONE"]
+				# run PBFT for intra-committee consensus
+				self.runPBFT("intra committee consensus")
 
 			elif self.state == ELASTICO_STATES["PBFT_NONE"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PREPARED"] or self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
 				# run pbft for intra consensus
@@ -2229,28 +2211,11 @@ class Elastico:
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]:
 				# final committee node will collect blocks and merge them
-				logging.warning("final member sent the block to final")
-				flag = False
-				for commId in range(pow(2,s)):
-					if commId not in self.CommitteeConsensusData:
-						flag = True
-						logging.warning("bad committee id lol %s" , str(commId))
-						break
-					else:
-						for txnBlock in self.CommitteeConsensusData[commId]:
-							if len(self.CommitteeConsensusData[commId][txnBlock]) <= c//2:
-								flag = True
-								logging.warning("bad committee id for intra committee block %s" , str(commId))
-								break
-				if flag == False:
-					# when sufficient number of blocks from each committee are received
-					logging.warning("good going for verify and merge")
-					self.verifyAndMergeConsensusData()
+				self.checkCountForConsensusData()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 				# final committee member runs final pbft
 				self.state = ELASTICO_STATES["FinalPBFT_NONE"]
-
 				self.runFinalPBFT("final committee consensus")
 
 			elif self.state == ELASTICO_STATES["FinalPBFT_NONE"] or self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["FinalPBFT_PREPARED"] or self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]:
@@ -2264,38 +2229,15 @@ class Elastico:
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["CommitmentSentToFinal"]:
 				# broadcast final txn block to ntw
 				if len(self.commitments) >= c//2 + 1:
-					logging.warning("got sufficient commitments")
 					self.BroadcastFinalTxn()
 
 			elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
-				# collect final blocks sent by final committee and add the blocks to the response
-				logging.warning("receiving multiple final blocks %s", str(self.finalBlockbyFinalCommittee))
-				logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
-				for txnBlock in self.finalBlockbyFinalCommittee:
-					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
-						TxnsList = ast.literal_eval(txnBlock)
-						# create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
-						finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
-						# add the block to the response
-						self.response.append(finalCommittedBlock)
-					else:
-						logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
-
-				if len(self.response) > 0:
-					logging.warning("final block sent the block to client by %s", str(self.port))
-					self.state = ELASTICO_STATES["FinalBlockSentToClient"]
+				self.checkCountForFinalData()
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 				# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 				if len(self.newRcommitmentSet) >= c//2 + 1:
-					logging.warning("R Broadcasted by Final member")
 					self.BroadcastR()
-				else:
-					logging.warning("insufficient RCommitments")
-
-			elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
-				if self.isFinalMember():
-					logging.warning("wrong state of final committee member")
 
 			elif self.state == ELASTICO_STATES["ReceivedR"]:
 				self.state = ELASTICO_STATES["AppendToLedger"]
@@ -2306,7 +2248,6 @@ class Elastico:
 
 			elif self.state == ELASTICO_STATES["LedgerUpdated"]:
 				# Now, the node can be reset
-				logging.warning("call for reset BY %s - %s" , str(self.port), str(self.committee_id))
 				return "reset"
 
 		except Exception as e:
