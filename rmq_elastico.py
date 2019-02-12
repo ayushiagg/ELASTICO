@@ -125,7 +125,9 @@ def MulticastCommittee(commList, identityobj, txns):
 				# give txns only to the primary node
 				if memberId == primaryId:
 					data["txns"] = txns[committee_id]
+				# construct the msg
 				msg = {"data" : data , "type" : "committee members views"}
+				# send the committee member views to nodes
 				memberId.send(msg)
 	except Exception as e:
 		logging.error("error in multicast committees list", exc_info=e)
@@ -653,11 +655,9 @@ class Elastico:
 			Send about new nodes to directory committee members
 		"""
 		# Add the new processor in particular committee list of directory committee nodes
-		print("---Send to directory---")
 		for nodeId in self.cur_directory:
 			msg = {"data" : self.identity, "type" : "newNode"}
 			nodeId.send(msg)
-
 
 
 	def checkCommitteeFull(self):
@@ -666,21 +666,24 @@ class Elastico:
 		"""
 		commList = self.committee_list
 		flag = 0
+		# iterating over all committee ids
 		for iden in range(pow(2,s)):
 			if iden not in commList or len(commList[iden]) < c:
 				logging.warning("committees not full  - bad miss id : %s", str(iden))
 				flag = 1
 				break
 		if flag == 0:
-			# Send commList[iden] to members of commList[iden]
 			logging.warning("committees full  - good")
 			if self.state == ELASTICO_STATES["RunAsDirectory"]:
 				logging.error("directory member has not yet received the epochTxn")
 				# directory member has not yet received the epochTxn
 				pass
 			if self.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]:
+				# notify the final members
 				self.notify_finalCommittee()
+				# multicast the txns and committee members to the nodes
 				MulticastCommittee(commList, self.identity, self.txn)
+				# change the state after multicast
 				self.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
 
 
@@ -727,6 +730,7 @@ class Elastico:
 			# new node is added to the corresponding committee list if committee list has less than c members
 			elif msg["type"] == "newNode" and self.is_directory:
 				identityobj = msg["data"]
+				# verify the PoW
 				if self.verify_PoW(identityobj):
 					if identityobj.committee_id not in self.committee_list:
 						# Add the identity in committee
@@ -740,7 +744,6 @@ class Elastico:
 								flag = False
 								break
 						if flag:
-							# self.cur_directory.add(identityobj)
 							self.committee_list[identityobj.committee_id].append(identityobj)
 							if len(self.committee_list[identityobj.committee_id]) == c:
 								# check that if all committees are full
@@ -758,8 +761,10 @@ class Elastico:
 
 				if "txns" in msg["data"]:
 					# update the txn block
+					# ToDo: txnblock should be ordered, not set
 					self.txn_block |= set(msg["data"]["txns"])
 					self.primary =  True
+				# ToDo: verify this union thing
 				# union of committee members wrt directory member
 				self.committee_Members = self.unionViews(self.committee_Members, commMembers)
 				# union of final committee members wrt directory member
@@ -770,15 +775,6 @@ class Elastico:
 					self.state = ELASTICO_STATES["Receiving Committee Members"]
 				else:
 					logging.error("Wrong state : %s", str(self.state))
-
-
-			elif msg["type"] == "Committee full" and self.verify_PoW(msg["data"]):
-				if self.state == ELASTICO_STATES["Receiving Committee Members"]:
-					# all committee members have received their member views
-					logging.warning("change to committee full")
-					self.state = ELASTICO_STATES["Committee full"]
-				else:
-					logging.warning("change to committee full failure")
 
 			# receiving H(Ri) by final committe members
 			elif msg["type"] == "hash" and self.isFinalMember():
@@ -1178,7 +1174,6 @@ class Elastico:
 		if verified:
 			# Log the pre-prepare msgs!
 			self.logPre_prepareMsg(msg)
-			# self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		else:
 			logging.error("error in verification of process_pre_prepareMsg")
 		pass
@@ -1290,6 +1285,7 @@ class Elastico:
 			if self.pre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId and self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"] == seqnum:
 				if msg["pre-prepareData"]["digest"] != self.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]:
 					return False
+		# If msg is discarded then what to do
 		return True
 
 	def verify_Finalpre_prepare(self, msg):
@@ -1947,7 +1943,7 @@ class Elastico:
 		"""
 		"""
 		# transactions, prevBlockHash, timestamp, numAncestorBlocks, txnCount
-		if len(self.response) == 1:
+		if len(self.response) >= 1:
 			transactions = self.response[0]
 
 			merkleTree = self.createMerkleTree(transactions)
@@ -1969,7 +1965,7 @@ class Elastico:
 			ledger.append(newBlock)
 
 
-		elif len(self.response) > 1:
+		if len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
 		pass
 
@@ -2064,11 +2060,9 @@ class Elastico:
 				# directory member has received the txns for all committees 
 				self.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
 
-			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				self.state = ELASTICO_STATES["Committee full"]
 			
 			# when a node is part of some committee
-			elif self.state == ELASTICO_STATES["Committee full"]:
+			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
 				logging.warning("welcome to committee full - %s -- %s", str(self.port) , str(self.committee_id))
 				if self.flag == False:
 					# logging the bad nodes
@@ -2081,7 +2075,7 @@ class Elastico:
 					# run PBFT for intra-committee consensus
 					self.runPBFT("intra committee consensus")
 
-			elif self.state == ELASTICO_STATES["PBFT_NONE"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PREPARED"] or self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"] or self.state == ELASTICO_STATES["Formed Committee"]:
+			elif self.state == ELASTICO_STATES["PBFT_NONE"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["PBFT_PREPARED"] or self.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]:
 				# run pbft for intra consensus
 				self.runPBFT("intra committee consensus")
 
@@ -2238,6 +2232,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
 
+				# stop the faulty node in between
 				if node.faulty == True and time.time() - startTime >= 60:
 					logging.warning("bye bye!")
 					break
