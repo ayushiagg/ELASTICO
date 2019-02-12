@@ -507,6 +507,7 @@ class Elastico:
 			self.finalCommitteeMembers = set()
 			# only when this is the member of the directory committee
 			self.txn = dict()
+			self.response = []
 			self.flag = True
 			self.views = set()
 			self.primary = False
