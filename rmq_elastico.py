@@ -2069,6 +2069,33 @@ class Elastico:
 		self.state = ELASTICO_STATES["PoW Computed"]
 
 
+	def consumeMsg(self):
+		"""
+			consume the msgs for this node
+		"""
+		try:
+			# create a channel
+			channel = node.connection.channel()
+			# specify the queue name 
+			queue = channel.queue_declare( queue='hello' + str(node.port))
+			# count the number of messages that are in the queue
+			count = queue.method.message_count
+
+			# consume all the messages one by one
+			while count:
+				# get the message from the queue
+				method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+				if method_frame:
+					channel.basic_ack(method_frame.delivery_tag)
+					data = pickle.loads(body)
+					# consume the msg by taking the action in receive
+					node.receive(data)
+				count -= 1
+			# close the channel 
+			channel.close()
+		except Exception as e:
+			logging.warning("error in basic get %s",str(count),exc_info=e)
+
 
 	def execute(self, epochTxn):
 		"""
@@ -2271,33 +2298,9 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				if len(sharedObj) == n:
 					break
 				else:
-					pass
-				
+					pass			
 				# process consume the msgs from the queue
-
-				try:
-					# create a channel
-					channel = node.connection.channel()
-					# specify the queue name 
-					queue = channel.queue_declare( queue='hello' + str(node.port))
-					# count the number of messages that are in the queue
-					count = queue.method.message_count
-
-					# consume all the messages one by one
-					while count:
-						# get the message from the queue
-						method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
-						if method_frame:
-							channel.basic_ack(method_frame.delivery_tag)
-							data = pickle.loads(body)
-							# consume the msg by taking the action in receive
-							node.receive(data)
-						count -= 1
-					# close the channel 
-					channel.close()
-				except Exception as e:
-					logging.warning("error in basic get %s",str(count),exc_info=e)
-					break
+				node.consumeMsg()
 			# Ensuring that all nodes are reset and sharedobj is not affected
 			time.sleep(60)
 
