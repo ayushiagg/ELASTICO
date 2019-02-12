@@ -2321,6 +2321,21 @@ def hexdigest(msg):
 	return commitment.hexdigest()
 
 
+def createProcesses(epochTxns, sharedObj):
+	"""
+		create the processes for each elastico node
+	"""
+	# list of processes
+	processes = []
+	for nodeIndex in range(n):
+		# create a process
+		process = Process(target= executeSteps, args=(nodeIndex, epochTxns, sharedObj))
+		# add to the list of processes
+		processes.append(process)
+	return processes
+
+
+
 def Run(epochTxns):
 	"""
 		runs all the epochs
