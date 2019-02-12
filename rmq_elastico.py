@@ -1233,6 +1233,7 @@ class Elastico:
 		if not self.verify_PoW(msg["identity"]):
 			logging.warning("wrong pow in verify prepares")
 			return False
+
 		# verify signatures of the received msg
 		if not self.verify_sign(msg["sign"] , msg["prepareData"] , msg["identity"].PK):
 			logging.warning("wrong sign in verify prepares")
@@ -2131,31 +2132,8 @@ class Elastico:
 
 				self.runFinalPBFT("final committee consensus")
 
-			elif self.state == ELASTICO_STATES["FinalPBFT_NONE"]:
+			elif self.state == ELASTICO_STATES["FinalPBFT_NONE"] or self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"] or self.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] or self.state == ELASTICO_STATES["FinalPBFT_PREPARED"] or self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"] or self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]:
 				self.runFinalPBFT("final committee consensus")
-				pass
-
-			elif self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]:
-				# node enters the pre-prepare phase and now will multicast prepare msgs
-				self.runFinalPBFT("final committee consensus")
-				pass
-
-			elif self.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"]:
-				self.runFinalPBFT("final committee consensus")
-
-			elif self.state == ELASTICO_STATES["FinalPBFT_PREPARED"]:
-				# node enters the prepare stage
-				self.runFinalPBFT("final committee consensus")
-
-			elif self.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]:
-				# commit msges are sent , run PBFT to see if state is committed or not
-				self.runFinalPBFT("final committee consensus")
-
-
-
-			elif self.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]:
-				self.runFinalPBFT("final committee consensus")
-
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalPBFT_COMMITTED"]:
 				# send the commitment to other final committee members
