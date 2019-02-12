@@ -2094,6 +2094,18 @@ class Elastico:
 		except Exception as e:
 			logging.warning("error in basic get %s",str(count),exc_info=e)
 
+	def executePoW(self):
+		"""
+			execute PoW
+		"""
+		if self.flag == True:
+			# compute Pow for good node
+			self.compute_PoW()
+		else:
+			# compute Pow for bad node
+			self.compute_fakePoW()
+
+	
 
 	def execute(self, epochTxn):
 		"""
