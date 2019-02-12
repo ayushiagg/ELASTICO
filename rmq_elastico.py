@@ -32,7 +32,7 @@ commitmentSet = set()
 network_nodes = []
 
 # ELASTICO_STATES - states reperesenting the running state of the node
-ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARED" : 22, "PBFT_COMMITTED" : 23, "PBFT_PREPARE_SENT" : 24 , "PBFT_COMMIT_SENT" : 25, "PBFT_PRE_PREPARE_SENT"  :26 , "FinalPBFT_NONE" : 27,  "FinalPBFT_PRE_PREPARE" : 28, "FinalPBFT_PREPARED" : 29, "FinalPBFT_COMMITTED" : 30, "FinalPBFT_PREPARE_SENT" : 31 , "FinalPBFT_COMMIT_SENT" : 32, "FinalPBFT_PRE_PREPARE_SENT"  :33, "AppendToLedger" : 34, "LedgerUpdated" : 35}
+ELASTICO_STATES = {"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2,"Formed Committee": 3, "RunAsDirectory": 4 ,"Receiving Committee Members" : 5,"Committee full" : 6 , "PBFT Finished" : 7, "Intra Consensus Result Sent to Final" : 8, "FinalBlockSent" : 9, "FinalBlockReceived" : 10, "RunAsDirectory after-TxnReceived" : 11, "RunAsDirectory after-TxnMulticast" : 12, "Final PBFT Start" : 13, "Merged Consensus Data" : 14, "PBFT Finished-FinalCommittee" : 15 , "CommitmentSentToFinal" : 16, "BroadcastedR" : 17, "ReceivedR" :  18, "FinalBlockSentToClient" : 19 ,"PBFT_NONE" : 20 , "PBFT_PRE_PREPARE" : 21, "PBFT_PREPARED" : 22, "PBFT_COMMITTED" : 23, "PBFT_PREPARE_SENT" : 24 , "PBFT_COMMIT_SENT" : 25, "PBFT_PRE_PREPARE_SENT"  :26 , "FinalPBFT_NONE" : 27,  "FinalPBFT_PRE_PREPARE" : 28, "FinalPBFT_PREPARED" : 29, "FinalPBFT_COMMITTED" : 30, "FinalPBFT_PREPARE_SENT" : 31 , "FinalPBFT_COMMIT_SENT" : 32, "FinalPBFT_PRE_PREPARE_SENT"  :33,  "LedgerUpdated" : 34}
 
 def consistencyProtocol():
 	"""
@@ -2240,9 +2240,6 @@ class Elastico:
 					self.BroadcastR()
 
 			elif self.state == ELASTICO_STATES["ReceivedR"]:
-				self.state = ELASTICO_STATES["AppendToLedger"]
-
-			elif self.state == ELASTICO_STATES["AppendToLedger"]:
 				self.appendToLedger()
 				self.state = ELASTICO_STATES["LedgerUpdated"]
 
@@ -2261,7 +2258,6 @@ class Elastico:
 		"""
 			call for reset
 		"""
-		# now reset the node
 		logging.warning("call for reset for  %s" , str(self.port))
 		if isinstance(self.identity, Identity):
 		# if node has formed its identity
