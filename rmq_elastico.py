@@ -2349,6 +2349,33 @@ def startAndJoinProcesses(processes):
 		processes[nodeIndex].join()
 
 
+def makeMalicious():
+	"""
+		make some nodes malicious who will compute wrong PoW
+	"""
+	global network_nodes
+	# making some(4 here) nodes as malicious
+	malicious_count = 0
+	for i in range(malicious_count):
+		badNodeIndex = random_gen(32)%n
+		# set the flag false for bad nodes
+		network_nodes[badNodeIndex].flag = False
+
+
+def makeFaulty():
+	"""
+		make some nodes faulty who will stop participating in the protocol after sometime
+	"""
+	global network_nodes
+	# making some(4 here) nodes as faulty
+	faulty_count = 0
+	for i in range(faulty_count):
+		faultyNodeIndex = random_gen(32)%n
+		# set the flag false for bad nodes
+		network_nodes[faultyNodeIndex].faulty = True
+
+
+
 
 
 def Run(epochTxns):
