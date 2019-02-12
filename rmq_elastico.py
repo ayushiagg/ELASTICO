@@ -2379,7 +2379,9 @@ def Run(epochTxns):
 			processes[nodeIndex].join()
 
 		logging.warning("processes finished")
-		logging.warning("LEDGER %s",str(ledger))
+		logging.warning("LEDGER-  %s, length - %s",str(ledger), str(len(ledger)))
+		for block in ledger:
+			logging.warning("txns : %s", str(block.data.transactions))
 
 	except Exception as e:
 		logging.error("error in run step" , exc_info=e)
@@ -2406,7 +2408,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 2
+		numOfEpochs = 3
 		for i in range(numOfEpochs):
 			epochTxns[i] = createTxns()
 		# run all the epochs 
