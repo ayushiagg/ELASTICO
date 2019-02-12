@@ -1949,7 +1949,6 @@ class Elastico:
 		return ("{:0" + str(r) +  "b}").format(xor_val) , randomset
 
 
-	# verify the PoW of the sender
 	def verify_PoW(self, identityobj):
 		"""
 			verify the PoW of the node identityobj
@@ -2193,7 +2192,6 @@ class Elastico:
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["Merged Consensus Data"]:
 				# final committee member runs final pbft
-				logging.warning("merged consensus data")
 				self.state = ELASTICO_STATES["FinalPBFT_NONE"]
 
 				self.runFinalPBFT("final committee consensus")
@@ -2232,7 +2230,6 @@ class Elastico:
 
 			elif self.isFinalMember() and self.state == ELASTICO_STATES["FinalBlockSentToClient"]:
 				# broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
-				# ToDo: check this constraint 
 				if len(self.newRcommitmentSet) >= c//2 + 1:
 					logging.warning("R Broadcasted by Final member")
 					self.BroadcastR()
@@ -2287,15 +2284,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 					response = node.execute(epochTxn)
 
 					if response == "reset":
-						# now reset the node
-						logging.warning("call for reset for  %s" , str(node.port))
-						if isinstance(node.identity, Identity):
-						# if node has formed its identity
-							msg = {"type": "reset-all", "data" : node.identity}
-							node.identity.send(msg)
-						else:
-							# this node has not computed its identity,calling reset explicitly for node
-							node.reset()
+						node.executeReset()
 						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
 
@@ -2307,7 +2296,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				if len(sharedObj) == n:
 					break
 				else:
-					pass			
+					pass
 				# process consume the msgs from the queue
 				node.consumeMsg()
 			# Ensuring that all nodes are reset and sharedobj is not affected
@@ -2432,7 +2421,7 @@ def Run(epochTxns):
 		makeMalicious()
 		makeFaulty()
 		
-		# create the processes		
+		# create the processes
 		processes = createProcesses(epochTxns, sharedObj)
 		# start and join the processes
 		startAndJoinProcesses(processes)
