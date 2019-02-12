@@ -231,7 +231,7 @@ class Block:
 		rootHash = merkleTree.Get_Root_leaf()
 		self.header = BlockHeader(rootHash, prevBlockHash, timestamp, numAncestorBlocks, txnCount)
 		self.data = BlockData(transactions, merkleTree)
-		self.IdentitiesAndSignature = []
+		self.IdentitiesAndSignatures = []
 
 	def getRootHash(self):
 		"""
@@ -245,11 +245,11 @@ class Block:
 		if verified:
 			for newobj in data:
 				flag = False
-				for obj in IdentitiesAndSignatures:
+				for obj in self.IdentitiesAndSignatures:
 					if newobj.isEqual(obj):
 						flag = True
 						break
-				if flag == False:		
+				if flag == False:
 					self.IdentitiesAndSignatures.append(newobj)
 
 	def verifyBlock(self):
@@ -791,6 +791,7 @@ class Elastico:
 					# update the txn block
 					# ToDo: txnblock should be ordered, not set
 					self.txn_block |= set(msg["data"]["txns"])
+					logging.warning("I am primary %s", str(self.port))
 					self.primary =  True
 				# ToDo: verify this union thing
 				# union of committee members wrt directory member
@@ -920,7 +921,7 @@ class Elastico:
 
 			elif msg["type"] == "notify final member":
 				logging.warning("notifying final member %s" , str(self.port))
-				if self.verify_PoW(msg["data"]["identity"]) and self.committeeid == fin_num:
+				if self.verify_PoW(msg["data"]["identity"]) and self.committee_id == fin_num:
 					self.is_final = True
 
 			elif msg["type"] == "Broadcast Ri":
@@ -1610,6 +1611,7 @@ class Elastico:
 					finalTxnBlock = list(finalTxnBlock)
 					# order them! Reason : to avoid errors in signatures as sets are unordered
 					self.finalBlock["finalBlock"] = sorted(finalTxnBlock)
+					logging.warning("final block by port %s with final block %s" , str(self.port), str(self.finalBlock["finalBlock"]))
 					self.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
 				pass
 		except Exception as e:
@@ -1794,11 +1796,9 @@ class Elastico:
 			final committee members will broadcast S(commitmentSet), along with final set of 
 			X(txn_block) to everyone in the network
 		"""
-		# ToDo: check this S, discuss with sir
 		boolVal , S = consistencyProtocol()
 		if boolVal == False:
 			return S
-		# 
 		commitmentList = list(S)	
 		PK = self.key.publickey().exportKey().decode()  
 		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
@@ -2105,7 +2105,6 @@ class Elastico:
 			
 			# when a node is part of some committee
 			elif self.state == ELASTICO_STATES["Receiving Committee Members"]:
-				logging.warning("welcome to committee full - %s -- %s", str(self.port) , str(self.committee_id))
 				if self.flag == False:
 					# logging the bad nodes
 					logging.error("member with invalid POW %s with commMembers : %s", self.identity , self.committee_Members)
@@ -2167,9 +2166,10 @@ class Elastico:
 					logging.warning("got sufficient commitments")
 					self.BroadcastFinalTxn()
 
-			elif self.state == ELASTICO_STATES["FinalBlockReceived"] and self.isFinalMember():
+			elif self.state == ELASTICO_STATES["FinalBlockReceived"]:
 				# collect final blocks sent by final committee and add the blocks to the response
 				logging.warning("receiving multiple final blocks %s", str(self.finalBlockbyFinalCommittee))
+				logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						TxnsList = ast.literal_eval(txnBlock)
@@ -2177,7 +2177,6 @@ class Elastico:
 						finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
 						# add the block to the response
 						self.response.append(finalCommittedBlock)
-						logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 					else:
 						logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
 
