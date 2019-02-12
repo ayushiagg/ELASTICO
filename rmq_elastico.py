@@ -2375,6 +2375,19 @@ def makeFaulty():
 		network_nodes[faultyNodeIndex].faulty = True
 
 
+def createNodes():
+	"""
+		create the elastico nodes
+	"""
+	# network_nodes is the list of elastico objects
+	global network_nodes
+	if len(network_nodes) == 0:
+		for i in range(n):
+			print( "---Running for processor number---" , i + 1)
+			# Add the elastico obj to the list 
+			network_nodes.append(Elastico())
+
+
 
 
 
