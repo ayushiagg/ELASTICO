@@ -973,8 +973,6 @@ class Elastico:
 			self.process_prepareMsg(msg)
 		elif msg["type"] == "commit":
 			self.process_commitMsg(msg)
-		else:
-			pass
 
 
 	def Finalpbft_process_message(self, msg):
@@ -987,8 +985,7 @@ class Elastico:
 			self.process_FinalprepareMsg(msg)
 		elif msg["type"] == "Finalcommit":
 			self.process_FinalcommitMsg(msg)
-		else:
-			pass
+
 
 	def process_commitMsg(self, msg):
 		"""
@@ -998,7 +995,7 @@ class Elastico:
 		if verified:
 			# Log the commit msgs!
 			self.log_commitMsg(msg)
-		pass
+
 
 	def process_FinalcommitMsg(self, msg):
 		"""
@@ -1008,7 +1005,7 @@ class Elastico:
 		if verified:
 			# Log the commit msgs!
 			self.log_FinalcommitMsg(msg)
-		pass
+
 
 	def process_prepareMsg(self, msg):
 		"""
@@ -1018,7 +1015,7 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_prepareMsg(msg)
-		pass
+
 
 	def process_FinalprepareMsg(self, msg):
 		"""
@@ -1028,8 +1025,6 @@ class Elastico:
 		if verified:
 			# Log the prepare msgs!
 			self.log_FinalprepareMsg(msg)
-
-		pass
 
 
 	def isPrepared(self):
@@ -1227,7 +1222,7 @@ class Elastico:
 			self.logPre_prepareMsg(msg)
 		else:
 			logging.error("error in verification of process_pre_prepareMsg")
-		pass
+
 
 	def process_Finalpre_prepareMsg(self, msg):
 		"""
@@ -1241,7 +1236,7 @@ class Elastico:
 			# self.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
 		else:
 			logging.error("error in verification of Final process_pre_prepareMsg")
-		pass
+
 
 	def verify_commit(self, msg):
 		"""
@@ -1565,7 +1560,6 @@ class Elastico:
 				if self.isCommitted():
 					logging.warning("committed done by %s" , str(self.port))
 					self.state = ELASTICO_STATES["PBFT_COMMITTED"]
-				pass
 		except Exception as e:
 			logging.error("error at run pbft", exc_info=e)
 			raise e
@@ -1630,7 +1624,6 @@ class Elastico:
 					self.finalBlock["finalBlock"] = sorted(finalTxnBlock)
 					logging.warning("final block by port %s with final block %s" , str(self.port), str(self.finalBlock["finalBlock"]))
 					self.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
-				pass
 		except Exception as e:
 			logging.error("error at run pbft", exc_info=e)
 			raise e
@@ -1760,9 +1753,6 @@ class Elastico:
 			# dont send pre-prepare msg to self
 			if not self.identity.isEqual(nodeId):
 				nodeId.send(pre_preparemsg)
-			else:
-				pass
-		pass
 
 
 	def isFinalMember(self):
@@ -2027,7 +2017,7 @@ class Elastico:
 
 		if len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
-		pass
+
 
 	def createMerkleTree(self, transactions):
 		"""
@@ -2291,9 +2281,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 			epochTxn = epochTxns[epoch]
 			startTime = time.time()
 			while True:
-				# execute one step of elastico node
-
-				# execution of a node is done only when it has not done reset
+				# execute one step of elastico node, execution of a node is done only when it has not done reset
 				if nodeIndex not in sharedObj:
 					response = node.execute(epochTxn)
 
@@ -2309,8 +2297,6 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 				# All the elastico objects has done their reset
 				if len(sharedObj) == n:
 					break
-				else:
-					pass
 				# process consume the msgs from the queue
 				node.consumeMsg()
 			# Ensuring that all nodes are reset and sharedobj is not affected
