@@ -1989,6 +1989,7 @@ class Elastico:
 		"""
 			append the response to the ledger
 		"""
+		lock.acquire()
 		if len(self.response) >= 1:
 			finalCommittedBlock = self.response[0]
 			# extracting transactions from the final committed block
@@ -1999,21 +2000,22 @@ class Elastico:
 			# get the transactions count
 			txnCount = len(transactions)
 			
+			# For the genesis block
+			prevBlockHash = ""
+			signUpdated = False
 			if len(ledger) > 0:
 				LastBlock = ledger[-1]
 				if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
 					# ToDo: Add signs here
 					LastBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
-					return 
+					signUpdated = True
 				else:
 					prevBlockHash = LastBlock.hexdigest()
-
-			# it is the genesis block
-			else:
-				prevBlockHash = ""
-			newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
-			newBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
-			ledger.append(newBlock)
+			if signUpdated == False:
+				newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
+				newBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
+				ledger.append(newBlock)
+		lock.release()
 
 		if len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
