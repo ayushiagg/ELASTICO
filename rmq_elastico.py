@@ -826,9 +826,10 @@ class Elastico:
 					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
-							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = set()
-
-						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].add(finalTxnBlock_signature)
+							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = []
+						
+						identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
+						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].append(identityAndSign)
 
 						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
 							logging.warning("condition fulfilled")
