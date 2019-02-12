@@ -839,30 +839,37 @@ class Elastico:
 					# verify the signatures
 					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
 
+						# list init for final txn block
 						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = []
 						
 						# creating the object that contains the identity and signature of the final member
 						identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
 						
-						# appending the identity and sign of final member 
-						self.finalBlockbyFinalCommittee[str(finalTxnBlock)].append(identityAndSign)
+						# check whether this combination of identity and sign already exists or not
+						flag = True
+						for idSignObj in  self.finalBlockbyFinalCommittee[str(finalTxnBlock)]:
+							if idSignObj.isEqual(identityAndSign):
+								# it exists
+								flag = False
+								break
+						if flag:
+							# appending the identity and sign of final member
+							self.finalBlockbyFinalCommittee[str(finalTxnBlock)].append(identityAndSign)
 
-						# block is signed by sufficient final members 
-						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1:
-							logging.warning("condition fulfilled")
-							# for final members, their state is updated only when they have also sent the finalblock
+						# block is signed by sufficient final members and when the final block has not been sent to the client yet
+						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1 and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
+
+							# for final members, their state is updated only when they have also sent the finalblock to ntw
 							if self.isFinalMember():
-								if self.finalBlock["sent"] and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
-									logging.warning("changing state of final member to FinalBlockReceived")
+								if self.finalBlock["sent"]:
 									self.state = ELASTICO_STATES["FinalBlockReceived"]
-								pass
 							else:
 								self.state = ELASTICO_STATES["FinalBlockReceived"]
 
 						if self.newRcommitmentSet == "":
 							self.newRcommitmentSet = set()
-						# union of commitments 
+						# union of commitments
 						self.newRcommitmentSet |= set(received_commitmentSetList)
 						logging.warning("new r commit set %s", str(self.newRcommitmentSet))
 
