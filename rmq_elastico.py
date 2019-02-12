@@ -1969,29 +1969,33 @@ class Elastico:
 
 	def appendToLedger(self):
 		"""
+			append the response to the ledger
 		"""
-		# transactions, prevBlockHash, timestamp, numAncestorBlocks, txnCount
 		if len(self.response) >= 1:
-			transactions = self.response[0]
+			finalCommittedBlock = self.response[0]
+			# extracting transactions from the final committed block
+			transactions = finalCommittedBlock.txnList
 
+			# create a merkle tree of the transactions
 			merkleTree = self.createMerkleTree(transactions)
-			
+			# get the transactions count
 			txnCount = len(transactions)
+			
 			if len(ledger) > 0:
 				LastBlock = ledger[-1]
 				if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
 					# ToDo: Add signs here
-					LastBlock.addSign(self.identity)
+					LastBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
 					return 
 				else:
 					prevBlockHash = LastBlock.hexdigest()
 
+			# it is the genesis block
 			else:
 				prevBlockHash = ""
 			newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
-			newBlock.addSign(self.identity)			
+			newBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
 			ledger.append(newBlock)
-
 
 		if len(self.response) > 1:
 			logging.error("Multiple Blocks coming!")
