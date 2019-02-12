@@ -2075,21 +2075,21 @@ class Elastico:
 		"""
 		try:
 			# create a channel
-			channel = node.connection.channel()
+			channel = self.connection.channel()
 			# specify the queue name 
-			queue = channel.queue_declare( queue='hello' + str(node.port))
+			queue = channel.queue_declare( queue='hello' + str(self.port))
 			# count the number of messages that are in the queue
 			count = queue.method.message_count
 
 			# consume all the messages one by one
 			while count:
 				# get the message from the queue
-				method_frame, header_frame, body = channel.basic_get('hello' + str(node.port))
+				method_frame, header_frame, body = channel.basic_get('hello' + str(self.port))
 				if method_frame:
 					channel.basic_ack(method_frame.delivery_tag)
 					data = pickle.loads(body)
 					# consume the msg by taking the action in receive
-					node.receive(data)
+					self.receive(data)
 				count -= 1
 			# close the channel 
 			channel.close()
