@@ -2105,7 +2105,23 @@ class Elastico:
 			# compute Pow for bad node
 			self.compute_fakePoW()
 
-	
+	def receiveTxns(self,epochTxn):
+		"""
+			directory node will receive transactions from client
+		"""
+		# Receive txns from client for an epoch
+		k = 0
+		num = len(epochTxn) // pow(2,s) 
+		# loop in sorted order of committee ids
+		for iden in range(pow(2,s)):
+			if iden == pow(2,s)-1:
+				# give all the remaining txns to the last committee
+				self.txn[iden] = epochTxn[ k : ]
+			else:
+				self.txn[iden] = epochTxn[ k : k + num]
+			k = k + num
+
+
 
 	def execute(self, epochTxn):
 		"""
