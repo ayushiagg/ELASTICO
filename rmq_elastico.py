@@ -39,7 +39,6 @@ def consistencyProtocol():
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
-	# ToDo: fix this 
 	global network_nodes, commitmentSet
 
 	for node in network_nodes:
@@ -1856,7 +1855,6 @@ class Elastico:
 		pass
 
 
-
 	def generate_randomstrings(self):
 		"""
 			Generate r-bit random strings
@@ -1983,6 +1981,7 @@ class Elastico:
 			return True
 		return False
 
+
 	def appendToLedger(self):
 		"""
 			append the response to the ledger
@@ -2026,6 +2025,7 @@ class Elastico:
 		merkleTree = MerkleTree(transactions)
 		merkleTree.create_tree()
 		return merkleTree
+
 
 	def compute_fakePoW(self):
 		"""
@@ -2094,6 +2094,7 @@ class Elastico:
 		except Exception as e:
 			logging.warning("error in basic get %s",str(count),exc_info=e)
 
+
 	def executePoW(self):
 		"""
 			execute PoW
@@ -2104,6 +2105,7 @@ class Elastico:
 		else:
 			# compute Pow for bad node
 			self.compute_fakePoW()
+
 
 	def receiveTxns(self,epochTxn):
 		"""
@@ -2120,6 +2122,7 @@ class Elastico:
 			else:
 				self.txn[iden] = epochTxn[ k : k + num]
 			k = k + num
+
 
 	def checkCountForConsensusData(self):
 		"""
@@ -2290,6 +2293,7 @@ def executeSteps(nodeIndex, epochTxns , sharedObj):
 					response = node.execute(epochTxn)
 
 					if response == "reset":
+						# now reset the node
 						node.executeReset()
 						# adding the value reset for the node in the sharedobj
 						sharedObj[nodeIndex] = "reset"
@@ -2459,7 +2463,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 3
+		numOfEpochs = 1
 		for i in range(numOfEpochs):
 			epochTxns[i] = createTxns()
 		# run all the epochs 
