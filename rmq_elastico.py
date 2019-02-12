@@ -2121,7 +2121,28 @@ class Elastico:
 				self.txn[iden] = epochTxn[ k : k + num]
 			k = k + num
 
+	def checkCountForConsensusData(self):
+	"""
+		check the sufficient count for consensus data
+	"""
+	flag = False
+	for commId in range(pow(2,s)):
+		if commId not in self.CommitteeConsensusData:
+			flag = True
+			break
+		else:
+			for txnBlock in self.CommitteeConsensusData[commId]:
+				if len(self.CommitteeConsensusData[commId][txnBlock]) <= c//2:
+					flag = True
+					logging.warning("bad committee id for intra committee block %s" , str(commId))
+					break
+	if flag == False:
+		# when sufficient number of blocks from each committee are received
+		logging.warning("good going for verify and merge")
+		self.verifyAndMergeConsensusData()
 
+
+	
 
 	def execute(self, epochTxn):
 		"""
