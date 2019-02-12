@@ -2414,59 +2414,23 @@ def Run(epochTxns):
 	try:
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
-		# share global port among processes
-		port = manager.Value('i', 49152)
-		# shared lock among processes
-		lock=manager.Lock()
-		# ledger - ledger is the database that contains the set of blocks where each block comes after an epoch
-		ledger = manager.list()
-
-		if len(network_nodes) == 0:
-			# network_nodes is the list of elastico objects
-			for i in range(n):
-				print( "---Running for processor number---" , i + 1)
-				# Add the elastico obj to the list 
-				network_nodes.append(Elastico())
-
-		# making some(4 here) nodes as malicious
-		malicious_count = 0
-		for i in range(malicious_count):
-			badNodeIndex = random_gen(32)%n
-			# set the flag false for bad nodes
-			network_nodes[badNodeIndex].flag = False
-
-		# making some(4 here) nodes as faulty
-		faulty_count = 0
-		for i in range(faulty_count):
-			faultyNodeIndex = random_gen(32)%n
-			# set the flag false for bad nodes
-			network_nodes[faultyNodeIndex].faulty = True
-
-		# sharedObj is the dict which denotes whether the nodeId has done reset or not in an epoch 
-		sharedObj = manager.dict()
+		sharedObj = manageSharedData(manager)
 		
-		# list of processes
-		processes = []
-		for nodeIndex in range(n):
-			# create a process
-			process = Process(target= executeSteps, args=(nodeIndex, epochTxns, sharedObj))
-			# add to the list of processes
-			processes.append(process)
+		# create the elastico nodes
+		createNodes()
 
-		for nodeIndex in range(n):
-			print("process number" , nodeIndex , "started")
-			# start the process
-			processes[nodeIndex].start()
-
-		for nodeIndex in range(n):
-			# waits for the process to finish
-			processes[nodeIndex].join()
-
-		logging.warning("processes finished")
+		# make some nodes malicious and faulty
+		makeMalicious()
+		makeFaulty()
+		
+		# create the processes		
+		processes = createProcesses(epochTxns, sharedObj)
+		# start and join the processes
+		startAndJoinProcesses(processes)
+		
 		logging.warning("LEDGER-  %s, length - %s",str(ledger), str(len(ledger)))
 		for block in ledger:
 			logging.warning("txns : %s", str(block.data.transactions))
-
 	except Exception as e:
 		logging.error("error in run step" , exc_info=e)
 		raise e
@@ -2484,6 +2448,7 @@ def createTxns():
 		random_num = random_gen()
 		txns.append(random_num)
 	return txns
+
 
 if __name__ == "__main__":
 	try:
