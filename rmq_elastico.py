@@ -184,6 +184,16 @@ class Identity:
 			raise e
 
 
+class Transaction:
+	"""
+		class for transaction
+	"""
+	def __init__(self, sender, receiver, amount):
+		self.sender = sender
+		self.receiver = receiver
+		self.amount = amount
+
+
 class BlockHeader:
 	"""
 	"""
