@@ -2174,7 +2174,8 @@ class Elastico:
 				for txnBlock in self.finalBlockbyFinalCommittee:
 					if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
 						TxnsList = ast.literal_eval(txnBlock)
-						self.response.append(TxnsList)
+						finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
+						self.response.append(finalCommittedBlock)
 						logging.warning("adding response by %s-- %s" , str(self.port) , str(self.response))
 					else:
 						logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
