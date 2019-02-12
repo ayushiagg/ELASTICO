@@ -396,7 +396,7 @@ class Elastico:
 		self.port = self.get_port()
 		self.key = self.get_key()
 		self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-		self.cur_directory = set()
+		self.cur_directory = []
 		self.identity = ""
 		self.committee_id = ""
 		# only when this node is the member of directory committee
@@ -455,7 +455,7 @@ class Elastico:
 
 			# self.port = self.get_port()
 			self.PoW = {"hash" : "", "set_of_Rs" : "", "nonce" : 0}
-			self.cur_directory = set()
+			self.cur_directory = []
 			self.identity = ""
 			self.committee_id = ""
 			# only when this node is the member of directory committee
@@ -717,13 +717,15 @@ class Elastico:
 				# verify the PoW of the sender
 				if self.verify_PoW(identityobj):
 					if len(self.cur_directory) < c:
+						# check whether identityobj is already present or not
 						flag = True
 						for obj in self.cur_directory:
 							if identityobj.isEqual(obj):
 								flag = False
 								break
 						if flag:
-							self.cur_directory.add(identityobj)
+							# append the object if not already present
+							self.cur_directory.append(identityobj)
 				else:
 					logging.error("%s  PoW not valid of an incoming directory member " , str(identityobj) )
 
