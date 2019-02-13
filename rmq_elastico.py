@@ -1894,7 +1894,7 @@ class Elastico:
 			return S
 		commitmentList = list(S)	
 		PK = self.key.publickey().exportKey().decode()  
-		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.sign(self.finalBlock["finalBlock"])}
+		data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.signTxnList(self.finalBlock["finalBlock"])}
 		logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
 		# final Block sent to ntw
 		self.finalBlock["sent"] = True
