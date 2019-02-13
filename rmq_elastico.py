@@ -198,10 +198,10 @@ class Transaction:
 			Digest of a transaction
 		"""
 		digest = SHA256.new()
-		digest.update(self.sender)
-		digest.update(self.receiver)
-		digest.update(str(self.amount))
-		digest.update(str(self.timestamp))
+		digest.update(self.sender.encode())
+		digest.update(self.receiver.encode())
+		digest.update(str(self.amount).encode())
+		digest.update(str(self.timestamp).encode())
 		return digest.hexdigest()
 
 
@@ -1896,7 +1896,7 @@ class Elastico:
 		"""
 		digest = SHA256.new()
 		for txn in txnList:
-			digest.update( txn.hexdigest() )
+			digest.update( txn.hexdigest().encode() )
 		return digest.hexdigest()
 
 	def hexdigest(self, msg):
@@ -2487,7 +2487,7 @@ def createTxns():
 	numOfTxns = 20
 	for j in range(numOfTxns):
 		random_num = random_gen()
-		transaction = Transaction('a' , 'b' , random_num, time.time())
+		transaction = Transaction("a" , "b" , random_num, time.time())
 		txns.append(transaction)
 	return txns
 
