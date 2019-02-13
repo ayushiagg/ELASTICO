@@ -241,6 +241,14 @@ class BlockData:
 		self.transactions = transactions
 		self.merkleTree = merkleTree
 
+	def hexdigest(self):
+		"""
+			Digest of a block data
+		"""
+		digest = SHA256.new()
+		return digest.hexdigest()
+
+
 
 class IdentityAndSign:
 	"""
