@@ -990,6 +990,25 @@ class Elastico:
 				logging.info("ConnectionRefusedError at port : %s", "!")
 			raise e
 
+	def verify_signTxnList(self, signature, TxnList, publickey):
+		"""
+			verify whether signature is valid or not 
+			if public key is not key object then create a key object
+		"""
+		# decode the signature before verifying
+		signature = base64.b64decode(signature)
+		if type(publickey) is str:
+			publickey = publickey.encode()
+		if type(publickey) is bytes:
+			publickey = RSA.importKey(publickey)
+		# create digest of data
+		digest = SHA256.new()
+		for txn in TxnList:
+			txnDigest = txn.hexdigest()
+			digest.update(txnDigest.encode())
+		verifier = PKCS1_v1_5.new(publickey)
+		return verifier.verify(digest,signature)
+
 	def pbft_process_message(self, msg):
 		"""
 			Process the messages related to Pbft!
