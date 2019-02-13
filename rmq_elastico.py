@@ -1900,6 +1900,20 @@ class Elastico:
 		"""
 		pass
 
+	def signTxnList(self, TxnList):
+		"""
+		"""
+		# create digest of data
+		digest = SHA256.new()
+		for txn in TxnList:
+			txnDigest = txn.hexdigest()
+			digest.update(txnDigest.encode())
+		signer = PKCS1_v1_5.new(self.key)
+		signature = signer.sign(digest)
+		# encode the signature before sending
+		signature = base64.b64encode(signature)
+		return signature
+
 
 	def generate_randomstrings(self):
 		"""
