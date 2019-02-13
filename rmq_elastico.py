@@ -818,7 +818,7 @@ class Elastico:
 				if "txns" in msg["data"]:
 					# update the txn block
 					# ToDo: txnblock should be ordered, not set
-					self.txn_block = self.unionTxns(msg["data"]["txns"])
+					self.txn_block= self.unionTxns(self.txn_block, msg["data"]["txns"])
 					logging.warning("I am primary %s", str(self.port))
 					self.primary =  True
 				# ToDo: verify this union thing
@@ -898,8 +898,6 @@ class Elastico:
 							self.newRcommitmentSet = set()
 						# union of commitments
 						self.newRcommitmentSet |= set(received_commitmentSetList)
-						logging.warning("new r commit set %s", str(self.newRcommitmentSet))
-
 					else:
 						logging.error("Signature invalid in final block received")
 				else:
@@ -1635,11 +1633,11 @@ class Elastico:
 						for seqnum in self.FinalcommittedData[viewId]:
 							msgList = self.FinalcommittedData[viewId][seqnum]
 							for msg in msgList:
-								self.finalBlock["finalBlock"] |= set(msg)
+								self.finalBlock["finalBlock"] = self.unionTxns(self.finalBlock["finalBlock"], msg)
 					finalTxnBlock = self.finalBlock["finalBlock"]
 					finalTxnBlock = list(finalTxnBlock)
 					# order them! Reason : to avoid errors in signatures as sets are unordered
-					self.finalBlock["finalBlock"] = sorted(finalTxnBlock)
+					# self.finalBlock["finalBlock"] = sorted(finalTxnBlock)
 					logging.warning("final block by port %s with final block %s" , str(self.port), str(self.finalBlock["finalBlock"]))
 					self.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
 		except Exception as e:
@@ -1700,7 +1698,7 @@ class Elastico:
 		"""
 			construct pre-prepare msg , done by primary
 		"""
-		txnBlockList = list(self.txn_block)
+		txnBlockList = self.txn_block
 		# make pre_prepare_contents Ordered Dict for signatures purpose
 		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
 		
@@ -1854,13 +1852,12 @@ class Elastico:
 			for seqnum in self.committedData[viewId]:
 				msgList = self.committedData[viewId][seqnum]
 				for msg in msgList:
-					self.txn_block |= set(msg)
+					self.txn_block= self.unionTxns(self.txn_block, msg)
 		logging.warning("size of committee members %s" , str(len(self.finalCommitteeMembers)))
 		logging.warning("send to final %s - %s--txns %s", str(self.committee_id) , str(self.port) , str(self.txn_block))
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
-			txnBlock = list(self.txn_block)
-			txnBlock = sorted(txnBlock)
+			txnBlock = self.txn_block
 			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
