@@ -1550,11 +1550,14 @@ class Elastico:
 		logging.warning("verify and merge %s -- %s" , str(self.port) ,str(self.committee_id))
 		for committeeid in range(pow(2,s)):
 			if committeeid in self.CommitteeConsensusData:
-				for txnBlock in self.CommitteeConsensusData[committeeid]:
-					if len(self.CommitteeConsensusData[committeeid][txnBlock]) >= c//2 + 1:
+				for txnBlockDigest in self.CommitteeConsensusData[committeeid]:
+					if len(self.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c//2 + 1:
+						# get the txns from the digest
+						txnBlock = self.CommitteeConsensusDataTxns[committeeid][txnBlockDigest]
 						if len(txnBlock) > 0:
-							set_of_txns = ast.literal_eval(txnBlock)
-							self.mergedBlock.extend(set_of_txns)
+							# set_of_txns = ast.literal_eval(txnBlockDigest)
+							# self.mergedBlock.extend(set_of_txns)
+							self.mergedBlock = unionTxns(self, self.mergedBlock, set_of_txns)
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
 			logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
@@ -2207,8 +2210,8 @@ class Elastico:
 				flag = True
 				break
 			else:
-				for txnBlock in self.CommitteeConsensusData[commId]:
-					if len(self.CommitteeConsensusData[commId][txnBlock]) <= c//2:
+				for txnBlockDigest in self.CommitteeConsensusData[commId]:
+					if len(self.CommitteeConsensusData[commId][txnBlockDigest]) <= c//2:
 						flag = True
 						logging.warning("bad committee id for intra committee block %s" , str(commId))
 						break
