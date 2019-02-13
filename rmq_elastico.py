@@ -366,12 +366,16 @@ class MerkleTree:
 				current_right = ''
 
 			# Apply the Hash 256 function to the current values
-			current_hash = hexdigest(current)
-
+			if type(current) is Transaction:
+				current_hash = current.hexdigest()
+			else:
+				current_hash = hexdigest(current) 
 			# If the current right hash is not a '' <- empty string
 			if current_right != '':
-				current_right_hash = hexdigest(current_right)
-
+				if type(current_right) is Transaction:
+					current_right_hash = current_right.hexdigest()
+				else:
+					current_right_hash = hexdigest(current_right) 
 			# Add the Transaction to the dictionary 
 			past_transaction[listoftransaction[index]] = current_hash
 
