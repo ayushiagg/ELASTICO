@@ -1589,7 +1589,7 @@ class Elastico:
 						if len(txnBlock) > 0:
 							# set_of_txns = ast.literal_eval(txnBlockDigest)
 							# self.mergedBlock.extend(set_of_txns)
-							self.mergedBlock = unionTxns(self, self.mergedBlock, set_of_txns)
+							self.mergedBlock = self.unionTxns(self.mergedBlock, txnBlock)
 		if len(self.mergedBlock) > 0:
 			self.state = ELASTICO_STATES["Merged Consensus Data"]
 			logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
