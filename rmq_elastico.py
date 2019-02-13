@@ -220,6 +220,18 @@ class BlockHeader:
 		self.txnCount = txnCount
 		self.rootHash = rootHash
 
+	def hexdigest(self):
+		"""
+			Digest of a block header
+		"""
+		digest = SHA256.new()
+		digest.update(self.prevBlockHash.encode())
+		digest.update(str(self.timestamp).encode())
+		digest.update(str(self.numAncestorBlocks).encode())
+		digest.update(str(self.txnCount).encode())
+		digest.update(self.rootHash.encode())
+		return digest.hexdigest()
+
 
 class BlockData:
 	"""
