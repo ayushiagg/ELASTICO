@@ -1890,6 +1890,14 @@ class Elastico:
 			Ri = random_gen(r)
 			self.Ri = ("{:0" + str(r) +  "b}").format(Ri)
 
+	def txnHexdigest(self, txnList):
+		"""
+			return hexdigest for a list of transactions
+		"""
+		digest = SHA256.new()
+		for txn in txnList:
+			digest.update( txn.hexdigest() )
+		return digest.hexdigest()
 
 	def hexdigest(self, msg):
 		"""
