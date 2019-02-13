@@ -181,10 +181,17 @@ class Transaction:
 	"""
 		class for transaction
 	"""
-	def __init__(self, sender, receiver, amount):
+	def __init__(self, sender, receiver, amount, timestamp):
 		self.sender = sender
 		self.receiver = receiver
 		self.amount = amount
+		self.timestamp = timestamp
+
+	def isEqual(self, transaction):
+		"""
+			compare two objs are equal or not
+		"""
+		return self.sender == transaction.sender and self.receiver == transaction.receiver and self.amount == transaction.amount and self.timestamp == transaction.timestamp
 
 
 class BlockHeader:
