@@ -449,7 +449,7 @@ class Elastico:
 		self.Ri = ""
 		# only when this node is the member of final committee
 		self.commitments = set()
-		self.txn_block = set()
+		self.txn_block = []
 		self.set_of_Rs = set()
 		self.newset_of_Rs = set()
 		self.CommitteeConsensusData = dict()
@@ -510,7 +510,7 @@ class Elastico:
 			self.Ri = ""
 			# only when this node is the member of final committee
 			self.commitments = set()
-			self.txn_block = set()
+			self.txn_block = []
 			self.set_of_Rs = self.newset_of_Rs
 			self.newset_of_Rs = set()
 			self.CommitteeConsensusData = dict()
