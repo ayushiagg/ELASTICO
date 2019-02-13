@@ -1967,6 +1967,7 @@ class Elastico:
 		"""
 			return hexdigest for a list of transactions
 		"""
+		txnList = sorted(txnList, key = lambda txn:txn.timestamp)
 		digest = SHA256.new()
 		for txn in txnList:
 			digest.update( txn.hexdigest().encode() )
