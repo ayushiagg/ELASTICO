@@ -41,7 +41,7 @@ def consistencyProtocol():
 		presently selecting random c hash of Ris from the total set of commitments
 	"""
 	global network_nodes, commitmentSet
-
+	# ToDo: implement interactive consistency Protocol
 	for node in network_nodes:
 		if node.isFinalMember():
 			if len(node.commitments) <= c//2:
@@ -78,7 +78,7 @@ def BroadcastTo_Network(data, type_):
 	"""
 
 	global network_nodes
-
+	# construct msg
 	msg = { "data" : data , "type" : type_ }
 	# establish a connection with RabbitMQ server
 	connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
@@ -112,11 +112,13 @@ def MulticastCommittee(commList, identityobj, txns):
 		# get the final committee members with the fixed committee id
 		finalCommitteeMembers = commList[fin_num]
 		for committee_id in commList:
+			# take the committee members of a particular committee id
 			commMembers = commList[committee_id]
 			# find the primary identity, Take the first identity
 			# ToDo: fix this, many nodes can be primary
 			primaryId = commMembers[0]
 			for memberId in commMembers:
+				# send the committee members , final committee members
 				data = {"committee members" : commMembers , "final Committee members"  : finalCommitteeMembers , "identity" : identityobj}
 				# give txns only to the primary node
 				if memberId == primaryId:
@@ -160,6 +162,7 @@ class Identity:
 			connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 			# create a channel
 			channel = connection.channel()
+
 			port = self.port
 
 			# create a hello queue to which the message will be delivered
@@ -2528,7 +2531,9 @@ def createTxns():
 	# number of transactions in each epoch
 	numOfTxns = 20
 	for j in range(numOfTxns):
+		# random amount
 		random_num = random_gen()
+		# craete the dummy transaction
 		transaction = Transaction("a" , "b" , random_num, time.time())
 		txns.append(transaction)
 	return txns
