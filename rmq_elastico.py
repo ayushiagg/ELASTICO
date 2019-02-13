@@ -2470,7 +2470,8 @@ def createTxns():
 	numOfTxns = 20
 	for j in range(numOfTxns):
 		random_num = random_gen()
-		txns.append(random_num)
+		transaction = Transaction('a' , 'b' , random_num, time.time())
+		txns.append(transaction)
 	return txns
 
 
