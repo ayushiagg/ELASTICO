@@ -1746,7 +1746,7 @@ class Elastico:
 		for viewId in self.preparedData:
 			for seqnum in self.preparedData[viewId]:
 				for msg in self.preparedData[viewId][seqnum]:
-					digest = self.hexdigest(msg)
+					digest = self.txnHexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
 					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
