@@ -959,12 +959,12 @@ class Elastico:
 					if self.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK):
 						if identityobj.committee_id not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj.committee_id] = dict()
-						# txnBlock sent was converted as a list
-						# data["txnBlock"] = set(data["txnBlock"])
+							self.CommitteeConsensusDataTxns[identityobj.committee_id] = dict()
 						TxnBlockDigest = self.txnHexdigest( data["txnBlock"] )
 						if TxnBlockDigest not in self.CommitteeConsensusData[identityobj.committee_id]:
 							self.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
 							# store the txns for this digest
+
 							self.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
 
 						# add signatures for the txn block 
