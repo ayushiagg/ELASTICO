@@ -255,6 +255,13 @@ class BlockData:
 			Digest of a block data
 		"""
 		digest = SHA256.new()
+		# take the digest of the txnBlock
+		txndigest = txnHexdigest(self.transactions)
+		digest.update(txndigest.encode())
+		
+		# take the digest of the merkle tree
+		merkleTreedigest = self.merkleTree.hexdigest()
+		digest.update( merkleTreedigest.encode())
 		return digest.hexdigest()
 
 
