@@ -456,7 +456,7 @@ class Elastico:
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
-		self.finalBlock = {"sent" : False, "finalBlock" : set() }
+		self.finalBlock = {"sent" : False, "finalBlock" : [] }
 		self.RcommitmentSet = ""
 		self.newRcommitmentSet = ""
 		self.finalCommitteeMembers = set()
@@ -517,7 +517,7 @@ class Elastico:
 			self.finalBlockbyFinalCommittee = dict()
 			self.state = ELASTICO_STATES["NONE"]
 			self.mergedBlock = []
-			self.finalBlock = {"sent" : False, "finalBlock" : set() }
+			self.finalBlock = {"sent" : False, "finalBlock" : [] }
 			self.RcommitmentSet = self.newRcommitmentSet
 			self.newRcommitmentSet = ""
 			self.finalCommitteeMembers = set()
