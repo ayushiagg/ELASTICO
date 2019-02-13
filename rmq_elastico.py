@@ -464,6 +464,7 @@ class Elastico:
 		self.set_of_Rs = set()
 		self.newset_of_Rs = set()
 		self.CommitteeConsensusData = dict()
+		self.CommitteeConsensusDataTxns = dict()
 		self.finalBlockbyFinalCommittee = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
@@ -525,6 +526,7 @@ class Elastico:
 			self.set_of_Rs = self.newset_of_Rs
 			self.newset_of_Rs = set()
 			self.CommitteeConsensusData = dict()
+			self.CommitteeConsensusDataTxns = dict()
 			self.finalBlockbyFinalCommittee = dict()
 			self.state = ELASTICO_STATES["NONE"]
 			self.mergedBlock = []
