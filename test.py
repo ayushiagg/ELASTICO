@@ -140,18 +140,28 @@
 
 # 	for nodeId in range(n):
 # 		node = nodes[nodeId]
-# 		print(node.x, node.y, node.z)
+# # 		print(node.x, node.y, node.z)
 
-class Elastic:
-	def __init__(self, IP, PK, committee_id, PoW, epoch_randomness, port):
-		self.IP = IP
-		self.PK = PK
-		self.committee_id = committee_id
-		self.PoW = PoW
-		self.epoch_randomness = epoch_randomness
-		self.partOfNtw = False
-		self.port = port
+# class Elastic:
+# 	def __init__(self, IP, PK, committee_id, PoW, epoch_randomness, port):
+# 		self.IP = IP
+# 		self.PK = PK
+# 		self.committee_id = committee_id
+# 		self.PoW = PoW
+# 		self.epoch_randomness = epoch_randomness
+# 		self.partOfNtw = False
+# 		self.port = port
 
-identityobj = Elastic("ip" , "pk" , "id", "pow" , "epoch" , "port")
-d = identityobj.__dict__
-print(d["port"])		
+# identityobj = Elastic("ip" , "pk" , "id", "pow" , "epoch" , "port")
+# d = identityobj.__dict__
+# print(d["port"])		
+
+from rmq_elastico import Transaction
+import time
+t = Transaction('a' , 'b' , 40 , time.time())
+u = Transaction('a' , 'b' , 20 , time.time())
+v = Transaction('a' , 'b' , 230 , time.time())
+l = [t,u,v]
+l = sorted(l, key=lambda txn: txn.timestamp, reverse = True)
+print(l[0].amount)
+print(type(u) is Transaction)
