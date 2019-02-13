@@ -747,7 +747,18 @@ class Elastico:
 				nodeData.add(data)
 		return nodeData
 
-
+	def unionTxns(self, transactions):
+		"""
+			union the transactions
+		"""
+		for transaction in transactions:
+			flag = True
+			for txn in self.txn_block:
+				if txn.isEqual(transaction):
+					flag = False
+					break
+			if flag:
+				self.txn_block.append(transaction)
 
 	def receive(self, msg):
 		"""
@@ -806,7 +817,7 @@ class Elastico:
 				if "txns" in msg["data"]:
 					# update the txn block
 					# ToDo: txnblock should be ordered, not set
-					self.txn_block |= set(msg["data"]["txns"])
+					self.txn_block = self.unionTxns(msg["data"]["txns"])
 					logging.warning("I am primary %s", str(self.port))
 					self.primary =  True
 				# ToDo: verify this union thing
