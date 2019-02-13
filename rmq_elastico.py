@@ -340,6 +340,33 @@ class MerkleTree:
 		self.past_transaction = OrderedDict()
 		self.listoftransaction = transactions
 
+	def hexdigest(self):
+		"""
+			hexdigest of the merkle tree
+		"""
+		digest = SHA256.new()
+		# take the digest of the merkle tree contents
+		transactionList = self.listoftransaction
+		for item in transactionList:
+			if type(item) is Transaction:
+				txndigest = item.hexdigest()
+				digest.update(txndigest.encode())
+			else:
+				digest.update(str(item).encode())
+
+		dictOfTxns = self.past_transaction
+		for key, value in dictOfTxns.items():
+			# take the digest of the key 
+			if type(key) is Transaction:
+				keydigest = key.hexdigest()
+				digest.update(keydigest.encode())
+			else:
+				digest.update(str(key).encode())
+			# take the digest of the value 
+			digest.update(str(value).encode())
+		return digest.hexdigest()
+
+
 	# Create the Merkle Tree  
 	def create_tree(self):
 
