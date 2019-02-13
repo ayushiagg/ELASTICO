@@ -747,18 +747,19 @@ class Elastico:
 				nodeData.add(data)
 		return nodeData
 
-	def unionTxns(self, transactions):
+	def unionTxns(self, actualTxns, receivedTxns):
 		"""
 			union the transactions
 		"""
-		for transaction in transactions:
+		for transaction in receivedTxns:
 			flag = True
-			for txn in self.txn_block:
+			for txn in actualTxns:
 				if txn.isEqual(transaction):
 					flag = False
 					break
 			if flag:
-				self.txn_block.append(transaction)
+				actualTxns.append(transaction)
+		return actualTxns
 
 	def receive(self, msg):
 		"""
