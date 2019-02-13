@@ -1346,7 +1346,7 @@ class Elastico:
 			logging.warning("wrong sign in  verify pre-prepare")
 			return False
 		# verifying the digest of request msg
-		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+		if self.txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			logging.warning("wrong digest in  verify pre-prepare")
 			return False
 		# check the view is same or not
@@ -1711,7 +1711,7 @@ class Elastico:
 		"""
 		txnBlockList = self.txn_block
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.txnHexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
