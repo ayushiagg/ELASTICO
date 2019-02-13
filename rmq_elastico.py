@@ -907,28 +907,30 @@ class Elastico:
 					finalTxnBlock = data["finalTxnBlock"]
 					finalTxnBlock_signature = data["finalTxnBlock_signature"]
 					# verify the signatures
-					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_sign(finalTxnBlock_signature, finalTxnBlock, PK):
+					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK):
 
 						# list init for final txn block
-						if str(finalTxnBlock) not in self.finalBlockbyFinalCommittee:
-							self.finalBlockbyFinalCommittee[str(finalTxnBlock)] = []
+						finaltxnBlockDigest = self.txnHexdigest(finalTxnBlock)
+						if finaltxnBlockDigest not in self.finalBlockbyFinalCommittee:
+							self.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []
+							self.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
 						
 						# creating the object that contains the identity and signature of the final member
 						identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
 						
 						# check whether this combination of identity and sign already exists or not
 						flag = True
-						for idSignObj in  self.finalBlockbyFinalCommittee[str(finalTxnBlock)]:
+						for idSignObj in  self.finalBlockbyFinalCommittee[finaltxnBlockDigest]:
 							if idSignObj.isEqual(identityAndSign):
 								# it exists
 								flag = False
 								break
 						if flag:
 							# appending the identity and sign of final member
-							self.finalBlockbyFinalCommittee[str(finalTxnBlock)].append(identityAndSign)
+							self.finalBlockbyFinalCommittee[finaltxnBlockDigest].append(identityAndSign)
 
 						# block is signed by sufficient final members and when the final block has not been sent to the client yet
-						if len(self.finalBlockbyFinalCommittee[str(finalTxnBlock)]) >= c//2 + 1 and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
+						if len(self.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c//2 + 1 and self.state != ELASTICO_STATES["FinalBlockSentToClient"]:
 
 							# for final members, their state is updated only when they have also sent the finalblock to ntw
 							if self.isFinalMember():
