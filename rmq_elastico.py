@@ -494,6 +494,7 @@ class Elastico:
 		self.CommitteeConsensusData = dict()
 		self.CommitteeConsensusDataTxns = dict()
 		self.finalBlockbyFinalCommittee = dict()
+		self.finalBlockbyFinalCommitteeTxns = dict()
 		self.state = ELASTICO_STATES["NONE"]
 		self.mergedBlock = []
 		self.finalBlock = {"sent" : False, "finalBlock" : [] }
@@ -556,6 +557,7 @@ class Elastico:
 			self.CommitteeConsensusData = dict()
 			self.CommitteeConsensusDataTxns = dict()
 			self.finalBlockbyFinalCommittee = dict()
+			self.finalBlockbyFinalCommitteeTxns = dict()
 			self.state = ELASTICO_STATES["NONE"]
 			self.mergedBlock = []
 			self.finalBlock = {"sent" : False, "finalBlock" : [] }
