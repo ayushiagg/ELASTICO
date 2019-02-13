@@ -208,6 +208,15 @@ class Transaction:
 		digest.update(str(self.timestamp).encode())
 		return digest.hexdigest()
 
+def txnHexdigest(txnList):
+	"""
+		return hexdigest for a list of transactions
+	"""
+	txnList = sorted(txnList, key = lambda txn:txn.timestamp)
+	digest = SHA256.new()
+	for txn in txnList:
+		digest.update( txn.hexdigest().encode() )
+	return digest.hexdigest()
 
 class BlockHeader:
 	"""
@@ -910,7 +919,7 @@ class Elastico:
 					if self.verify_sign(sign, received_commitmentSetList, PK) and self.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK):
 
 						# list init for final txn block
-						finaltxnBlockDigest = self.txnHexdigest(finalTxnBlock)
+						finaltxnBlockDigest = txnHexdigest(finalTxnBlock)
 						if finaltxnBlockDigest not in self.finalBlockbyFinalCommittee:
 							self.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []
 							self.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
@@ -960,7 +969,7 @@ class Elastico:
 						if identityobj.committee_id not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj.committee_id] = dict()
 							self.CommitteeConsensusDataTxns[identityobj.committee_id] = dict()
-						TxnBlockDigest = self.txnHexdigest( data["txnBlock"] )
+						TxnBlockDigest = txnHexdigest( data["txnBlock"] )
 						if TxnBlockDigest not in self.CommitteeConsensusData[identityobj.committee_id]:
 							self.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
 							# store the txns for this digest
@@ -1207,7 +1216,7 @@ class Elastico:
 				seqnum = self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
 				if self.viewId in self.preparedData and seqnum in self.preparedData[self.viewId]:
 					for prepareMsg in self.preparedData[self.viewId][seqnum]:
-						if self.txnHexdigest(prepareMsg) == digest:
+						if txnHexdigest(prepareMsg) == digest:
 							# pre-prepared matched and prepared is also true, check for commits
 							if self.viewId in self.commitMsgLog:
 								if seqnum in self.commitMsgLog[self.viewId]:
@@ -1259,7 +1268,7 @@ class Elastico:
 				seqnum = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
 				if self.viewId in self.FinalpreparedData and seqnum in self.FinalpreparedData[self.viewId]:
 					for prepareMsg in self.FinalpreparedData[self.viewId][seqnum]:
-						if self.txnHexdigest(prepareMsg) == digest:
+						if txnHexdigest(prepareMsg) == digest:
 							# pre-prepared matched and prepared is also true, check for commits
 							if self.viewId in self.FinalcommitMsgLog:
 								if seqnum in self.FinalcommitMsgLog[self.viewId]:
@@ -1402,7 +1411,7 @@ class Elastico:
 			logging.warning("wrong sign in  verify pre-prepare")
 			return False
 		# verifying the digest of request msg
-		if self.txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+		if txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			logging.warning("wrong digest in  verify pre-prepare")
 			return False
 		# check the view is same or not
@@ -1431,7 +1440,7 @@ class Elastico:
 			logging.warning("wrong sign in  verify final pre-prepare")
 			return False
 		# verifying the digest of request msg
-		if self.txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+		if txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			logging.warning("wrong digest in  verify final pre-prepare")
 			return False
 		# check the view is same or not
@@ -1770,7 +1779,7 @@ class Elastico:
 		"""
 		txnBlockList = self.txn_block
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.txnHexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "pre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : txnHexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "pre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
@@ -1781,7 +1790,7 @@ class Elastico:
 		"""
 		txnBlockList = self.mergedBlock
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.txnHexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : txnHexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "Finalpre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
@@ -1805,7 +1814,7 @@ class Elastico:
 		for viewId in self.preparedData:
 			for seqnum in self.preparedData[viewId]:
 				for msg in self.preparedData[viewId][seqnum]:
-					digest = self.txnHexdigest(msg)
+					digest = txnHexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
 					commitMsg = {"type" : "commit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
@@ -1821,7 +1830,7 @@ class Elastico:
 		for viewId in self.FinalpreparedData:
 			for seqnum in self.FinalpreparedData[viewId]:
 				for msg in self.FinalpreparedData[viewId][seqnum]:
-					digest = self.txnHexdigest(msg)
+					digest = txnHexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
 					commitMsg = {"type" : "Finalcommit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
@@ -1963,15 +1972,6 @@ class Elastico:
 			Ri = random_gen(r)
 			self.Ri = ("{:0" + str(r) +  "b}").format(Ri)
 
-	def txnHexdigest(self, txnList):
-		"""
-			return hexdigest for a list of transactions
-		"""
-		txnList = sorted(txnList, key = lambda txn:txn.timestamp)
-		digest = SHA256.new()
-		for txn in txnList:
-			digest.update( txn.hexdigest().encode() )
-		return digest.hexdigest()
 
 	def hexdigest(self, msg):
 		"""
