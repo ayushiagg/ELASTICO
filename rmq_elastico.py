@@ -922,7 +922,7 @@ class Elastico:
 				logging.warning("%s received the intra committee block from commitee id - %s- %s", str(self.port) , str(identityobj.committee_id) , str(identityobj.port))    
 				if self.verify_PoW(identityobj):
 					# verify the signatures
-					if self.verify_sign( data["sign"], data["txnBlock"] , identityobj.PK):
+					if self.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK):
 						if identityobj.committee_id not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj.committee_id] = dict()
 						# txnBlock sent was converted as a list
@@ -1151,7 +1151,7 @@ class Elastico:
 				seqnum = self.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
 				if self.viewId in self.preparedData and seqnum in self.preparedData[self.viewId]:
 					for prepareMsg in self.preparedData[self.viewId][seqnum]:
-						if self.hexdigest(prepareMsg) == digest:
+						if self.txnHexdigest(prepareMsg) == digest:
 							# pre-prepared matched and prepared is also true, check for commits
 							if self.viewId in self.commitMsgLog:
 								if seqnum in self.commitMsgLog[self.viewId]:
@@ -1203,7 +1203,7 @@ class Elastico:
 				seqnum = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
 				if self.viewId in self.FinalpreparedData and seqnum in self.FinalpreparedData[self.viewId]:
 					for prepareMsg in self.FinalpreparedData[self.viewId][seqnum]:
-						if self.hexdigest(prepareMsg) == digest:
+						if self.txnHexdigest(prepareMsg) == digest:
 							# pre-prepared matched and prepared is also true, check for commits
 							if self.viewId in self.FinalcommitMsgLog:
 								if seqnum in self.FinalcommitMsgLog[self.viewId]:
@@ -1375,7 +1375,7 @@ class Elastico:
 			logging.warning("wrong sign in  verify final pre-prepare")
 			return False
 		# verifying the digest of request msg
-		if self.hexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
+		if self.txnHexdigest(msg["message"]) != msg["pre-prepareData"]["digest"]:
 			logging.warning("wrong digest in  verify final pre-prepare")
 			return False
 		# check the view is same or not
@@ -1722,7 +1722,7 @@ class Elastico:
 		"""
 		txnBlockList = self.mergedBlock
 		# make pre_prepare_contents Ordered Dict for signatures purpose
-		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.hexdigest(txnBlockList)})
+		pre_prepare_contents =  OrderedDict({ "type" : "Finalpre-prepare" , "viewId" : self.viewId, "seq" : 1 , "digest" : self.txnHexdigest(txnBlockList)})
 		
 		pre_preparemsg = {"type" : "Finalpre-prepare", "message" : txnBlockList , "pre-prepareData" : pre_prepare_contents, "sign" : self.sign(pre_prepare_contents) , "identity" : self.identity}
 		return pre_preparemsg 
@@ -1762,7 +1762,7 @@ class Elastico:
 		for viewId in self.FinalpreparedData:
 			for seqnum in self.FinalpreparedData[viewId]:
 				for msg in self.FinalpreparedData[viewId][seqnum]:
-					digest = self.hexdigest(msg)
+					digest = self.txnHexdigest(msg)
 					# make commit_contents Ordered Dict for signatures purpose
 					commit_contents = OrderedDict({"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest })
 					commitMsg = {"type" : "Finalcommit" , "sign" : self.sign(commit_contents) , "commitData" : commit_contents, "identity" : self.identity}
@@ -1869,7 +1869,7 @@ class Elastico:
 		for finalId in self.finalCommitteeMembers:
 			# here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
 			txnBlock = self.txn_block
-			data = {"txnBlock" : txnBlock , "sign" : self.sign(txnBlock), "identity" : self.identity}
+			data = {"txnBlock" : txnBlock , "sign" : self.signTxnList(txnBlock), "identity" : self.identity}
 			msg = {"data" : data, "type" : "intraCommitteeBlock" }
 			finalId.send(msg)
 		self.state = ELASTICO_STATES["Intra Consensus Result Sent to Final"]
