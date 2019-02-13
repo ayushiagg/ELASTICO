@@ -193,6 +193,17 @@ class Transaction:
 		"""
 		return self.sender == transaction.sender and self.receiver == transaction.receiver and self.amount == transaction.amount and self.timestamp == transaction.timestamp
 
+	def hexdigest(self):
+		"""
+			Digest of a transaction
+		"""
+		digest = SHA256.new()
+		digest.update(self.sender)
+		digest.update(self.receiver)
+		digest.update(str(self.amount))
+		digest.update(str(self.timestamp))
+		return digest.hexdigest()
+
 
 class BlockHeader:
 	"""
