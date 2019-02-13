@@ -2259,15 +2259,15 @@ class Elastico:
 			check the sufficient counts for final data
 		"""
 		# collect final blocks sent by final committee and add the blocks to the response
-		for txnBlock in self.finalBlockbyFinalCommittee:
-			if len(self.finalBlockbyFinalCommittee[txnBlock]) >= c//2 + 1:
-				TxnsList = ast.literal_eval(txnBlock)
+		for txnBlockDigest in self.finalBlockbyFinalCommittee:
+			if len(self.finalBlockbyFinalCommittee[txnBlockDigest]) >= c//2 + 1:
+				TxnList = self.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
 				# create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
-				finalCommittedBlock = FinalCommittedBlock(TxnsList, self.finalBlockbyFinalCommittee[txnBlock])
+				finalCommittedBlock = FinalCommittedBlock(TxnList, self.finalBlockbyFinalCommittee[txnBlockDigest])
 				# add the block to the response
 				self.response.append(finalCommittedBlock)
 			else:
-				logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlock])))
+				logging.error("less block signs : %s", str(len(self.finalBlockbyFinalCommittee[txnBlockDigest])))
 
 		if len(self.response) > 0:
 			logging.warning("final block sent the block to client by %s", str(self.port))
