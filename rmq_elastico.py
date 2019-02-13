@@ -323,33 +323,13 @@ class Block:
 			computes the digest for the block
 		"""
 		digest = SHA256.new()
-		# transactions = self.data.transactions
-		# prevBlockHash = self.header.prevBlockHash
-		# timestamp = self.timestamp
-		# numAncestorBlocks = self.numAncestorBlocks
-		# txnCount = self.txnCount
-		# rootHash = self.rootHash
-		# if type(transactions) is not str:
-		# 	transactions = str(transactions)
-		# if type(prevBlockHash) is not str:
-		# 	prevBlockHash = str(prevBlockHash)
-		# if type(timestamp) is not str:
-		# 	timestamp = str(timestamp)
-		# if type(numAncestorBlocks) is not str:
-		# 	numAncestorBlocks = str(numAncestorBlocks)
-		# if type(txnCount) is not str:
-		# 	txnCount = str(txnCount)
-		# if type(rootHash) is not str:
-		# 	rootHash = str(rootHash)
-
-		# digest.update(transactions.encode())
-		# digest.update(prevBlockHash.encode())
-		# digest.update(timestamp.encode())
-		# digest.update(numAncestorBlocks.encode())
-		# digest.update(txnCount.encode())
-		# digest.update(rootHash.encode())
-		hash_val = digest.hexdigest()
-		return hash_val
+		# digest of the block header
+		headerDigest = self.header.hexdigest()
+		digest.update(headerDigest.encode())
+		# digest of the block data
+		blockDataDigest = self.data.hexdigest()
+		digest.update(blockDataDigest.encode())
+		return digest.hexdigest()
 
 
 class MerkleTree:
