@@ -928,12 +928,15 @@ class Elastico:
 						if identityobj.committee_id not in self.CommitteeConsensusData:
 							self.CommitteeConsensusData[identityobj.committee_id] = dict()
 						# txnBlock sent was converted as a list
-						data["txnBlock"] = set(data["txnBlock"])
-						if str(data["txnBlock"]) not in self.CommitteeConsensusData[identityobj.committee_id]:
-							self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ] = set()
+						# data["txnBlock"] = set(data["txnBlock"])
+						TxnBlockDigest = self.txnHexdigest( data["txnBlock"] )
+						if TxnBlockDigest not in self.CommitteeConsensusData[identityobj.committee_id]:
+							self.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
+							# store the txns for this digest
+							self.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
 
 						# add signatures for the txn block 
-						self.CommitteeConsensusData[identityobj.committee_id][ str(data["txnBlock"]) ].add( data["sign"] )
+						self.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ].add( data["sign"] )
 						logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(self.state) ,str( identityobj.committee_id) , str(identityobj.port) , str(self.port))   
 					else:
 						logging.error("signature invalid for intra committee block")        
