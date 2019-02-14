@@ -36,8 +36,13 @@ func main() {
 	// Generate random numbers in range [0..prime1]
 	// Ignore error values
 	x, _ := rand.Int(rand.Reader, prime1)
-	
+
+	mape := make(map[string]interface{})
+	mape["hash"] = ""
+	mape["set_of_Rs"] = ""
+	mape["nonce"] = 0
 	fmt.Printf("x: %v\n", x)
-	
+
+	fmt.Println(mape)
 
 }
