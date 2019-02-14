@@ -1,5 +1,5 @@
 package main
-
+	
 import (
 	"fmt"
 	// "crypto/sha256"
@@ -27,7 +27,7 @@ type Elastico struct{
 	key *rsa.PrivateKey
 	epoch_randomness string
 	PoW map[string]interface{}
-	cur_directory 
+	cur_directory []Identity
 	// identity = ""
 	// committee_id int32
 	// // only when this node is the member of directory committee
@@ -100,7 +100,7 @@ func (e *Elastico)get_IP(){
 		fmt.Println("error:", err.Error)
 	}
 	// setting the IP addr from the byte array
-	e.IP= fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
+	e.IP = fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
 }
 
 
