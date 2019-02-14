@@ -9,10 +9,22 @@ import (
 	"strconv"
 
 )
+
+type Identity struct{
+	IP string
+	PK string
+	committee_id int
+	PoW map[string]interface{}
+	epoch_randomness string
+	port int
+}
+
 type Elastico struct{
 	key *rsa.PrivateKey
 	IP string
+	cur []Identity
 }
+
 func main() {
 	e:= Elastico{}
 	var err error 
@@ -42,7 +54,7 @@ func main() {
 	mape["set_of_Rs"] = ""
 	mape["nonce"] = 0
 	fmt.Printf("x: %v\n", x)
-
-	fmt.Println(mape)
-
+	
+	var cure []Identity
+	fmt.Println(mape, cure)
 }
