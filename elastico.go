@@ -19,7 +19,11 @@ type Identity struct{
 	port int
 }
 
-
+type Transaction struct{
+	sender string
+	receiver string
+	amount float32	
+}
 type Elastico struct{
 	// connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 	IP string
