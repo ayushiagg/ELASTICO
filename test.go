@@ -56,5 +56,11 @@ func main() {
 	fmt.Printf("x: %v\n", x)
 	
 	var cure []Identity
-	fmt.Println(mape, cure)
+
+	a:= make(map[int]map[string]string)
+	a[0] = make(map[string]string)
+	a[0]["d"] = "dfsgf"
+	a[0]["de"] = "dfsgf"
+	fmt.Println(mape, cure, a)
+
 }
