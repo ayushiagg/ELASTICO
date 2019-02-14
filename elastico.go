@@ -32,37 +32,37 @@ type Elastico struct{
 	epoch_randomness string
 	PoW map[string]interface{}
 	cur_directory []Identity
-	// identity = ""
-	// committee_id int32
-	// // only when this node is the member of directory committee
-	// committee_list = map[int32]
-	// // only when this node is not the member of directory committee
-	// committee_Members = set()
-	// is_directory bool
-	// is_final bool
-	// Ri string
-	// // only when this node is the member of final committee
-	// commitments = set()
-	// txn_block = set()
-	// set_of_Rs = set()
-	// newset_of_Rs = set()
-	// CommitteeConsensusData
-	// finalBlockbyFinalCommittee = dict()
-	// state map[string]int32
-	// mergedBlock = []
-	// finalBlock = {"sent" : False, "finalBlock" : set() }
-	// RcommitmentSet = ""
-	// newRcommitmentSet = ""
-	// finalCommitteeMembers = set()
-	// // only when this is the member of the directory committee
-	// txn = dict()
-	// response = []
-	// flag bool
-	// views = set()
-	// primary bool
-	// viewId int
-	// faulty bool
-	/* pre_prepareMsgLog
+	identity Identity
+	committee_id int
+	// only when this node is the member of directory committee
+	committee_list map[int][]Identity
+	// only when this node is not the member of directory committee
+	committee_Members []Identity
+	is_directory bool
+	is_final bool
+	Ri string
+	// only when this node is the member of final committee
+	commitments map[string]bool
+	txn_block []Transaction
+	set_of_Rs map[string]bool
+	newset_of_Rs map[string]bool
+	CommitteeConsensusData map[int]map[string][]string
+	finalBlockbyFinalCommittee map[int]map[string][]string
+	state map[string]int
+	mergedBlock []Transaction
+	finalBlock map[string]interface{}
+	RcommitmentSet map[string]bool
+	newRcommitmentSet map[string]bool
+	finalCommitteeMembers []Identity
+	// only when this is the member of the directory committee
+	txn map[int][]Transaction
+	response []Transaction
+	flag bool
+	views map[int]bool
+	primary bool
+	viewId int
+	faulty bool
+	 // pre_prepareMsgLog
 	// prepareMsgLog
 	// commitMsgLog
 	// preparedData
@@ -72,7 +72,7 @@ type Elastico struct{
 	// FinalcommitMsgLog
 	// FinalpreparedData
 	// FinalcommittedData
-	*/
+	
 
 }
 
