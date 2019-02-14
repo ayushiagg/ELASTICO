@@ -145,6 +145,9 @@ func (e* Elastico) init() {
 	e.PoW["hash"] = ""
 	e.PoW["set_of_Rs"] = ""
 	e.PoW["nonce"] = 0
+	e.finalBlock = make(map[string]interface{})
+	e.finalBlock["sent"] = false
+	e.finalBlock["finalBlock"] = make([]Transaction,0)
 
 }
 func main(){
