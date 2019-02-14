@@ -2589,7 +2589,7 @@ if __name__ == "__main__":
 
 		# epochTxns - dictionary that maps the epoch number to the list of transactions
 		epochTxns = dict()
-		numOfEpochs = 1
+		numOfEpochs = 3
 		for i in range(numOfEpochs):
 			epochTxns[i] = createTxns()
 		# run all the epochs 

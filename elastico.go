@@ -16,8 +16,8 @@ type Elastico struct{
 	port uint
 	key *rsa.PrivateKey
 	epoch_randomness string
-	// PoW map[string]
-	// cur_directory = set()
+	PoW map[string]interface{}
+	cur_directory 
 	// identity = ""
 	// committee_id int32
 	// // only when this node is the member of directory committee
@@ -122,7 +122,17 @@ func random_gen(r int64) (*big.Int) {
 	return randomNum
 }
 
+func (e* Elastico) compute_PoW(){
 
+}
+func (e* Elastico) init() {
+	// Initialize PoW!	
+	e.PoW = make(map[string]interface{})
+	e.PoW["hash"] = ""
+	e.PoW["set_of_Rs"] = ""
+	e.PoW["nonce"] = 0
+
+}
 func main(){
 
 }
