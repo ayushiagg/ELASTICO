@@ -8,7 +8,17 @@ import (
 	"math/big"
 	"strconv"
 	// "reflect"
-)	
+)
+
+type Identity struct{
+	IP string
+	PK string
+	committee_id int
+	PoW map[string]interface{}
+	epoch_randomness string
+	port int
+}
+
 
 type Elastico struct{
 	// connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
