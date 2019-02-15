@@ -87,7 +87,7 @@ type Elastico struct{
 	PoW map[string]interface{}
 	cur_directory []Identity
 	identity Identity
-	committee_id int
+	committee_id int64
 	// only when this node is the member of directory committee
 	committee_list map[int][]Identity
 	// only when this node is not the member of directory committee
@@ -189,11 +189,6 @@ func (e *Elastico)get_port(){
 	defer lock.Unlock()
 }
 
-			
-		// if self.state == ELASTICO_STATES["NONE"]:
-		// 	PK = self.key.publickey().exportKey().decode()
-		// 	IP = self.IP
-		// 	
 
 func (e* Elastico) compute_PoW(){
 	/*	
