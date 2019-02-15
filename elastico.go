@@ -302,6 +302,18 @@ func (e* Elastico) init() {
 	e.viewId = 0
 	e.faulty = false	
 }
+
 func main(){
+	e := &Elastico{}
+	e.init()
+	for e.state == 0{
+		e.compute_PoW()
+	}
+	fmt.Println(e.state, e.PoW)
+	// pk := e.key.Public()
+
+	// rsaPublickey, _ := pk.(*rsa.PublicKey)
+	// fmt.Println(rsaPublickey.N.Bytes())
+	// fmt.Println(rsaPublickey.E.Bytes())
 
 }
