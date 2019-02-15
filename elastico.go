@@ -150,6 +150,33 @@ func (e* Elastico) init() {
 	e.PoW["hash"] = ""
 	e.PoW["set_of_Rs"] = ""
 	e.PoW["nonce"] = 0
+
+	e.cur_directory = make([]Identity, 0)
+	
+	e.committee_list = make(map[int][]Identity)
+
+	e.committee_Members = make([]Identity, 0)
+
+	// for setting epoch_randomness
+	e.initER()
+
+	e.commitments = make(map[string]bool)
+
+	e.txn_block = make([]Transaction, 0)
+
+	e.set_of_Rs = make(map[string]bool)
+
+	e.newset_of_Rs = make(map[string]bool)
+	
+	e.CommitteeConsensusData = make(map[int]map[string][]string)
+	
+	e.CommitteeConsensusDataTxns map[int]map[string][]Transaction
+	
+	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
+
+	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
+
+
 	e.finalBlock = make(map[string]interface{})
 	e.finalBlock["sent"] = false
 	e.finalBlock["finalBlock"] = make([]Transaction,0)
