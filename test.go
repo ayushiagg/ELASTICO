@@ -35,6 +35,22 @@ func failOnError(err error, msg string) {
   }
 }
 
+func get_committeeid(PoW string){
+	/*
+		returns last s-bit of PoW["hash"] as Identity : committee_id
+	*/ 
+	s := 4
+	bindigest := ""
+	for i:=0 ; i < len(PoW); i++ {
+		intVal, _ := strconv.ParseUint( string(PoW[i]) ,16,0)
+		bindigest += fmt.Sprintf("%04b", intVal)
+	}
+	fmt.Println(bindigest)
+	identity := bindigest[len(bindigest)-s:]
+	fmt.Println(identity)
+	iden, _ := strconv.ParseUint(identity, 2 , 0)
+	fmt.Println(iden)
+}
 func main() {
 	e:= Elastico{}
 	var err error 
@@ -64,17 +80,30 @@ func main() {
 	mape["set_of_Rs"] = ""
 	mape["nonce"] = 0
 	fmt.Printf("x: %v\n", x)
-	
-	var cure []Identity
 
 	a:= make(map[int]map[string]string)
 	a[0] = make(map[string]string)
 	a[0]["d"] = "dfsgf"
 	a[0]["de"] = "dfsgf"
-	fmt.Println(mape, cure, a, ELASTICO_STATES)
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
-	fmt.Println(conn)
 	defer conn.Close()
+	digest := sha256.New()
+	digest.Write([]byte("051"))
+
+	p := digest.Sum(nil)
+
+	hash_val := string(p)
+
+	hash := ""
+	for i := 0; i < len(p); i++{
+		hash += string(p[i])
+	}
+	// fmt.Println(hash_val)
+	// fmt.Println(hash)
+	lelo := fmt.Sprintf("%x", p)
+	get_committeeid(hash)
+	get_committeeid(hash_val)
+	get_committeeid(lelo)
 }
