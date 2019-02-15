@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	// "crypto/sha256"
+	"crypto/sha256"
 	"crypto/rsa"
 	"crypto/rand"
 	"math/big"
 	"strconv"
+	"strings"
 	// "reflect"
 	"sync"
 	"github.com/streadway/amqp" // for rabbitmq
