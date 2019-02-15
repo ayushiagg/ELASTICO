@@ -2538,8 +2538,8 @@ def Run(epochTxns):
 	"""
 		runs all the epochs
 	"""
-	global network_nodes, ledger, port, lock
-	
+	global network_nodes, ledger
+
 	try:
 		# Manager for managing the shared variable among the processes
 		manager = Manager()
