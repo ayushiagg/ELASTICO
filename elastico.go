@@ -70,6 +70,37 @@ type Identity struct{
 	port uint
 }
 
+func (e *Elastico)get_committeeid int{
+	/*
+		returns last s-bit of PoW["hash"] as Identity : committee_id
+	*/ 
+	bindigest = ''
+	for hashdig in PoW:
+		bindigest += "{:04b}".format(int(hashdig, 16))
+	identity = bindigest[-s:]
+	return int(identity, 2)
+}
+
+func (e *Elastico)form_identity{
+	/*
+		identity formation for a node
+		identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
+	*/	
+	if e.state == ELASTICO_STATES["PoW Computed"]{
+		// export public key
+		PK := e.key.Public()
+
+		// set the committee id acc to PoW solution
+		e.committee_id = e.get_committeeid(e.PoW["hash"])
+
+		e.identity = Identity{e.IP, PK, e.committee_id, e.PoW, e.epoch_randomness,e.port}
+		// changed the state after identity formation
+		e.state = ELASTICO_STATES["Formed Identity"]
+		return e.identity
+	}
+}
+
+
 type Transaction struct{
 	sender string
 	receiver string
