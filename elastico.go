@@ -196,10 +196,12 @@ func (e* Elastico) init() {
 	var err error
 	// create rabbit mq connection
 	e.connection, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// log if connection fails
 	failOnError(err, "Failed to connect to RabbitMQ")
-	
+	// set IP
 	e.get_IP()
 	e.get_port()
+	// set RSA
 	e.get_key()
 	// Initialize PoW!	
 	e.PoW = make(map[string]interface{})
