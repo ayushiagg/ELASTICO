@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/rand"
 	"reflect"
 	"math/big"
