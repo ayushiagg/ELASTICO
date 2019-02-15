@@ -34,6 +34,14 @@ var r int64 = 4
 // fin_num - final committee id
 var fin_num int = 0
 
+func failOnError(err error, msg string) {
+	// logging the error
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}
+
+
 func random_gen(r int64) (*big.Int) {
 	/*
 		generate a random integer
