@@ -9,6 +9,8 @@ import (
 	"strconv"
 	// "reflect"
 	"sync"
+	"github.com/streadway/amqp" // for rabbitmq
+	"log"
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
