@@ -76,7 +76,8 @@ type Transaction struct{
 }
 
 type Elastico struct{
-	// connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+
+	connection *amqp.Connection
 	IP string
 	port uint
 	key *rsa.PrivateKey
