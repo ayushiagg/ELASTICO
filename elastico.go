@@ -125,6 +125,22 @@ func (e *Elastico) initER(){
 		e.epoch_randomness = fmt.Sprintf("%0"+ strconv.FormatInt(r, 10) + "b\n", randomnum)
 }
 
+func (e *Elastico)get_port(){
+
+	/*
+		get port number for the process
+	*/
+
+	// acquire the lock
+	lock.Lock()
+
+	port += 1
+
+	e.port = port
+	
+	// release the lock
+	defer lock.Unlock()
+}
 
 func random_gen(r int64) (*big.Int) {
 	/*
