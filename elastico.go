@@ -29,7 +29,7 @@ var s int = 2
 // c - size of committee
 var c int = 4
 // D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-var D int = 3
+var D int = 6
 // r - number of bits in random string
 var r int64 = 4
 // fin_num - final committee id
@@ -200,10 +200,13 @@ func (e* Elastico) compute_PoW(){
 	zero_string := ""
 	for i:=0 ; i < D; i ++ {
 		zero_string += "0"
-	}	
+	}
+	nonce :=  e.PoW["nonce"].(int)
 	if e.state == ELASTICO_STATES["NONE"] {
 		// public key
-		PK := e.key
+		PK := e.key.Public()
+		rsaPublickey, _ := PK.(*rsa.PublicKey)
+		// fmt.Println("%T", reflect.TypeOf(PK) )
 		IP := e.IP
 		// If it is the first epoch , randomset_R will be an empty set .
 		// otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
@@ -214,25 +217,27 @@ func (e* Elastico) compute_PoW(){
 		// 	compute the digest 
 		digest := sha256.New()
 		digest.Write([]byte(IP))
-		digest.Write([]byte(PK))
+		digest.Write(rsaPublickey.N.Bytes())
+		digest.Write([]byte(strconv.Itoa(rsaPublickey.E)))
 		digest.Write([]byte(e.epoch_randomness))
-		digest.Write([]byte(strconv.Itoa(e.PoW["nonce"])))
+		digest.Write([]byte(strconv.Itoa(nonce)))
 
 		hash_val := fmt.Sprintf("%x" , digest.Sum(nil))
 		if strings.HasPrefix(hash_val, zero_string){
 			//hash starts with leading D 0's
 			e.PoW["hash"] = hash_val
 			e.PoW["set_of_Rs"] =  randomset_R
+			e.PoW["nonce"] = nonce
 			// change the state after solving the puzzle
 			e.state = ELASTICO_STATES["PoW Computed"]
-			return hash_val
-		}
-		else{
-			// try for other nonce 
-			e.PoW["nonce"] += 1
+		} else {
+			// try for other nonce
+			nonce += 1 
+			e.PoW["nonce"] = nonce
 		}
 	}
 }
+
 
 
 func (e* Elastico) init() {
