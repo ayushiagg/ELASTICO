@@ -29,7 +29,6 @@ type Elastico struct{
 	IP string
 	port uint
 	key *rsa.PrivateKey
-	epoch_randomness string
 	PoW map[string]interface{}
 	cur_directory []Identity
 	identity Identity
@@ -40,6 +39,7 @@ type Elastico struct{
 	committee_Members []Identity
 	is_directory bool
 	is_final bool
+	epoch_randomness string
 	Ri string
 	// only when this node is the member of final committee
 	commitments map[string]bool
@@ -47,8 +47,10 @@ type Elastico struct{
 	set_of_Rs map[string]bool
 	newset_of_Rs map[string]bool
 	CommitteeConsensusData map[int]map[string][]string
+	CommitteeConsensusDataTxns map[int]map[string][]Transaction
 	finalBlockbyFinalCommittee map[int]map[string][]string
-	state map[string]int
+	finalBlockbyFinalCommitteeTxns map[int]map[string][]Transaction
+	state int
 	mergedBlock []Transaction
 	finalBlock map[string]interface{}
 	RcommitmentSet map[string]bool
@@ -140,6 +142,9 @@ func (e* Elastico) compute_PoW(){
 
 }
 func (e* Elastico) init() {
+	e.get_IP()
+	e.get_port()
+	e.get_key()
 	// Initialize PoW!	
 	e.PoW = make(map[string]interface{})
 	e.PoW["hash"] = ""
