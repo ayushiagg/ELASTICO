@@ -32,7 +32,7 @@ var D int = 3
 // r - number of bits in random string
 var r int64 = 4
 // fin_num - final committee id
-fin_num = 0
+var fin_num int = 0
 
 func random_gen(r int64) (*big.Int) {
 	/*
