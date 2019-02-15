@@ -339,11 +339,12 @@ func main(){
 	for e.state == 0{
 		e.compute_PoW()
 	}
-	fmt.Println(e.state, e.PoW)
-	// pk := e.key.Public()
-
-	// rsaPublickey, _ := pk.(*rsa.PublicKey)
-	// fmt.Println(rsaPublickey.N.Bytes())
-	// fmt.Println(rsaPublickey.E.Bytes())
+	numOfEpochs := 3
+	epochTxns := make(map[int][]Transaction)
+	for _, epoch := range numOfEpochs{
+		epochTxns[epoch] = createTxns()
+		// run all the epochs 
+		Run(epochTxns)
+	}
 
 }
