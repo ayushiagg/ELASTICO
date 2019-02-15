@@ -300,6 +300,39 @@ func (e* Elastico) init() {
 	e.faulty = false	
 }
 
+
+func (e *Elastico)get_committeeid(PoW string) int64{
+	/*
+		returns last s-bit of PoW["hash"] as Identity : committee_id
+	*/ 
+	bindigest := ""
+	
+	for i:=0 ; i < len(PoW); i++ {
+		intVal, _ := strconv.ParseInt( string(PoW[i]) ,16,0)
+		bindigest += fmt.Sprintf("%04b", intVal)
+	}
+	identity := bindigest[len(bindigest)-s:]
+	iden, _ := strconv.ParseInt(identity, 2 , 0)
+	return iden
+}
+
+func (e *Elastico)form_identity() {
+	/*
+		identity formation for a node
+		identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
+	*/	
+	if e.state == ELASTICO_STATES["PoW Computed"]{
+		// export public key
+		PK := e.key.Public().(*rsa.PublicKey)
+
+		// set the committee id acc to PoW solution
+		e.committee_id = e.get_committeeid(e.PoW["hash"].(string))
+
+		e.identity = Identity{e.IP, PK, e.committee_id, e.PoW, e.epoch_randomness,e.port}
+		// changed the state after identity formation
+		e.state = ELASTICO_STATES["Formed Identity"]
+	}
+}
 func main(){
 	e := &Elastico{}
 	e.init()
