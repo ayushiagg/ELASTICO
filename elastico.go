@@ -187,12 +187,50 @@ func (e *Elastico)get_port(){
 	defer lock.Unlock()
 }
 
+			
+		// if self.state == ELASTICO_STATES["NONE"]:
+		// 	PK = self.key.publickey().exportKey().decode()
+		// 	IP = self.IP
+		// 	
 
 func (e* Elastico) compute_PoW(){
+	/*	
+		returns hash which satisfies the difficulty challenge(D) : PoW["hash"]
+	*/
+	zero_string := ""
+	for i:=0 ; i < D; i ++ {
+		zero_string += "0"
+	}	
 	if e.state == ELASTICO_STATES["NONE"] {
 		// public key
-		PK = e.key
-		IP = e.IP
+		PK := e.key
+		IP := e.IP
+		// If it is the first epoch , randomset_R will be an empty set .
+		// otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
+		randomset_R := make(map[string]bool)
+		if len(e.set_of_Rs) > 0 {
+			// e.epoch_randomness, randomset_R = e.xor_R()
+		}
+		// 	compute the digest 
+		digest := sha256.New()
+		digest.Write([]byte(IP))
+		digest.Write([]byte(PK))
+		digest.Write([]byte(e.epoch_randomness))
+		digest.Write([]byte(strconv.Itoa(e.PoW["nonce"])))
+
+		hash_val := fmt.Sprintf("%x" , digest.Sum(nil))
+		if strings.HasPrefix(hash_val, zero_string){
+			//hash starts with leading D 0's
+			e.PoW["hash"] = hash_val
+			e.PoW["set_of_Rs"] =  randomset_R
+			// change the state after solving the puzzle
+			e.state = ELASTICO_STATES["PoW Computed"]
+			return hash_val
+		}
+		else{
+			// try for other nonce 
+			e.PoW["nonce"] += 1
+		}
 	}
 }
 
