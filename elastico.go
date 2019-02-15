@@ -1,5 +1,5 @@
 package main
-	
+
 import (
 	"fmt"
 	// "crypto/sha256"
@@ -11,10 +11,45 @@ import (
 	"sync"
 )
 
+// ELASTICO_STATES - states reperesenting the running state of the node
 var ELASTICO_STATES = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2, "Formed Committee": 3, "RunAsDirectory": 4 ,"RunAsDirectory after-TxnReceived" : 5,  "RunAsDirectory after-TxnMulticast" : 6, "Receiving Committee Members" : 7,"PBFT_NONE" : 8 , "PBFT_PRE_PREPARE" : 9, "PBFT_PRE_PREPARE_SENT"  : 10, "PBFT_PREPARE_SENT" : 11, "PBFT_PREPARED" : 12, "PBFT_COMMITTED" : 13, "PBFT_COMMIT_SENT" : 14,  "Intra Consensus Result Sent to Final" : 15,  "Merged Consensus Data" : 16, "FinalPBFT_NONE" : 17,  "FinalPBFT_PRE_PREPARE" : 18, "FinalPBFT_PRE_PREPARE_SENT"  : 19,  "FinalPBFT_PREPARE_SENT" : 20 , "FinalPBFT_PREPARED" : 21, "FinalPBFT_COMMIT_SENT" : 22, "FinalPBFT_COMMITTED" : 23, "PBFT Finished-FinalCommittee" : 24 , "CommitmentSentToFinal" : 25, "FinalBlockSent" : 26, "FinalBlockReceived" : 27,"BroadcastedR" : 28, "ReceivedR" :  29, "FinalBlockSentToClient" : 30,   "LedgerUpdated" : 31}
 
+// shared lock among processes
 var lock sync.Mutex
+
 var port uint = 49152
+
+// n : number of nodes
+var n int = 66 
+// s - where 2^s is the number of committees
+var s int = 2
+// c - size of committee
+var c int = 4
+// D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
+var D int = 3
+// r - number of bits in random string
+var r int64 = 4
+// fin_num - final committee id
+fin_num = 0
+
+func random_gen(r int64) (*big.Int) {
+	/*
+		generate a random integer
+	*/
+	// n is the base, e is the exponent, creating big.Int variables
+	var n,e = big.NewInt(2) , big.NewInt(r)
+	// taking the exponent n to the power e, and storing the result in n
+	n.Exp(n, e, nil)
+	// generates the random num in the range[0,n)
+	randomNum, err := rand.Int(rand.Reader, n)
+
+	if err != nil {
+		fmt.Println("error:", err.Error)
+	}
+	return randomNum
+}
+
+
 type Identity struct{
 	IP string
 	PK string
@@ -29,6 +64,7 @@ type Transaction struct{
 	receiver string
 	amount float32	
 }
+
 type Elastico struct{
 	// connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 	IP string
@@ -79,12 +115,9 @@ type Elastico struct{
 	// FinalcommitMsgLog
 	// FinalpreparedData
 	// FinalcommittedData
-	
-
 }
 
 
-var r int64 = 4
 func (e *Elastico) get_key(){
 	/*
 		for each node, it will set key as public pvt key pair
@@ -142,22 +175,6 @@ func (e *Elastico)get_port(){
 	defer lock.Unlock()
 }
 
-func random_gen(r int64) (*big.Int) {
-	/*
-		generate a random integer
-	*/
-	// n is the base, e is the exponent, creating big.Int variables
-	var n,e = big.NewInt(2) , big.NewInt(r)
-	// taking the exponent n to the power e, and storing the result in n
-	n.Exp(n, e, nil)
-	// generates the random num in the range[0,n)
-	randomNum, err := rand.Int(rand.Reader, n)
-
-	if err != nil {
-		fmt.Println("error:", err.Error)
-	}
-	return randomNum
-}
 
 func (e* Elastico) compute_PoW(){
 
