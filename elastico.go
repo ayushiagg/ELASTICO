@@ -188,7 +188,11 @@ func (e *Elastico)get_port(){
 
 
 func (e* Elastico) compute_PoW(){
-
+	if e.state == ELASTICO_STATES["NONE"] {
+		// public key
+		PK = e.key
+		IP = e.IP
+	}
 }
 
 
