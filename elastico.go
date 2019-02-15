@@ -172,17 +172,31 @@ func (e* Elastico) init() {
 	
 	e.CommitteeConsensusData = make(map[int]map[string][]string)
 	
-	e.CommitteeConsensusDataTxns map[int]map[string][]Transaction
+	e.CommitteeConsensusDataTxns = make(map[int]map[string][]Transaction)
 	
 	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
 
 	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
 
+	e.state = ELASTICO_STATES["NONE"]
+
+	e.mergedBlock = make([]Transaction, 0)
 
 	e.finalBlock = make(map[string]interface{})
 	e.finalBlock["sent"] = false
 	e.finalBlock["finalBlock"] = make([]Transaction,0)
 
+	e.RcommitmentSet = make(map[string]bool)
+	e.newRcommitmentSet = make(map[string]bool)
+	e.finalCommitteeMembers = make([]Identity, 0)
+	
+	e.txn = make(map[int][]Transaction)
+	e.response = make([]Transaction, 0)
+	e.flag = true
+	e.views = make(map[int]bool)
+	e.primary = false
+	e.viewId = 0
+	e.faulty = false	
 }
 func main(){
 
