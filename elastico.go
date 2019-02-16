@@ -537,8 +537,8 @@ func createTxns()[]Transaction{
 
 
 func main(){
-	os.Remove("rus.log")
-	file, _ := os.OpenFile("rus.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
+	os.Remove("logfile.log")
+	file, _ := os.OpenFile("logfile.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
 
 	numOfEpochs := 2
 	epochTxns := make(map[int][]Transaction)
