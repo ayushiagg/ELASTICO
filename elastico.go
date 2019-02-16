@@ -334,6 +334,70 @@ func (e *Elastico)executePoW{
 }
 
 
+func (e *Elastico) compute_fakePoW(){
+	/*
+		bad node generates the fake PoW
+	*/
+	// random fakeness 
+	x := random_gen(32)
+	_ , index := x.DivMod(x , big.NewInt(3) , big.NewInt(0))
+
+	if index == 0{
+		
+		// Random hash with initial D hex digits 0s
+		digest := sha256.New()
+		ranHash := fmt.Sprintf("%x" , digest.Sum(nil))
+		hash_val := ""
+		for i:=0 ; i < D ; i++{
+			hash_val += "0"
+		}
+		e.PoW["hash"] = hash_val + ranHash[D:]
+
+	} else if index == 1{
+		
+		// computing an invalid PoW using less number of values in digest
+		randomset_R := set()
+		// if len(self.set_of_Rs) > 0:
+		// 	self.epoch_randomness, randomset_R = self.xor_R()    
+		for {
+
+			digest := sha256.New()
+			nonce:= e.PoW["nonce"]
+			digest.Write([]byte(strconv.Itoa(nonce)))
+			hash_val := fmt.Sprintf("%x" , digest.Sum(nil))
+			if strings.HasPrefix(hash_val, zero_string){
+				e.PoW["hash"] = hash_val
+				e.PoW["set_of_Rs"] =  randomset_R
+				e.PoW["nonce"] = nonce
+			}else{
+				// try for other nonce
+				nonce += 1 
+				e.PoW["nonce"] = nonce
+			}
+		}
+	}
+	
+	else if index == 2{
+		
+		// computing a random PoW
+		randomset_R := set()
+		// if len(self.set_of_Rs) > 0:
+		// 	self.epoch_randomness, randomset_R := self.xor_R()    
+		digest := sha256.New()
+		ranHash := fmt.Sprintf("%x" , digest.Sum(nil))
+		nonce := random_gen() 
+		e.PoW["hash"] = ranHash
+		e.PoW["set_of_Rs"] =  randomset_R
+		// ToDo: nonce has to be in int instead of big.Int
+		e.PoW["nonce"] = nonce
+	}
+
+	log.Warn("computed fake POW " , index)
+	e.state = ELASTICO_STATES["PoW Computed"]
+	
+}
+
+
 func (e *Elastico)form_identity() {
 	/*
 		identity formation for a node
