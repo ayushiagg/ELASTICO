@@ -1,3 +1,4 @@
+// A package clause starts every source file.
 package main
 
 import (
@@ -9,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 	// "reflect"
-	"sync"
+	"sync" // for locks
 	"github.com/streadway/amqp" // for rabbitmq
-	"log"
+	"log" // for logging
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
@@ -19,7 +20,7 @@ var ELASTICO_STATES = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Ident
 
 // shared lock among processes
 var lock sync.Mutex
-
+// shared port among the processes 
 var port uint = 49152
 
 // n : number of nodes
@@ -49,9 +50,10 @@ func random_gen(r int64) (*big.Int) {
 	*/
 	// n is the base, e is the exponent, creating big.Int variables
 	var n,e = big.NewInt(2) , big.NewInt(r)
-	// taking the exponent n to the power e, and storing the result in n
+	// taking the exponent n to the power e and nil modulo, and storing the result in n
 	n.Exp(n, e, nil)
 	// generates the random num in the range[0,n)
+	// here Reader is a global, shared instance of a cryptographically secure random number generator.
 	randomNum, err := rand.Int(rand.Reader, n)
 
 	if err != nil {
