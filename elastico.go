@@ -342,6 +342,69 @@ func (e *Elastico) isFinalMember(){
 }
 
 
+func (e *Elastico) runPBFT(){
+	/*
+		Runs a Pbft instance for the intra-committee consensus
+	*/
+	if e.state == ELASTICO_STATES["PBFT_NONE"]{
+		if e.primary{
+			// construct pre-prepare msg
+			pre_preparemsg := e.construct_pre_prepare()
+			// multicasts the pre-prepare msg to replicas
+			// ToDo: what if primary does not send the pre-prepare to one of the nodes
+			e.send_pre_prepare(pre_preparemsg)
+
+			// change the state of primary to pre-prepared 
+			e.state = ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]
+			// primary will log the pre-prepare msg for itself
+			e.logPre_prepareMsg(pre_preparemsg)
+
+		} else{
+
+			// for non-primary members
+			if e.is_pre_prepared(){
+				e.state = ELASTICO_STATES["PBFT_PRE_PREPARE"]
+			}
+		}
+
+	} else if e.state == ELASTICO_STATES["PBFT_PRE_PREPARE"]{
+
+		if e.primary == false{
+			
+			// construct prepare msg
+			// ToDo: verify whether the pre-prepare msg comes from various primaries or not
+			preparemsgList := e.construct_prepare()
+			// logging.warning("constructing prepares with port %s" , str(e.port))
+			e.send_prepare(preparemsgList)
+			e.state = ELASTICO_STATES["PBFT_PREPARE_SENT"]
+		}
+
+	} else if e.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]{
+			// ToDo: if, primary has not changed its state to "PBFT_PREPARE_SENT"
+			if e.isPrepared(){
+				
+				// logging.warning("prepared done by %s" , str(e.port))
+				e.state = ELASTICO_STATES["PBFT_PREPARED"]
+
+			} else if e.state == ELASTICO_STATES["PBFT_PREPARED"]{
+
+				commitMsgList := e.construct_commit()
+				e.send_commit(commitMsgList)
+				e.state = ELASTICO_STATES["PBFT_COMMIT_SENT"]
+
+			}else if e.state == ELASTICO_STATES["PBFT_COMMIT_SENT"]{
+				
+				if e.isCommitted(){
+					
+					// logging.warning("committed done by %s" , str(e.port))
+					e.state = ELASTICO_STATES["PBFT_COMMITTED"]	
+				}
+			}
+	}
+}
+			
+	
+
 func (e *Elastico) compute_fakePoW(){
 	/*
 		bad node generates the fake PoW
