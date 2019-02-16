@@ -318,6 +318,21 @@ func (e *Elastico)get_committeeid(PoW string) int64{
 	return iden
 }
 
+
+func (e *Elastico)executePoW{
+	/*
+		execute PoW
+	*/
+	if e.flag{
+		// compute Pow for good node
+		e.compute_PoW()
+	} else{
+		// compute Pow for bad node
+		e.compute_fakePoW()
+	}
+}
+
+
 func (e *Elastico)form_identity() {
 	/*
 		identity formation for a node
