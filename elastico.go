@@ -12,7 +12,7 @@ import (
 	// "reflect"
 	"sync" // for locks
 	"github.com/streadway/amqp" // for rabbitmq
-	"log" // for logging
+	log "github.com/sirupsen/logrus" // for logging
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
