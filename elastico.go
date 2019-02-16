@@ -77,7 +77,7 @@ type Identity struct{
 type Transaction struct{
 	sender string
 	receiver string
-	amount float32	
+	amount *big.Int
 }
 
 type Elastico struct{
@@ -335,18 +335,38 @@ func (e *Elastico)form_identity() {
 		e.state = ELASTICO_STATES["Formed Identity"]
 	}
 }
+
+func createTxns()[]Transaction{
+	/*
+		create txns for an epoch
+	*/
+	// number of transactions in each epoch
+	numOfTxns := 20
+	// txns is the list of the transactions in one epoch to which the committees will agree on
+	txns := make([]Transaction,numOfTxns)
+	for i:=0 ; i < numOfTxns ; i++{
+		// random amount
+		random_num := random_gen(32)
+		// create the dummy transaction
+		transaction := Transaction{"a" , "b" , random_num}
+		txns[i] = transaction
+	}
+	return txns
+	
+}
+
+
 func main(){
 	e := &Elastico{}
 	e.init()
-	for e.state == 0{
-		e.compute_PoW()
-	}
-	numOfEpochs := 3
+	
+	numOfEpochs := 1
 	epochTxns := make(map[int][]Transaction)
-	for _, epoch := range numOfEpochs{
+	for epoch := 0 ; epoch < numOfEpochs ; epoch ++{
 		epochTxns[epoch] = createTxns()
+		fmt.Println(epochTxns[epoch])
 		// run all the epochs 
-		Run(epochTxns)
+		// Run(epochTxns)
 	}
 
 }
