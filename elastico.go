@@ -334,6 +334,14 @@ func (e *Elastico)executePoW{
 }
 
 
+func (e *Elastico) isFinalMember(){
+	/*
+		tell whether this node is a final committee member or not
+	*/
+	return e.is_final
+}
+
+
 func (e *Elastico) compute_fakePoW(){
 	/*
 		bad node generates the fake PoW
