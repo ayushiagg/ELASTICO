@@ -53,8 +53,10 @@ func get_committeeid(PoW string){
 	fmt.Println(iden)
 }
 func main() {
+	os.Remove("rus.log")
+	file, _ := os.OpenFile("rus.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
 	e:= Elastico{}
-	var err error 
+	var err error
 	e.key,err = rsa.GenerateKey(rand.Reader, 2048)
 	if err!= nil{
 		fmt.Println(e.key)
@@ -90,21 +92,7 @@ func main() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
-	digest := sha256.New()
-	digest.Write([]byte("051"))
-
-	p := digest.Sum(nil)
-
-	hash_val := string(p)
-
-	hash := ""
-	for i := 0; i < len(p); i++{
-		hash += string(p[i])
-	}
-	// fmt.Println(hash_val)
-	// fmt.Println(hash)
-	lelo := fmt.Sprintf("%x", p)
-	get_committeeid(hash)
-	get_committeeid(hash_val)
-	get_committeeid(lelo)
+	log.SetOutput(file)
+    log.SetLevel(log.InfoLevel)
+    log.Info("-")
 }
