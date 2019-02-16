@@ -13,6 +13,7 @@ import (
 	"sync" // for locks
 	"github.com/streadway/amqp" // for rabbitmq
 	log "github.com/sirupsen/logrus" // for logging
+	"os"
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
@@ -372,16 +373,20 @@ func createTxns()[]Transaction{
 
 
 func main(){
-	e := &Elastico{}
-	e.init()
-	
-	numOfEpochs := 1
+	os.Remove("rus.log")
+	file, _ := os.OpenFile("rus.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
+
+	numOfEpochs := 2
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0 ; epoch < numOfEpochs ; epoch ++{
 		epochTxns[epoch] = createTxns()
-		fmt.Println(epochTxns[epoch])
-		// run all the epochs 
-		// Run(epochTxns)
 	}
+
+	log.SetOutput(file)
+	log.SetLevel(log.InfoLevel)
+
+	// run all the epochs 
+	// Run(epochTxns)
+
 
 }
