@@ -352,6 +352,106 @@ func (e *Elastico)form_identity() {
 	}
 }
 
+func (e *Elastico) execute(epochTxn){
+	/*
+		executing the functions based on the running state
+	*/	
+	// # print the current state of node for debug purpose
+	// 		print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
+
+	// initial state of elastico node
+	if e.state == ELASTICO_STATES["NONE"]{
+
+		e.executePoW()
+
+	} else if e.state == ELASTICO_STATES["PoW Computed"]{
+		
+		// form identity, when PoW computed
+		e.form_identity()
+	} else if e.state == ELASTICO_STATES["Formed Identity"]{
+		
+		// form committee, when formed identity
+		e.form_committee()
+
+	} else if e.is_directory && e.state == ELASTICO_STATES["RunAsDirectory"]{
+		
+		log.Info("The directory member :- " , e.port)
+		e.receiveTxns(epochTxn)
+		// directory member has received the txns for all committees 
+		e.state  = ELASTICO_STATES["RunAsDirectory after-TxnReceived"]
+
+	} else if e.state == ELASTICO_STATES["Receiving Committee Members"]{
+		// when a node is part of some committee	
+		if e.flag == False{
+			
+			// logging the bad nodes
+			logging.error("member with invalid POW %s with commMembers : %s", e.identity , e.committee_Members)
+		}
+		// Now The node should go for Intra committee consensus
+		// initial state for the PBFT
+		e.state = ELASTICO_STATES["PBFT_NONE"]
+		// run PBFT for intra-committee consensus
+		e.runPBFT("intra committee consensus")
+
+	} else if e.state == ELASTICO_STATES["PBFT_NONE"] || e.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] || e.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["PBFT_PREPARED"] || e.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] || e.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]{
+		
+		// run pbft for intra consensus
+		e.runPBFT("intra committee consensus")
+	} else if e.state == ELASTICO_STATES["PBFT_COMMITTED"]{
+
+		// send pbft consensus blocks to final committee members
+		log.Info("pbft finished by members %s" , str(e.port))
+		e.SendtoFinal()
+
+	}else if e.isFinalMember() && e.state == ELASTICO_STATES["Intra Consensus Result Sent to Final"]{
+		
+		// final committee node will collect blocks and merge them
+		e.checkCountForConsensusData()
+
+	}else if e.isFinalMember() && e.state == ELASTICO_STATES["Merged Consensus Data"]{
+		
+		// final committee member runs final pbft
+		e.state = ELASTICO_STATES["FinalPBFT_NONE"]
+		e.runFinalPBFT("final committee consensus")
+	}else if e.state == ELASTICO_STATES["FinalPBFT_NONE"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"] || e.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PREPARED"] || e.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]{
+
+		e.runFinalPBFT("final committee consensus")
+	} else if e.isFinalMember() && e.state == ELASTICO_STATES["FinalPBFT_COMMITTED"]{
+
+		// send the commitment to other final committee members
+		e.sendCommitment()
+		log.Warn("pbft finished by final committee %s" , str(e.port))
+	}
+
+	else if e.isFinalMember() && e.state == ELASTICO_STATES["CommitmentSentToFinal"]{
+
+		// broadcast final txn block to ntw
+		if len(e.commitments) >= c / 2 + 1 {
+			e.BroadcastFinalTxn()
+		}
+	} else if e.state == ELASTICO_STATES["FinalBlockReceived"]{
+
+		e.checkCountForFinalData()
+
+	} else if e.isFinalMember() && e.state == ELASTICO_STATES["FinalBlockSentToClient"]{
+
+		// broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
+		if len(e.newRcommitmentSet) >= c/2 + 1{
+			e.BroadcastR()
+		}
+	}else if e.state == ELASTICO_STATES["ReceivedR"]{
+
+		e.appendToLedger()
+		e.state = ELASTICO_STATES["LedgerUpdated"]
+
+	}else if e.state == ELASTICO_STATES["LedgerUpdated"]{
+
+		// Now, the node can be reset
+		return "reset"
+	}
+}
+
+
 func createTxns()[]Transaction{
 	/*
 		create txns for an epoch
@@ -387,6 +487,5 @@ func main(){
 
 	// run all the epochs 
 	// Run(epochTxns)
-
 
 }
