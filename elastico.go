@@ -617,6 +617,26 @@ func (e *Elastico)form_identity() {
 }
 
 
+func (e *Elastico)form_committee(){
+	/*
+		creates directory committee if not yet created otherwise informs all the directory members
+	*/
+	if len(e.cur_directory) < c{
+		
+		e.is_directory = true
+		// broadcast the identity to whole ntw
+		BroadcastTo_Network(e.identity, "directoryMember")
+		// change the state as it is the directory member
+		e.state = ELASTICO_STATES["RunAsDirectory"]
+	} else {
+		
+		e.Send_to_Directory()
+		if e.state != ELASTICO_STATES["Receiving Committee Members"]: 
+			e.state = ELASTICO_STATES["Formed Committee"]
+	}
+}
+
+
 func (e *Elastico)verify_PoW(identityobj){
 	/*
 		verify the PoW of the node identityobj
