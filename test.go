@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"crypto/rsa"
-	// "crypto/sha256"
+	"crypto/sha256"
 	"crypto/rand"
 	"reflect"
 	"math/big"
@@ -36,6 +36,24 @@ func failOnError(err error, msg string) {
   }
 }
 
+func random_gen(r int64) (*big.Int) {
+	/*
+		generate a random integer
+	*/
+	// n is the base, e is the exponent, creating big.Int variables
+	var n,e = big.NewInt(2) , big.NewInt(r)
+	// taking the exponent n to the power e and nil modulo, and storing the result in n
+	n.Exp(n, e, nil)
+	// generates the random num in the range[0,n)
+	// here Reader is a global, shared instance of a cryptographically secure random number generator.
+	randomNum, err := rand.Int(rand.Reader, n)
+
+	if err != nil {
+		fmt.Println("error:", err.Error)
+	}
+	return randomNum
+}
+
 func get_committeeid(PoW string){
 	/*
 		returns last s-bit of PoW["hash"] as Identity : committee_id
@@ -52,6 +70,23 @@ func get_committeeid(PoW string){
 	iden, _ := strconv.ParseUint(identity, 2 , 0)
 	fmt.Println(iden)
 }
+
+func compute_fakePoW(){
+	z:= random_gen(32)
+	_ , mod := z.DivMod(z , big.NewInt(9) , big.NewInt(0))
+	fmt.Println(mod)
+	digest := sha256.New()
+	ranHash := fmt.Sprintf("%x" , digest.Sum(nil))
+	hash_val := ""
+	for i:=0 ; i < 3 ; i++{
+		hash_val += "0"
+	}
+	fmt.Println(ranHash)
+	fmt.Println(ranHash[3:])
+	fmt.Println(hash_val + ranHash[3:] )
+}
+
+
 func main() {
 	os.Remove("rus.log")
 	file, _ := os.OpenFile("rus.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
@@ -94,5 +129,5 @@ func main() {
 	defer conn.Close()
 	log.SetOutput(file)
     log.SetLevel(log.InfoLevel)
-    log.Info("-")
+    compute_fakePoW()
 }
