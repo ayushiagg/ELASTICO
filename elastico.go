@@ -1015,6 +1015,22 @@ func (e *Elastico)verify_PoW(identityobj){
 }
 
 
+func (e *Elastico) Finalpbft_process_message(msg map[string]interface{}){
+	/*
+		Process the messages related to Pbft!
+	*/
+	if msg["type"] == "Finalpre-prepare"{
+		self.process_Finalpre_prepareMsg(msg)
+
+	}else if msg["type"] == "Finalprepare"{
+		self.process_FinalprepareMsg(msg)
+
+	}else if msg["type"] == "Finalcommit"{
+		self.process_FinalcommitMsg(msg)
+	}
+}
+
+
 func (e *Elastico) process_commitMsg(msg map[string]interface{}){
 	/*
 		process the commit msg
