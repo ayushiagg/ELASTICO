@@ -144,11 +144,25 @@ type Transaction struct{
 	// ToDo: include timestamp or not
 }
 
-func(t *Transaction)TransactionInit(sender string, receiver string, amount *big.Int){
+func (t *Transaction) TransactionInit(sender string, receiver string, amount *big.Int) {
 	e.sender = sender
 	e.receiver = receiver
 	e.amount = amount
 }
+
+func (t *Transaction) hexdigest() string{
+	/*
+		Digest of a transaction
+	*/
+	digest := sha256.New()
+	digest.Write([]byte(t.sender))
+	digest.Write([]byte(t.receiver))
+	digest.Write([]byte(t.amount.String())) // convert amount(big.Int) to string
+		
+	hash_val := fmt.Sprintf("%x" , digest.Sum(nil))
+	return hash_val
+}
+
 
 
 func (t *Transaction)isEqual(transaction) bool{
