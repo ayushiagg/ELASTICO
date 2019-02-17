@@ -76,11 +76,10 @@ type Identity struct{
 }
 
 
-
 type Transaction struct{
 	sender string
 	receiver string
-	amount *big.Int
+	amount *big.Int // random_gen returns *big.Int
 }
 
 type Elastico struct{
@@ -144,9 +143,7 @@ func (e *Elastico) get_key(){
 	var err error
 	// generate the public-pvt key pair
 	e.key, err = rsa.GenerateKey(rand.Reader, 2048)
-	if err!= nil{
-		fmt.Println(err.Error)
-	}
+	failOnError(err, "key generation")
 }
 
 
@@ -159,9 +156,7 @@ func (e *Elastico)get_IP(){
 	byteArray := make([]byte, count)
 	// Assigning random values to the byte array
 	_, err := rand.Read(byteArray)
-	if err != nil {
-		fmt.Println("error:", err.Error)
-	}
+	failOnError(err, "reading random values error")
 	// setting the IP addr from the byte array
 	e.IP = fmt.Sprintf("%v.%v.%v.%v" , byteArray[0] , byteArray[1], byteArray[2], byteArray[3])
 }
@@ -178,18 +173,13 @@ func (e *Elastico) initER(){
 }
 
 func (e *Elastico)get_port(){
-
 	/*
 		get port number for the process
 	*/
-
 	// acquire the lock
 	lock.Lock()
-
 	port += 1
-
 	e.port = port
-	
 	// release the lock
 	defer lock.Unlock()
 }
