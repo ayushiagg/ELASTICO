@@ -1104,6 +1104,28 @@ func (e *Elastico) execute(epochTxn){
 	}
 }
 
+func (e *Elastico) receiveTxns(epochTxn) {
+	/*
+		directory node will receive transactions from client
+	*/
+	
+	// Receive txns from client for an epoch
+	k := 0
+	numOfCommittees:= int(math.Pow(2, float64(s)))
+	num = len(epochTxn) / numOfCommittees // Transactions per committee
+	// loop in sorted order of committee ids
+	for iden := 0 ; iden < numOfCommittees ; iden++ {
+		if iden == numOfCommittees - 1 {	
+			// give all the remaining txns to the last committee
+			e.txn[iden] = epochTxn[ k : ]
+		} else {
+			e.txn[iden] = epochTxn[ k : k + num]
+		}
+		k = k + num
+	}
+}
+
+
 func (e *Elastico)pbft_process_message(msg){
 	/*
 		Process the messages related to Pbft!
