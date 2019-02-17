@@ -89,6 +89,50 @@ func (i *Identity)isEqual(identityobj){
 }
 
 
+func(i *Identity)send(msg){
+	/*
+		send the msg to node based on their identity
+	*/
+	// establish a connection with RabbitMQ server
+	connection , err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// report the error
+	failOnError(err, "Failed to connect to RabbitMQ")
+	// close the connection
+	defer connection.Close()
+	// create a channel
+	ch, er := conn.Channel()
+	// report the error
+	failOnError(er, "Failed to open a channel")
+	// close the channel
+	defer ch.Close()
+	port = i.port
+
+	//create a hello queue to which the message will be delivered
+	queue, err := ch.QueueDeclare(
+		"hello" + string(port),	//name of the queue
+		false,	// durable
+		false,	// delete when unused
+		false,	// exclusive
+		false,	// no-wait
+		nil,	// arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	body := msg
+	err = ch.Publish(
+		"",				// exchange
+		queue.Name,		// routing key
+		false,			// mandatory
+		false,			// immediate
+		amqp.Publishing {
+		ContentType: "text/plain",
+		Body:		[]byte(msg),
+	})
+
+	failOnError(err, "Failed to publish a message")
+}
+
+
 type Transaction struct{
 	sender string
 	receiver string
