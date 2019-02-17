@@ -2222,7 +2222,7 @@ class Elastico:
 		"""
 			execute PoW
 		"""
-		if self.flag == True:
+		if self.flag:
 			# compute Pow for good node
 			self.compute_PoW()
 		else:
