@@ -776,69 +776,68 @@ func (e *Elastico) runFinalPBFT(){
 	/*
 		Run PBFT by final committee members
 	*/	
-		if e.state == ELASTICO_STATES["FinalPBFT_NONE"]{
+	if e.state == ELASTICO_STATES["FinalPBFT_NONE"]{
 
-			if e.primary{
+		if e.primary{
 
-				// construct pre-prepare msg
-				finalpre_preparemsg := e.construct_Finalpre_prepare()
-				// multicasts the pre-prepare msg to replicas
-				e.send_pre_prepare(finalpre_preparemsg)
+			// construct pre-prepare msg
+			finalpre_preparemsg := e.construct_Finalpre_prepare()
+			// multicasts the pre-prepare msg to replicas
+			e.send_pre_prepare(finalpre_preparemsg)
 
-				// change the state of primary to pre-prepared 
-				e.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]
-				// primary will log the pre-prepare msg for itself
-				e.logFinalPre_prepareMsg(finalpre_preparemsg)
+			// change the state of primary to pre-prepared 
+			e.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]
+			// primary will log the pre-prepare msg for itself
+			e.logFinalPre_prepareMsg(finalpre_preparemsg)
 
-			}else{
+		}else{
 
-				// for non-primary members
-				if e.is_Finalpre_prepared(){
-					e.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]
-				}
-			}
-
-		}else if e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]{
-			
-			if e.primary == false{
-				
-				// construct prepare msg
-				FinalpreparemsgList := e.construct_Finalprepare()
-				e.send_prepare(FinalpreparemsgList)
-				e.state = ELASTICO_STATES["FinalPBFT_PREPARE_SENT"]
-			}
-		} else if e.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]{
-
-			// ToDo: primary has not changed its state to "FinalPBFT_PREPARE_SENT"
-			if e.isFinalPrepared(){
-
-				e.state = ELASTICO_STATES["FinalPBFT_PREPARED"]
-			}
-		}else if e.state == ELASTICO_STATES["FinalPBFT_PREPARED"]{
-
-			commitMsgList := e.construct_Finalcommit()
-			e.send_commit(commitMsgList)
-			e.state = ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]
-
-		}else if e.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]{
-
-			if e.isFinalCommitted(){
-
-				// for viewId in e.FinalcommittedData:
-				// 	for seqnum in e.FinalcommittedData[viewId]:
-				// 		msgList = e.FinalcommittedData[viewId][seqnum]
-				// 		for msg in msgList:
-				// 			e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msg)
-				// finalTxnBlock = e.finalBlock["finalBlock"]
-				// finalTxnBlock = list(finalTxnBlock)
-				// # order them! Reason : to avoid errors in signatures as sets are unordered
-				// # e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
-				// logging.warning("final block by port %s with final block %s" , str(e.port), str(e.finalBlock["finalBlock"]))
-				e.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
+			// for non-primary members
+			if e.is_Finalpre_prepared(){
+				e.state = ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]
 			}
 		}
-}
 
+	}else if e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"]{
+		
+		if e.primary == false{
+			
+			// construct prepare msg
+			FinalpreparemsgList := e.construct_Finalprepare()
+			e.send_prepare(FinalpreparemsgList)
+			e.state = ELASTICO_STATES["FinalPBFT_PREPARE_SENT"]
+		}
+	} else if e.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]{
+
+		// ToDo: primary has not changed its state to "FinalPBFT_PREPARE_SENT"
+		if e.isFinalPrepared(){
+
+			e.state = ELASTICO_STATES["FinalPBFT_PREPARED"]
+		}
+	}else if e.state == ELASTICO_STATES["FinalPBFT_PREPARED"]{
+
+		commitMsgList := e.construct_Finalcommit()
+		e.send_commit(commitMsgList)
+		e.state = ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]
+
+	}else if e.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]{
+
+		if e.isFinalCommitted(){
+
+			// for viewId in e.FinalcommittedData:
+			// 	for seqnum in e.FinalcommittedData[viewId]:
+			// 		msgList = e.FinalcommittedData[viewId][seqnum]
+			// 		for msg in msgList:
+			// 			e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msg)
+			// finalTxnBlock = e.finalBlock["finalBlock"]
+			// finalTxnBlock = list(finalTxnBlock)
+			// # order them! Reason : to avoid errors in signatures as sets are unordered
+			// # e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
+			// logging.warning("final block by port %s with final block %s" , str(e.port), str(e.finalBlock["finalBlock"]))
+			e.state = ELASTICO_STATES["FinalPBFT_COMMITTED"]
+		}
+	}
+}
 
 
 func (e *Elastico) compute_fakePoW(){
