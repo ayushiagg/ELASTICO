@@ -803,6 +803,24 @@ func (e *Elastico) execute(epochTxn){
 	}
 }
 
+func (e *Elastico)pbft_process_message(msg){
+	/*
+		Process the messages related to Pbft!
+	*/
+	if msg["type"] == "pre-prepare"{
+		
+		e.process_pre_prepareMsg(msg)
+
+	}else if msg["type"] == "prepare"{
+
+		e.process_prepareMsg(msg)
+
+	}else if msg["type"] == "commit"{
+		e.process_commitMsg(msg)
+	}
+}
+
+
 
 func createTxns()[]Transaction{
 	/*
