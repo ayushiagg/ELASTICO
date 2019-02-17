@@ -999,7 +999,20 @@ func (e *Elastico)verify_PoW(identityobj){
 			return true
 		return false
 }
+
+
+func (e *Elastico) process_commitMsg(msg map[string]interface{}){
+	/*
+		process the commit msg
+	*/
+	// verify the commit message
+	verified := e.verify_commit(msg)
+	if verified{
 		
+		// Log the commit msgs!
+		e.log_commitMsg(msg)
+	}
+}
 
 func (e *Elastico) executeReset{
 	/*
@@ -1014,7 +1027,7 @@ func (e *Elastico) executeReset{
 		msg["data"] = e.identity
 		e.identity.send(msg)
 	}else{
-		
+
 		// this node has not computed its identity,calling reset explicitly for node
 		e.reset()
 	}
