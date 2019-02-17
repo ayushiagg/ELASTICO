@@ -1127,7 +1127,7 @@ func makeMalicious() {
 	*/
 	malicious_count := 0
 	for i := 0 ; i < malicious_count; i++{
-		randomNum := random_gen(32).Int64()
+		randomNum := random_gen(32).Int64()   // converting random num big.Int to Int64
 		badNodeIndex :=  randomNum % n
 		// set the flag false for bad nodes
 		network_nodes[badNodeIndex].flag = false
