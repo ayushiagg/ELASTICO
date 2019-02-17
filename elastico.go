@@ -475,7 +475,7 @@ func (e *Elastico) runFinalPBFT(){
 	/*
 		Run PBFT by final committee members
 	*/	
-		if self.state == ELASTICO_STATES["FinalPBFT_NONE"]{
+		if e.state == ELASTICO_STATES["FinalPBFT_NONE"]{
 
 			if e.primary{
 
@@ -567,8 +567,8 @@ func (e *Elastico) compute_fakePoW(){
 		for i:= 0 ; i <  D ; i++{
 			zero_string += "0"
 		}
-		// if len(self.set_of_Rs) > 0:
-		// 	self.epoch_randomness, randomset_R = self.xor_R()    
+		// if len(e.set_of_Rs) > 0:
+		// 	e.epoch_randomness, randomset_R = e.xor_R()    
 		for {
 
 			digest := sha256.New()
@@ -591,8 +591,8 @@ func (e *Elastico) compute_fakePoW(){
 		
 		// computing a random PoW
 		randomset_R := set()
-		// if len(self.set_of_Rs) > 0:
-		// 	self.epoch_randomness, randomset_R := self.xor_R()    
+		// if len(e.set_of_Rs) > 0:
+		// 	e.epoch_randomness, randomset_R := e.xor_R()    
 		digest := sha256.New()
 		ranHash := fmt.Sprintf("%x" , digest.Sum(nil))
 		nonce := random_gen() 
@@ -671,8 +671,8 @@ func (e *Elastico)verify_PoW(identityobj){
 
 		// check Digest for set of Ri strings
 		// for Ri in PoW["set_of_Rs"]:
-		// 	digest = self.hexdigest(Ri)
-		// 	if digest not in self.RcommitmentSet:
+		// 	digest = e.hexdigest(Ri)
+		// 	if digest not in e.RcommitmentSet:
 		// 		return false
 
 		// reconstruct epoch randomness
@@ -707,7 +707,7 @@ func (e *Elastico) execute(epochTxn){
 		executing the functions based on the running state
 	*/	
 	// # print the current state of node for debug purpose
-	// 		print(self.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(self.state)], "STATE of a committee member")
+	// 		print(e.identity ,  list(ELASTICO_STATES.keys())[ list(ELASTICO_STATES.values()).index(e.state)], "STATE of a committee member")
 
 	// initial state of elastico node
 	if e.state == ELASTICO_STATES["NONE"]{
