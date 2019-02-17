@@ -65,7 +65,7 @@ func random_gen(r int64) (*big.Int) {
 	return randomNum
 }
 
-
+// structure for identity of nodes
 type Identity struct{
 	IP string
 	PK *rsa.PublicKey
@@ -85,7 +85,7 @@ func (i *Identity)isEqual(identityobj){
 		checking two objects of Identity class are equal or not
 		
 	*/
-	return i.IP == identityobj.IP and i.PK == identityobj.PK and i.committee_id == identityobj.committee_id and i.PoW == identityobj.PoW and i.epoch_randomness == identityobj.epoch_randomness and i.port == identityobj.port
+	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW == identityobj.PoW && i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
 }
 
 
