@@ -15,6 +15,7 @@ import (
 	log "github.com/sirupsen/logrus" // for logging
 	"os"
 	"encoding/json"
+	"math"
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
@@ -308,6 +309,39 @@ func (e* Elastico) compute_PoW(){
 	}
 }
 
+
+func (e *Elastico)checkCommitteeFull(){
+	/*
+		directory member checks whether the committees are full or not
+	*/
+	commList = e.committee_list
+	flag := 0
+	numOfCommittees:= int(math.Pow(2, float64(s)))
+	// iterating over all committee ids
+	for iden:= 0 ; iden < numOfCommittees ; iden++{
+
+		val, ok := commList[iden]
+		if ok == false || len(commList[iden]) < c{
+	
+			log.Warn("committees not full  - bad miss id :", iden)
+			flag = 1
+			break
+		}
+	}
+	if flag == 0{
+
+		log.Warn("committees full  - good")
+		if e.state == ELASTICO_STATES["RunAsDirectory after-TxnReceived"]{
+
+			// notify the final members
+			e.notify_finalCommittee()
+			// multicast the txns and committee members to the nodes
+			MulticastCommittee(commList, e.identity, e.txn)
+			// change the state after multicast
+			e.state = ELASTICO_STATES["RunAsDirectory after-TxnMulticast"]
+		}
+	}
+}
 
 
 func (e* Elastico) ElasticoInit() {
