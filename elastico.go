@@ -248,7 +248,7 @@ func (e* Elastico) compute_PoW(){
 
 
 
-func (e* Elastico) init() {
+func (e* Elastico) ElasticoInit() {
 	var err error
 	// create rabbit mq connection
 	e.connection, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
