@@ -629,7 +629,7 @@ func (e *Elastico)form_committee(){
 		// change the state as it is the directory member
 		e.state = ELASTICO_STATES["RunAsDirectory"]
 	} else {
-		
+
 		e.Send_to_Directory()
 		if e.state != ELASTICO_STATES["Receiving Committee Members"]: 
 			e.state = ELASTICO_STATES["Formed Committee"]
@@ -731,12 +731,12 @@ func (e *Elastico) execute(epochTxn){
 		// initial state for the PBFT
 		e.state = ELASTICO_STATES["PBFT_NONE"]
 		// run PBFT for intra-committee consensus
-		e.runPBFT("intra committee consensus")
+		e.runPBFT()
 
 	} else if e.state == ELASTICO_STATES["PBFT_NONE"] || e.state == ELASTICO_STATES["PBFT_PRE_PREPARE"] || e.state ==ELASTICO_STATES["PBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["PBFT_PREPARED"] || e.state == ELASTICO_STATES["PBFT_COMMIT_SENT"] || e.state == ELASTICO_STATES["PBFT_PRE_PREPARE_SENT"]{
 		
 		// run pbft for intra consensus
-		e.runPBFT("intra committee consensus")
+		e.runPBFT()
 	} else if e.state == ELASTICO_STATES["PBFT_COMMITTED"]{
 
 		// send pbft consensus blocks to final committee members
@@ -752,10 +752,12 @@ func (e *Elastico) execute(epochTxn){
 		
 		// final committee member runs final pbft
 		e.state = ELASTICO_STATES["FinalPBFT_NONE"]
-		e.runFinalPBFT("final committee consensus")
+		e.runFinalPBFT()
+
 	}else if e.state == ELASTICO_STATES["FinalPBFT_NONE"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE"] || e.state ==ELASTICO_STATES["FinalPBFT_PREPARE_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PREPARED"] || e.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"] || e.state == ELASTICO_STATES["FinalPBFT_PRE_PREPARE_SENT"]{
 
-		e.runFinalPBFT("final committee consensus")
+		e.runFinalPBFT()
+
 	} else if e.isFinalMember() && e.state == ELASTICO_STATES["FinalPBFT_COMMITTED"]{
 
 		// send the commitment to other final committee members
