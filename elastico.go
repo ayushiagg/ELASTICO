@@ -57,16 +57,14 @@ func random_gen(r int64) (*big.Int) {
 		generate a random integer
 	*/
 	// n is the base, e is the exponent, creating big.Int variables
-	var n,e = big.NewInt(2) , big.NewInt(r)
+	var num ,e = big.NewInt(2) , big.NewInt(r)
 	// taking the exponent n to the power e and nil modulo, and storing the result in n
-	n.Exp(n, e, nil)
+	num.Exp(num, e, nil)
 	// generates the random num in the range[0,n)
 	// here Reader is a global, shared instance of a cryptographically secure random number generator.
-	randomNum, err := rand.Int(rand.Reader, n)
+	randomNum, err := rand.Int(rand.Reader, num)
 
-	if err != nil {
-		fmt.Println("error:", err.Error)
-	}
+	failOnError(err, "random number generation")
 	return randomNum
 }
 
