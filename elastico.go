@@ -899,9 +899,7 @@ func (e *Elastico) compute_fakePoW(){
 				e.PoW["nonce"] = nonce
 			}
 		}
-	}
-	
-	else if index == 2{
+	}else if index == 2{
 		
 		// computing a random PoW
 		randomset_R := set()
@@ -1334,19 +1332,6 @@ func (e *Elastico)verify_commit(msg){
 
 }
 
-	fmt.Println(Queue)
-	// consume all the messages one by one
-	for ; Queue.Messages > 0 ; Queue.Messages-- {
-
-		// get the message from the queue
-		msg, ok, _ := channel.Get(queueName, true)
-		fmt.Println(msg,ok)
-		if ok {
-			
-			_ = json.Unmarshal(msg.Body, &msg1)
-			// consume the msg by taking the action in receive
-			fmt.Println(msg1)
-		}
 
 func (e *Elastico) consumeMsg(){
 	/*
@@ -1358,7 +1343,7 @@ func (e *Elastico) consumeMsg(){
 	failOnError(err, "Failed to open a channel")
 	// close the channel 
 	defer channel.Close()
-	
+
 	nodeport := strconv.Itoa(e.port) 
 	queueName := "hello" + nodeport
 	// count the number of messages that are in the queue
