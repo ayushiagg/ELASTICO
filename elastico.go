@@ -332,7 +332,7 @@ func (e *Elastico)executePoW{
 }
 
 
-func (e *Elastico) isFinalMember(){
+func (e *Elastico) isFinalMember() bool{
 	/*
 		tell whether this node is a final committee member or not
 	*/
