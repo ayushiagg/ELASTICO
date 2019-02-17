@@ -306,11 +306,14 @@ func (e *Elastico)get_committeeid(PoW string) int64{
 	bindigest := ""
 	
 	for i:=0 ; i < len(PoW); i++ {
-		intVal, _ := strconv.ParseInt( string(PoW[i]) ,16,0)
-		bindigest += fmt.Sprintf("%04b", intVal)
+		intVal, err := strconv.ParseInt( string(PoW[i]) ,16, 0) // converts hex string to integer
+		failOnError(err , "string to int conversion error")
+		bindigest += fmt.Sprintf("%04b", intVal) // converts intVal to 4 bit binary value
 	}
+	// take last s bits of the binary digest
 	identity := bindigest[len(bindigest)-s:]
-	iden, _ := strconv.ParseInt(identity, 2 , 0)
+	iden, err := strconv.ParseInt(identity, 2 , 0) // converts binary string to integer
+	failOnError(err , "binary to int conversion error")
 	return iden
 }
 
