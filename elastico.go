@@ -1134,6 +1134,23 @@ func makeMalicious() {
 	}
 }
 
+
+func makeFaulty(){
+	/*
+		make some nodes faulty who will stop participating in the protocol after sometime
+	*/
+	// making some(4 here) nodes as faulty
+	faulty_count := 0
+	for i:=0 ; i < faulty_count ; i++{
+		randomNum := random_gen(32).Int64()  // converting random num big.Int to Int64
+		faultyNodeIndex :=  randomNum % n
+		// set the flag false for bad nodes
+		network_nodes[faultyNodeIndex].faulty = true
+	}
+}
+
+
+
 func (e *Elastico)verify_commit(msg){
 	/*
 		verify commit msgs
