@@ -75,6 +75,10 @@ type Identity struct{
 	port uint
 }
 
+func (i *Identity) IdentityInit(){
+	i.PoW = make(map[string]interface{})
+}
+
 
 type Transaction struct{
 	sender string
