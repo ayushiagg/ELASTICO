@@ -1334,7 +1334,54 @@ func (e *Elastico)verify_commit(msg){
 
 }
 
+	fmt.Println(Queue)
+	// consume all the messages one by one
+	for ; Queue.Messages > 0 ; Queue.Messages-- {
 
+		// get the message from the queue
+		msg, ok, _ := channel.Get(queueName, true)
+		fmt.Println(msg,ok)
+		if ok {
+			
+			_ = json.Unmarshal(msg.Body, &msg1)
+			// consume the msg by taking the action in receive
+			fmt.Println(msg1)
+		}
+
+func (e *Elastico) consumeMsg(){
+	/*
+		consume the msgs for this node
+	*/
+	
+	// create a channel
+	channel , err := e.connection.Channel()
+	failOnError(err, "Failed to open a channel")
+	// close the channel 
+	defer channel.Close()
+	
+	nodeport := strconv.Itoa(e.port) 
+	queueName := "hello" + nodeport
+	// count the number of messages that are in the queue
+	Queue, err := channel.QueueInspect(queueName)
+
+	data := make(map[string]interface{})
+
+	failOnError(err, "error in inspect")
+	// consume all the messages one by one
+	for ; Queue.Messages > 0 ; Queue.Messages-- {
+
+		// get the message from the queue
+		msg, ok, err := channel.Get(queueName, true)
+		failOnError(err , "error in get of queue")
+		if ok {
+			err := json.Unmarshal(msg.Body , &data)
+			failOnError(err, "error in unmarshall")
+			// consume the msg by taking the action in receive
+			e.receive(data)
+		}
+	}
+}
+		
 func createTxns() []Transaction {
 	/*
 		create txns for an epoch
