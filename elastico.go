@@ -89,7 +89,7 @@ func (i *Identity)isEqual(identityobj *Identity) bool{
 }
 
 
-func(i *Identity)send(msg){
+func(i *Identity)send(msg map[string]interface{}){
 	/*
 		send the msg to node based on their identity
 	*/
@@ -100,16 +100,16 @@ func(i *Identity)send(msg){
 	// close the connection
 	defer connection.Close()
 	// create a channel
-	ch, er := conn.Channel()
+	ch, er := connection.Channel()
 	// report the error
 	failOnError(er, "Failed to open a channel")
 	// close the channel
 	defer ch.Close()
-	port = i.port
+	port := strconv.Itoa(i.port)
 
 	//create a hello queue to which the message will be delivered
 	queue, err := ch.QueueDeclare(
-		"hello" + string(port),	//name of the queue
+		"hello" + port,	//name of the queue
 		false,	// durable
 		false,	// delete when unused
 		false,	// exclusive
