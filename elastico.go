@@ -688,7 +688,7 @@ func (e *Elastico)get_committeeid(PoW string) int64{
 }
 
 
-func (e *Elastico)executePoW{
+func (e *Elastico)executePoW(){
 	/*
 		execute PoW
 	*/
@@ -1144,40 +1144,50 @@ func (e *Elastico)verify_commit(msg){
 }
 
 
-
-
-func createTxns()[]Transaction{
+func makeMalicious() {
 	/*
-		create txns for an epoch
+		make some nodes malicious who will compute wrong PoW
 	*/
-	// number of transactions in each epoch
-	numOfTxns := 20
-	// txns is the list of the transactions in one epoch to which the committees will agree on
-	txns := make([]Transaction,numOfTxns)
-	for i:=0 ; i < numOfTxns ; i++{
-		// random amount
-		random_num := random_gen(32)
-		// create the dummy transaction
-		transaction := Transaction{"a" , "b" , random_num}
-		txns[i] = transaction
+	malicious_count := 0
+	for i := 0 ; i < malicious_count; i++{
+		randomNum := random_gen(32).Int64()
+		badNodeIndex :=  randomNum % n
+		// set the flag false for bad nodes
+		network_nodes[badNodeIndex].flag = false
 	}
-	return txns
-	
 }
 
 
-func main(){
-	os.Remove("logfile.log")
-	file, _ := os.OpenFile("logfile.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
+func createTxns() []Transaction {
+	/*
+		create txns for an epoch
+	*/
+	numOfTxns := 20 // number of transactions in each epoch
+	// txns is the list of the transactions in one epoch to which the committees will agree on
+	txns := make([]Transaction,numOfTxns)
+	for i:=0 ; i < numOfTxns ; i++{
+		random_num := random_gen(32)  // random amount
+		transaction := Transaction{"a" , "b" , random_num}  // create the dummy transaction
+		txns[i] = transaction
+	}
+	return txns
+}
 
-	numOfEpochs := 2
+
+func main() {
+	// delete the file
+	os.Remove("logfile.log")
+	// open the logging file
+	file, err := os.OpenFile("logfile.log",  os.O_CREATE|os.O_APPEND | os.O_WRONLY , 0666)
+	failOnError(err, "opening file error")  // report the open file error
+	numOfEpochs := 2 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0 ; epoch < numOfEpochs ; epoch ++{
 		epochTxns[epoch] = createTxns()
 	}
 
 	log.SetOutput(file)
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.InfoLevel) // set the log level
 
 	// run all the epochs 
 	// Run(epochTxns)

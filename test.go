@@ -126,15 +126,5 @@ func main() {
 	
 	log.SetOutput(file)
     log.SetLevel(log.InfoLevel)
-
-    i := Identity{}
-    i.IdentityInit()
-    msg := make(map[string]interface{})
-    data := make(map[string]interface{})
-    data["identity"] = i
-    msg["data"] = data
-    msg["type"] = "type of msg"
-    i.send(msg)
-    iden:= 5
-    log.Warn("committees not full %s - bad miss id : ", iden)
+    
 }
