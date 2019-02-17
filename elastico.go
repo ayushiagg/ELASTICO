@@ -1014,6 +1014,21 @@ func (e *Elastico) process_commitMsg(msg map[string]interface{}){
 	}
 }
 
+
+func (e *Elastico) process_FinalcommitMsg(msg){
+	/*
+		process the final commit msg
+	*/
+	// verify the commit message
+	verified := e.verify_commit(msg)
+	if verified{
+		
+		// Log the commit msgs!
+		e.log_FinalcommitMsg(msg)
+	}
+}
+
+
 func (e *Elastico) executeReset{
 	/*
 		call for reset
