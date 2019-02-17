@@ -453,7 +453,7 @@ func (e *Elastico) runFinalPBFT(){
 		}else if e.state == ELASTICO_STATES["FinalPBFT_COMMIT_SENT"]{
 
 			if e.isFinalCommitted(){
-				
+
 				// for viewId in e.FinalcommittedData:
 				// 	for seqnum in e.FinalcommittedData[viewId]:
 				// 		msgList = e.FinalcommittedData[viewId][seqnum]
@@ -494,6 +494,10 @@ func (e *Elastico) compute_fakePoW(){
 		
 		// computing an invalid PoW using less number of values in digest
 		randomset_R := set()
+		zero_string = ""
+		for i:= 0 ; i <  D ; i++{
+			zero_string += "0"
+		}
 		// if len(self.set_of_Rs) > 0:
 		// 	self.epoch_randomness, randomset_R = self.xor_R()    
 		for {
