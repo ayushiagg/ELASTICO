@@ -1028,6 +1028,20 @@ func (e *Elastico) process_FinalcommitMsg(msg){
 	}
 }
 
+func (e *Elastico) process_prepareMsg(msg){
+	/*
+		process prepare msg
+	*/
+	// verify the prepare message
+	verified := e.verify_prepare(msg)
+	if verified{
+		
+		// Log the prepare msgs!
+		e.log_prepareMsg(msg)
+	}
+}
+
+
 
 func (e *Elastico) executeReset{
 	/*
