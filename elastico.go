@@ -139,7 +139,17 @@ type Transaction struct{
 	sender string
 	receiver string
 	amount *big.Int // random_gen returns *big.Int
+	// ToDo: include timestamp or not
 }
+
+
+func (t *Transaction)isEqual(transaction) bool{
+	/*
+		compare two objs are equal or not
+	*/
+	return e.sender == transaction.sender and e.receiver == transaction.receiver and e.amount == transaction.amount and e.timestamp == transaction.timestamp
+}
+
 
 type Elastico struct{
 
