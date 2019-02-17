@@ -80,6 +80,15 @@ func (i *Identity) IdentityInit(){
 }
 
 
+func (i *Identity)isEqual(identityobj){
+	/*
+		checking two objects of Identity class are equal or not
+		
+	*/
+	return i.IP == identityobj.IP and i.PK == identityobj.PK and i.committee_id == identityobj.committee_id and i.PoW == identityobj.PoW and i.epoch_randomness == identityobj.epoch_randomness and i.port == identityobj.port
+}
+
+
 type Transaction struct{
 	sender string
 	receiver string
