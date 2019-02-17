@@ -38,6 +38,9 @@ var D int = 6
 var r int64 = 4
 // fin_num - final committee id
 var fin_num int = 0
+// network_nodes - list of elastico objects
+var network_nodes []Elastico 
+
 
 func failOnError(err error, msg string) {
 	// logging the error
