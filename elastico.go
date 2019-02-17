@@ -22,7 +22,7 @@ var ELASTICO_STATES = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Ident
 // shared lock among processes
 var lock sync.Mutex
 // shared port among the processes 
-var port uint = 49152
+var port int = 49152
 
 // n : number of nodes
 var n int = 66 
@@ -72,7 +72,7 @@ type Identity struct{
 	committee_id int64
 	PoW map[string]interface{}
 	epoch_randomness string
-	port uint
+	port int
 }
 
 func (i *Identity) IdentityInit(){
@@ -143,7 +143,7 @@ type Elastico struct{
 
 	connection *amqp.Connection
 	IP string
-	port uint
+	port int
 	key *rsa.PrivateKey
 	PoW map[string]interface{}
 	cur_directory []Identity
