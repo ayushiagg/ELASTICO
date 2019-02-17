@@ -14,6 +14,7 @@ import (
 	"github.com/streadway/amqp" // for rabbitmq
 	log "github.com/sirupsen/logrus" // for logging
 	"os"
+	"encoding/json"
 )
 
 // ELASTICO_STATES - states reperesenting the running state of the node
