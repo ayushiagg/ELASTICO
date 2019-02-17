@@ -557,6 +557,62 @@ func (e *Elastico)form_identity() {
 	}
 }
 
+
+func (e *Elastico)verify_PoW(identityobj){
+	/*
+		verify the PoW of the node identityobj
+	*/
+		zero_string := ""
+		for i:=0 ; i < D; i++{
+
+			zero_string += "0"
+		}
+
+		PoW := identityobj.PoW
+
+		// length of hash in hex
+		if len(PoW["hash"]) != 64{
+			return false
+		}
+
+		// Valid Hash has D leading '0's (in hex)
+		if ! strings.HasPrefix(Pow["hash"] , zero_string){
+			return false
+		}
+
+		// check Digest for set of Ri strings
+		// for Ri in PoW["set_of_Rs"]:
+		// 	digest = self.hexdigest(Ri)
+		// 	if digest not in self.RcommitmentSet:
+		// 		return false
+
+		// reconstruct epoch randomness
+		epoch_randomness := identityobj.epoch_randomness
+		// if len(PoW["set_of_Rs"]) > 0:
+		// 	xor_val = 0
+		// 	for R in PoW["set_of_Rs"]:
+		// 		xor_val = xor_val ^ int(R, 2)
+		// 	epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+
+		// recompute PoW 
+		PK := identityobj.PK
+		IP := identityobj.IP
+		nonce := PoW["nonce"].(int)
+
+		digest := sha256.New()
+		digest.Write([]byte(IP))
+		digest.update(PK.encode())
+		digest.update([]byte(epoch_randomness))
+		digest.update(str(nonce).encode())
+		hash_val = digest.hexdigest()
+		if hash_val.startswith('0' * D) && hash_val == PoW["hash"]:
+			// Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
+			return true
+		return false
+}
+		
+
+
 func (e *Elastico) execute(epochTxn){
 	/*
 		executing the functions based on the running state
