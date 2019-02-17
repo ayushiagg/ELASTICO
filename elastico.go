@@ -1159,6 +1159,24 @@ func (e *Elastico) process_pre_prepareMsg(msg map[string]interface{}){
 	}
 }
 
+func (e *Elastico) process_Finalpre_prepareMsg(msg){
+	/*
+		Process Final Pre-Prepare msg
+	*/
+
+	// verify the Final pre-prepare message
+	verified := e.verify_Finalpre_prepare(msg)
+	if verified{
+
+		// Log the final pre-prepare msgs!
+		e.logFinalPre_prepareMsg(msg)
+		
+	}else{
+		log.Error("error in verification of Final process_pre_prepareMsg")
+	}
+}
+
+
 
 func makeMalicious() {
 	/*
