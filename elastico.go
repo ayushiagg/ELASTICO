@@ -142,6 +142,12 @@ type Transaction struct{
 	// ToDo: include timestamp or not
 }
 
+func(t *Transaction)TransactionInit(sender string, receiver string, amount *big.Int){
+	e.sender = sender
+	e.receiver = receiver
+	e.amount = amount
+}
+
 
 func (t *Transaction)isEqual(transaction) bool{
 	/*
