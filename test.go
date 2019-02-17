@@ -122,9 +122,41 @@ func main() {
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
+
+	msg1 := make(map[string]interface{})
+	msg1["data"] = "ni"
+	msg1["features"] = "ayushi"
+	i := Identity{}
+	i.send(msg1)
+
 	defer conn.Close()
 	
 	log.SetOutput(file)
     log.SetLevel(log.InfoLevel)
-    
+	
+
+	// create a channel
+	channel , er := conn.Channel()
+	failOnError(er, "Failed to open a channel")
+	// close the channel 
+	defer channel.Close()
+	nodeport := strconv.Itoa(0) 
+	queueName := "hello" + nodeport
+	// count the number of messages that are in the queue
+	Queue, err := channel.QueueInspect(queueName)
+
+	fmt.Println(Queue)
+	// consume all the messages one by one
+	for ; Queue.Messages > 0 ; Queue.Messages-- {
+
+		// get the message from the queue
+		msg, ok, _ := channel.Get(queueName, true)
+		fmt.Println(msg,ok)
+		if ok {
+			
+			_ = json.Unmarshal(msg.Body, &msg1)
+			// consume the msg by taking the action in receive
+			fmt.Println(msg1)
+		}
+	}
 }
