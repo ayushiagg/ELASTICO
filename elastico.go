@@ -1143,6 +1143,23 @@ func (e *Elastico)pbft_process_message(msg){
 	}
 }
 
+
+func (e *Elastico) process_pre_prepareMsg(msg map[string]interface{}){
+	/*
+		Process Pre-Prepare msg
+	*/
+	// verify the pre-prepare message
+	verified := e.verify_pre_prepare(msg)
+	if verified{
+		// Log the pre-prepare msgs!
+		e.logPre_prepareMsg(msg)
+
+	}else{
+		log.Error("error in verification of process_pre_prepareMsg")
+	}
+}
+
+
 func makeMalicious() {
 	/*
 		make some nodes malicious who will compute wrong PoW
