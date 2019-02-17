@@ -80,12 +80,12 @@ func (i *Identity) IdentityInit(){
 }
 
 
-func (i *Identity)isEqual(identityobj){
+func (i *Identity)isEqual(identityobj *Identity) bool{
 	/*
 		checking two objects of Identity class are equal or not
 		
 	*/
-	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW == identityobj.PoW && i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
+	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["set_of_Rs"] == identityobj.PoW["set_of_Rs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] &&i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
 }
 
 
