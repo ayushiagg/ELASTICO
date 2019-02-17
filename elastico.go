@@ -1015,7 +1015,7 @@ func (e *Elastico) process_commitMsg(msg map[string]interface{}){
 }
 
 
-func (e *Elastico) process_FinalcommitMsg(msg){
+func (e *Elastico) process_FinalcommitMsg(msg map[string]interface{}){
 	/*
 		process the final commit msg
 	*/
@@ -1028,7 +1028,7 @@ func (e *Elastico) process_FinalcommitMsg(msg){
 	}
 }
 
-func (e *Elastico) process_prepareMsg(msg){
+func (e *Elastico) process_prepareMsg(msg map[string]interface{}){
 	/*
 		process prepare msg
 	*/
