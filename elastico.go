@@ -1042,6 +1042,21 @@ func (e *Elastico) process_prepareMsg(msg map[string]interface{}){
 }
 
 
+func (e *Elastico) process_FinalprepareMsg(msg map[string]interface{}){
+	/*
+		process final prepare msg
+	*/
+	// verify the prepare message
+	verified := e.verify_Finalprepare(msg)
+	if verified{
+		
+		// Log the prepare msgs!
+		e.log_FinalprepareMsg(msg)
+	}
+}
+
+
+
 
 func (e *Elastico) executeReset{
 	/*
