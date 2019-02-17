@@ -27,7 +27,7 @@ var lock sync.Mutex
 var port int = 49152
 
 // n : number of nodes
-var n int = 66 
+var n int64 = 66 
 // s - where 2^s is the number of committees
 var s int = 2
 // c - size of committee
