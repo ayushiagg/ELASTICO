@@ -135,4 +135,6 @@ func main() {
     msg["data"] = data
     msg["type"] = "type of msg"
     i.send(msg)
+    iden:= 5
+    log.Warn("committees not full %s - bad miss id : ", iden)
 }

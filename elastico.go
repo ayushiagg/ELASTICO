@@ -1032,7 +1032,7 @@ func (e *Elastico) execute(epochTxn){
 
 	} else if e.state == ELASTICO_STATES["Receiving Committee Members"]{
 		// when a node is part of some committee	
-		if e.flag == False{
+		if e.flag == false{
 			
 			// logging the bad nodes
 			logging.error("member with invalid POW %s with commMembers : %s", e.identity , e.committee_Members)
