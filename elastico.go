@@ -40,7 +40,9 @@ var fin_num int = 0
 func failOnError(err error, msg string) {
 	// logging the error
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		log.Error("see the error!")
+		log.Error("%s: %s", msg, err)
+		os.Exit()
 	}
 }
 
