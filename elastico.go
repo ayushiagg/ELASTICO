@@ -1121,6 +1121,18 @@ func (e *Elastico)pbft_process_message(msg){
 	}
 }
 
+func makeMalicious() {
+	/*
+		make some nodes malicious who will compute wrong PoW
+	*/
+	malicious_count := 0
+	for i := 0 ; i < malicious_count; i++{
+		randomNum := random_gen(32).Int64()
+		badNodeIndex :=  randomNum % n
+		// set the flag false for bad nodes
+		network_nodes[badNodeIndex].flag = false
+	}
+}
 
 func (e *Elastico)verify_commit(msg){
 	/*
@@ -1141,20 +1153,6 @@ func (e *Elastico)verify_commit(msg){
 	}
 	return true
 
-}
-
-
-func makeMalicious() {
-	/*
-		make some nodes malicious who will compute wrong PoW
-	*/
-	malicious_count := 0
-	for i := 0 ; i < malicious_count; i++{
-		randomNum := random_gen(32).Int64()
-		badNodeIndex :=  randomNum % n
-		// set the flag false for bad nodes
-		network_nodes[badNodeIndex].flag = false
-	}
 }
 
 
