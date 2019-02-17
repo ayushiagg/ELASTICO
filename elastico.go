@@ -344,6 +344,266 @@ func (e *Elastico)checkCommitteeFull(){
 }
 
 
+func (e *Elastico) receive(msg map[string]interface{}){
+	/*
+		method to recieve messages for a node as per the type of a msg
+	*/
+	// new node is added in directory committee if not yet formed
+	if msg["type"] == "directoryMember"{
+		
+		identityobj := msg["data"]
+		// verify the PoW of the sender
+		if e.verify_PoW(identityobj){
+			if len(e.cur_directory) < c{
+
+				// check whether identityobj is already present or not
+				flag := true
+				for obj in e.cur_directory{
+					
+					if identityobj.isEqual(obj){
+						
+						flag = false
+						break
+					}
+				}
+				if flag{
+					
+					// append the object if not already present
+					e.cur_directory.append(identityobj)
+				}
+			}
+		} else{
+			log.Error("PoW not valid of an incoming directory member " , identityobj )
+		}
+
+	}else if msg["type"] == "newNode" && e.is_directory{
+		// new node is added to the corresponding committee list if committee list has less than c members
+		identityobj := msg["data"]
+		// verify the PoW
+		if e.verify_PoW(identityobj){
+			_ , ok := e.committee_list[identityobj.committee_id]
+			if ok == false{
+				
+				// Add the identity in committee
+				e.committee_list[identityobj.committee_id] = [identityobj]
+
+			}else if len(e.committee_list[identityobj.committee_id]) < c{
+				// Add the identity in committee
+				flag := true
+				for obj in e.committee_list[identityobj.committee_id]{
+					if identityobj.isEqual(obj):
+						flag = false
+						break
+				}
+				if flag{
+
+					e.committee_list[identityobj.committee_id].append(identityobj)
+					if len(e.committee_list[identityobj.committee_id]) == c{
+						
+						// check that if all committees are full
+						e.checkCommitteeFull()
+					}
+				}
+				
+			}
+		}else{
+
+			log.Error("PoW not valid in adding new node")
+		}
+	}else if msg["type"] == "committee members views" && e.verify_PoW(msg["data"]["identity"]) && e.is_directory == false && msg["data"]["identity"].port not in e.views{
+
+		// union of committe members views
+		e.views.add(msg["data"]["identity"].port)
+		commMembers = msg["data"]["committee members"]
+		finalMembers  = msg["data"]["final Committee members"]
+
+		if "txns" in msg["data"]{
+			
+			// update the txn block
+			// ToDo: txnblock should be ordered, not set
+			e.txn_block= e.unionTxns(e.txn_block, msg["data"]["txns"])
+			logging.warning("I am primary %s", str(e.port))
+			e.primary =  true
+		}
+		// ToDo: verify this union thing
+		// union of committee members wrt directory member
+		e.committee_Members = e.unionViews(e.committee_Members, commMembers)
+		// union of final committee members wrt directory member
+		e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers , finalMembers)
+		// received the members
+		if e.state == ELASTICO_STATES["Formed Committee"] && len(e.views) >= c /2 + 1{
+
+			e.state = ELASTICO_STATES["Receiving Committee Members"]
+		}
+
+	}else if msg["type"] == "hash" && e.isFinalMember(){
+
+		// receiving H(Ri) by final committe members
+		data = msg["data"]
+		identityobj = data["identity"]
+		if e.verify_PoW(identityobj){
+			e.commitments.add(data["Hash_Ri"])
+		}
+	}else if msg["type"] == "RandomStringBroadcast"{
+
+		data := msg["data"]
+		identityobj := data["identity"]
+		if e.verify_PoW(identityobj){
+			
+			Ri := data["Ri"]
+			HashRi := e.hexdigest(Ri)
+
+			if HashRi in e.newRcommitmentSet{
+				
+				e.newset_of_Rs.add(Ri)
+				if len(e.newset_of_Rs) >= c/2 + 1{
+					e.state = ELASTICO_STATES["ReceivedR"]
+				}
+			}
+		}
+	}else if msg["type"] == "finalTxnBlock"{
+
+		data := msg["data"]
+		identityobj := data["identity"]
+		// verify the PoW of the sender
+		if e.verify_PoW(identityobj){
+
+			sign := data["signature"]
+			received_commitmentSetList := data["commitmentSet"]
+			PK := identityobj.PK
+			finalTxnBlock := data["finalTxnBlock"]
+			finalTxnBlock_signature := data["finalTxnBlock_signature"]
+			// verify the signatures
+			if e.verify_sign(sign, received_commitmentSetList, PK) and e.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK){
+
+				// list init for final txn block
+				finaltxnBlockDigest = txnHexdigest(finalTxnBlock)
+				if finaltxnBlockDigest not in e.finalBlockbyFinalCommittee:
+					e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []
+					e.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
+				
+				// creating the object that contains the identity and signature of the final member
+				identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
+				
+				// check whether this combination of identity and sign already exists or not
+				flag := true
+				for idSignObj in  e.finalBlockbyFinalCommittee[finaltxnBlockDigest]:
+					if idSignObj.isEqual(identityAndSign):
+						// it exists
+						flag = false
+						break
+				if flag:
+					// appending the identity and sign of final member
+					e.finalBlockbyFinalCommittee[finaltxnBlockDigest].append(identityAndSign)
+
+				// block is signed by sufficient final members and when the final block has not been sent to the client yet
+				if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c//2 + 1 and e.state != ELASTICO_STATES["FinalBlockSentToClient"]:
+
+					// for final members, their state is updated only when they have also sent the finalblock to ntw
+					if e.isFinalMember():
+						if e.finalBlock["sent"]:
+							e.state = ELASTICO_STATES["FinalBlockReceived"]
+					else:
+						e.state = ELASTICO_STATES["FinalBlockReceived"]
+
+				if e.newRcommitmentSet == "":
+					e.newRcommitmentSet = set()
+				// union of commitments
+				e.newRcommitmentSet |= set(received_commitmentSetList)
+
+			}else{
+
+				logging.error("Signature invalid in final block received")
+			}
+		}else{
+			logging.error("PoW not valid when final member send the block")
+		}
+	}else if msg["type"] == "intraCommitteeBlock" && e.isFinalMember(){
+
+		// final committee member receives the final set of txns along with the signature from the node
+		data = msg["data"]
+		identityobj = data["identity"]
+
+		logging.warning("%s received the intra committee block from commitee id - %s- %s", str(e.port) , str(identityobj.committee_id) , str(identityobj.port))    
+		if e.verify_PoW(identityobj):
+			// verify the signatures
+			if e.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK):
+				if identityobj.committee_id not in e.CommitteeConsensusData:
+					e.CommitteeConsensusData[identityobj.committee_id] = dict()
+					e.CommitteeConsensusDataTxns[identityobj.committee_id] = dict()
+				TxnBlockDigest = txnHexdigest( data["txnBlock"] )
+				if TxnBlockDigest not in e.CommitteeConsensusData[identityobj.committee_id]:
+					e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
+					// store the txns for this digest
+
+					e.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
+
+				// add signatures for the txn block 
+				e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ].add( data["sign"] )
+				logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(e.state) ,str( identityobj.committee_id) , str(identityobj.port) , str(e.port))   
+			else:
+				logging.error("signature invalid for intra committee block")        
+		else{
+			logging.error("pow invalid for intra committee block")
+		}
+
+	}else if msg["type"] == "command to run pbft"{
+
+		if e.is_directory == false{
+
+			e.runPBFT(e.txn_block)
+		}
+	}else if msg["type"] == "command to run pbft by final committee"{
+
+		if e.isFinalMember(){
+			e.runPBFT(e.mergedBlock)
+		}
+	}else if msg["type"] == "send txn set and sign to final committee"{
+		if e.is_directory == false{
+			e.SendtoFinal()
+		}
+	}else if msg["type"] == "verify and merge intra consensus data"{
+		if e.isFinalMember(){
+			e.verifyAndMergeConsensusData()
+		}
+	}else if msg["type"] == "send commitments of Ris"{
+		if e.isFinalMember(){
+			e.sendCommitment()
+		}
+	}else if msg["type"] == "broadcast final set of txns to the ntw"{
+		if e.isFinalMember(){
+			e.BroadcastFinalTxn()
+		}
+	}else if msg["type"] == "notify final member"{
+		
+		log.Warn("notifying final member " ,e.port)
+		if e.verify_PoW(msg["data"]["identity"]) && e.committee_id == fin_num{
+			e.is_final = true
+		}
+	}else if msg["type"] == "Broadcast Ri"{
+		if e.isFinalMember(){
+			e.BroadcastR()
+		}
+	}else if msg["type"] == "reset-all"{
+		
+		// ToDo: Add verification of pow here.
+		// reset the elastico node
+		e.reset()
+
+	}else if msg["type"] == "pre-prepare" || msg["type"] == "prepare"|| msg["type"] == "commit"{
+
+		e.pbft_process_message(msg)
+	}
+
+	else if msg["type"] == "Finalpre-prepare" || msg["type"] == "Finalprepare" || msg["type"] == "Finalcommit"{
+
+		e.Finalpbft_process_message(msg)
+	}
+
+}
+
+	
+
 func (e* Elastico) ElasticoInit() {
 	var err error
 	// create rabbit mq connection
