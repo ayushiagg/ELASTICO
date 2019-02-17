@@ -193,17 +193,20 @@ func (e* Elastico) compute_PoW(){
 	for i:=0 ; i < D; i ++ {
 		zero_string += "0"
 	}
+	// ToDo: type assertion for interface
 	nonce :=  e.PoW["nonce"].(int)
 	if e.state == ELASTICO_STATES["NONE"] {
 		// public key
 		PK := e.key.Public()
-		rsaPublickey, _ := PK.(*rsa.PublicKey)
-		// fmt.Println("%T", reflect.TypeOf(PK) )
+		fmt.Printf("%T" , PK)
+		rsaPublickey, err := PK.(*rsa.PublicKey)
+		failOnError(err, "rsa Public key conversion")
 		IP := e.IP
 		// If it is the first epoch , randomset_R will be an empty set .
 		// otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
 		randomset_R := make(map[string]bool)
 		if len(e.set_of_Rs) > 0 {
+			// ToDo: complete this for further epochs
 			// e.epoch_randomness, randomset_R = e.xor_R()
 		}
 		// 	compute the digest 
