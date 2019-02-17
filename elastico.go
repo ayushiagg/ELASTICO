@@ -1001,6 +1001,25 @@ func (e *Elastico)verify_PoW(identityobj){
 }
 		
 
+func (e *Elastico) executeReset{
+	/*
+		call for reset
+	*/
+	logging.warning("call for reset for " , e.port)
+	if isinstance(e.identity, Identity){
+
+		// if node has formed its identity
+		msg := make(map[string]interface{})
+		msg["type"] = "reset-all"
+		msg["data"] = e.identity
+		e.identity.send(msg)
+	}else{
+		
+		// this node has not computed its identity,calling reset explicitly for node
+		e.reset()
+	}
+}
+
 
 func (e *Elastico) execute(epochTxn){
 	/*
