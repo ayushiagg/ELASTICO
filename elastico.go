@@ -118,7 +118,8 @@ func(i *Identity)send(msg map[string]interface{}){
 	)
 	failOnError(err, "Failed to declare a queue")
 
-	body := msg
+	body, err := json.Marshal(msg)
+	failOnError(err, "Failed to marshal")
 	err = ch.Publish(
 		"",				// exchange
 		queue.Name,		// routing key
@@ -126,7 +127,7 @@ func(i *Identity)send(msg map[string]interface{}){
 		false,			// immediate
 		amqp.Publishing {
 		ContentType: "text/plain",
-		Body:		[]byte(msg),
+		Body:		body,
 	})
 
 	failOnError(err, "Failed to publish a message")
