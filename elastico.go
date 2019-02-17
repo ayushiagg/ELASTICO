@@ -1121,6 +1121,29 @@ func (e *Elastico)pbft_process_message(msg){
 }
 
 
+func (e *Elastico)verify_commit(msg){
+	/*
+		verify commit msgs
+	*/
+	// verify Pow
+	if ! e.verify_PoW(msg["identity"]){
+		return false
+	}
+	// verify signatures of the received msg
+	if ! e.verify_sign(msg["sign"] , msg["commitData"] , msg["identity"].PK){
+		return false
+	}
+	
+	// check the view is same or not
+	if msg["commitData"]["viewId"] != e.viewId{
+		return false
+	}
+	return true
+
+}
+
+
+
 
 func createTxns()[]Transaction{
 	/*
