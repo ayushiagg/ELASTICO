@@ -527,11 +527,11 @@ func (e *Elastico) receive_hash(msg map[string]interface{}) {
 
 func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}) {
 
-	data := msg["data"]
-	identityobj := data["identity"]
+	data := msg["data"].(map[string]interface{})
+	identityobj := data["identity"].(Identity)
 	if e.verify_PoW(identityobj) {
 
-		Ri := data["Ri"]
+		Ri := data["Ri"].(string)
 		HashRi := e.hexdigest(Ri)
 
 		if _, ok := e.newRcommitmentSet[HashRi]; ok {
@@ -547,22 +547,22 @@ func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}) {
 
 func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
 
-	data := msg["data"]
-	identityobj := data["identity"]
+	data := msg["data"].(map[string]interface{})
+	identityobj := data["identity"].(Identity)
 	// verify the PoW of the sender
 	if e.verify_PoW(identityobj) {
 
-		sign := data["signature"]
+		sign := data["signature"].(string)
 		received_commitmentSetList := data["commitmentSet"]
 		PK := identityobj.PK
-		finalTxnBlock := data["finalTxnBlock"]
-		finalTxnBlock_signature := data["finalTxnBlock_signature"]
+		finalTxnBlock := data["finalTxnBlock"].(map[string]interface{})
+		finalTxnBlock_signature := data["finalTxnBlock_signature"].(string)
 		// verify the signatures
 		if e.verify_sign(sign, received_commitmentSetList, PK) && e.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
-			if _ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
+			if _, ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
 
 				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []Transaction{finalTxnBlock}
 			}
@@ -589,8 +589,8 @@ func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
 			if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c/2+1 && e.state != Elastico_States["FinalBlockSentToClient"] {
 				// for final members, their state is updated only when they have also sent the finalblock to ntw
 				if e.isFinalMember() {
-
-					if e.finalBlock["sent"] {
+					finalBlockSent := e.finalBlock["sent"].(bool)
+					if finalBlockSent {
 
 						e.state = Elastico_States["FinalBlockReceived"]
 					}
@@ -615,8 +615,8 @@ func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
 
 func (e *Elastico) receive_intracommitteeblock(msg map[string]interface{}) {
 	// final committee member receives the final set of txns along with the signature from the node
-	data := msg["data"]
-	identityobj := data["identity"]
+	data := msg["data"].(map[string]interface{})
+	identityobj := data["identity"].(Identity)
 
 	if e.verify_PoW(identityobj) {
 
