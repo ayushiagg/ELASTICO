@@ -51,6 +51,16 @@ func failOnError(err error, msg string) {
 	}
 }
 
+func getConnection() *amqp.Connection{
+	/*
+		establish a connection with RabbitMQ server
+	*/
+	connection , err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	failOnError(err, "Failed to connect to RabbitMQ")	// report the error
+	return connection
+}
+
+
 
 func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	/*
@@ -61,9 +71,7 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	msg["data"] = data
 	msg["type"] = type_	
 	
-	// establish a connection with RabbitMQ server
-	connection , err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")	// report the error
+	connection := getConnection()
 	defer connection.Close()	// close the connection
 
 	ch, err := connection.Channel()	// create a channel
