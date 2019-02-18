@@ -584,83 +584,81 @@ func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
 			}
 
 			// block is signed by sufficient final members and when the final block has not been sent to the client yet
-			if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c/2 + 1 && e.state != ELASTICO_STATES["FinalBlockSentToClient"]{
+			if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c/2+1 && e.state != Elastico_States["FinalBlockSentToClient"] {
 				// for final members, their state is updated only when they have also sent the finalblock to ntw
 				if e.isFinalMember() {
 
 					if e.finalBlock["sent"] {
 
-						e.state = ELASTICO_STATES["FinalBlockReceived"]
+						e.state = Elastico_States["FinalBlockReceived"]
 					}
 
 				} else {
 
-					e.state = ELASTICO_STATES["FinalBlockReceived"]
+					e.state = Elastico_States["FinalBlockReceived"]
 				}
 
-			// union of commitments
+				// union of commitments
 				e.newRcommitmentSet |= set(received_commitmentSetList)
 			}
 
-
-		}else {
+		} else {
 
 			log.Error("Signature invalid in final block received")
 		}
-	}else {
+	} else {
 		log.Error("PoW not valid when final member send the block")
 	}
 }
-
 
 func (e *Elastico) receive_intracommitteeblock(msg map[string]interface{}) {
 	// final committee member receives the final set of txns along with the signature from the node
 	data := msg["data"]
 	identityobj := data["identity"]
 
-	if e.verify_PoW(identityobj){
+	if e.verify_PoW(identityobj) {
 
 		// verify the signatures
-		if e.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK) {
+		if e.verify_signTxnList(data["sign"], data["txnBlock"], identityobj.PK) {
 
-			if _,ok := e.CommitteeConsensusData[identityobj.committee_id] ; ok == false{
-				
+			if _, ok := e.CommitteeConsensusData[identityobj.committee_id]; ok == false {
+
 				e.CommitteeConsensusData[identityobj.committee_id] = make(map[string]interface{})
 				e.CommitteeConsensusDataTxns[identityobj.committee_id] = make(map[string]interface{})
 			}
-			TxnBlockDigest := txnHexdigest( data["txnBlock"] )
-			if _, ok := e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest] ; ok == false{
+			TxnBlockDigest := txnHexdigest(data["txnBlock"])
+			if _, ok := e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest]; ok == false {
 				// todo: see this
-				e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
+				e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest] = set()
 				// store the txns for this digest
-				e.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
+				e.CommitteeConsensusDataTxns[identityobj.committee_id][TxnBlockDigest] = data["txnBlock"]
 			}
 
 			// add signatures for the txn block
-			e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = append(e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] ,data["sign"] )  
+			e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest] = append(e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest], data["sign"])
 
-		}else{
+		} else {
 			log.Error("signature invalid for intra committee block")
 		}
-	}else{
+	} else {
 		log.Error("pow invalid for intra committee block")
 	}
 
 }
 
-func (e *Elastico) receive(msg map[string]interface{}){
+func (e *Elastico) receive(msg map[string]interface{}) {
 	/*
 		method to recieve messages for a node as per the type of a msg
 	*/
 	// new node is added in directory committee if not yet formed
 	if msg["type"] == "directoryMember" {
 		e.receive_directoryMember(msg)
-		
+
 	} else if msg["type"] == "newNode" && e.is_directory {
 		e.receive_newNode(msg)
-		
+
 	} else if msg["type"] == "committee members views" && e.verify_PoW(msg["data"]["identity"]) && e.is_directory == false {
-		if _ok := e.views[msg["data"]["identity"].port] ; ok == false {			
+		if _ok := e.views[msg["data"]["identity"].port]; ok == false {
 			e.receive_views(msg)
 		}
 
@@ -669,13 +667,13 @@ func (e *Elastico) receive(msg map[string]interface{}){
 
 	} else if msg["type"] == "RandomStringBroadcast" {
 		e.receive_RandomStringBroadcast(msg)
-		
+
 	} else if msg["type"] == "finalTxnBlock" {
 		e.receive_finalTxnBlock(msg)
 
 	} else if msg["type"] == "intraCommitteeBlock" && e.isFinalMember() {
 		e.receive_intracommitteeblock()
-		
+
 	} else if msg["type"] == "command to run pbft" {
 		if e.is_directory == false {
 			e.runPBFT(e.txn_block)
@@ -702,7 +700,7 @@ func (e *Elastico) receive(msg map[string]interface{}){
 			e.BroadcastFinalTxn()
 		}
 	} else if msg["type"] == "notify final member" {
-		log.Warn("notifying final member " ,e.port)
+		log.Warn("notifying final member ", e.port)
 		if e.verify_PoW(msg["data"]["identity"]) && e.committee_id == fin_num {
 			e.is_final = true
 		}
@@ -715,7 +713,7 @@ func (e *Elastico) receive(msg map[string]interface{}){
 		// reset the elastico node
 		e.reset()
 
-	} else if msg["type"] == "pre-prepare" || msg["type"] == "prepare"|| msg["type"] == "commit" {
+	} else if msg["type"] == "pre-prepare" || msg["type"] == "prepare" || msg["type"] == "commit" {
 
 		e.pbft_process_message(msg)
 	} else if msg["type"] == "Finalpre-prepare" || msg["type"] == "Finalprepare" || msg["type"] == "Finalcommit" {
@@ -723,9 +721,7 @@ func (e *Elastico) receive(msg map[string]interface{}){
 	}
 }
 
-	
-
-func (e* Elastico) ElasticoInit() {
+func (e *Elastico) ElasticoInit() {
 	var err error
 	// create rabbit mq connection
 	e.connection, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
@@ -736,14 +732,14 @@ func (e* Elastico) ElasticoInit() {
 	e.get_port()
 	// set RSA
 	e.get_key()
-	// Initialize PoW!	
+	// Initialize PoW!
 	e.PoW = make(map[string]interface{})
 	e.PoW["hash"] = ""
 	e.PoW["set_of_Rs"] = ""
 	e.PoW["nonce"] = 0
 
 	e.cur_directory = make([]Identity, 0)
-	
+
 	e.committee_list = make(map[int][]Identity)
 
 	e.committee_Members = make([]Identity, 0)
@@ -758,27 +754,27 @@ func (e* Elastico) ElasticoInit() {
 	e.set_of_Rs = make(map[string]bool)
 
 	e.newset_of_Rs = make(map[string]bool)
-	
+
 	e.CommitteeConsensusData = make(map[int]map[string][]string)
-	
+
 	e.CommitteeConsensusDataTxns = make(map[int]map[string][]Transaction)
-	
+
 	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
 
 	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
 
-	e.state = ELASTICO_STATES["NONE"]
+	e.state = Elastico_States["NONE"]
 
 	e.mergedBlock = make([]Transaction, 0)
 
 	e.finalBlock = make(map[string]interface{})
 	e.finalBlock["sent"] = false
-	e.finalBlock["finalBlock"] = make([]Transaction,0)
+	e.finalBlock["finalBlock"] = make([]Transaction, 0)
 
 	e.RcommitmentSet = make(map[string]bool)
 	e.newRcommitmentSet = make(map[string]bool)
 	e.finalCommitteeMembers = make([]Identity, 0)
-	
+
 	e.txn = make(map[int][]Transaction)
 	e.response = make([]Transaction, 0)
 	e.flag = true
@@ -788,8 +784,7 @@ func (e* Elastico) ElasticoInit() {
 	e.faulty = false
 }
 
-
-func (e *Elastico) reset(){
+func (e *Elastico) reset() {
 	/*
 		reset some of the elastico class members
 	*/
@@ -802,7 +797,7 @@ func (e *Elastico) reset(){
 	// channel.close()
 
 	// e.port = e.get_port()
-	
+
 	e.PoW = make(map[string]interface{})
 	e.PoW["hash"] = ""
 	e.PoW["set_of_Rs"] = ""
@@ -830,18 +825,17 @@ func (e *Elastico) reset(){
 	e.CommitteeConsensusDataTxns = make(map[int]map[string][]Transaction)
 	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
 	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
-	e.state = ELASTICO_STATES["NONE"]
+	e.state = Elastico_States["NONE"]
 	e.mergedBlock = make([]Transaction, 0)
-
 
 	e.finalBlock = make(map[string]interface{})
 	e.finalBlock["sent"] = false
-	e.finalBlock["finalBlock"] = make([]Transaction,0)
+	e.finalBlock["finalBlock"] = make([]Transaction, 0)
 
 	e.RcommitmentSet = e.newRcommitmentSet
 	e.newRcommitmentSet = make(map[string]bool)
 	e.finalCommitteeMembers = make([]Identity, 0)
-	
+
 	// only when this is the member of the directory committee
 	e.txn = make(map[int][]Transaction)
 	e.response = make([]Transaction, 0)
@@ -850,7 +844,7 @@ func (e *Elastico) reset(){
 	e.primary = false
 	e.viewId = 0
 	e.faulty = false
-	
+
 	// e.prepareMsgLog = dict()
 	// e.commitMsgLog = dict()
 	// e.preparedData = dict()
