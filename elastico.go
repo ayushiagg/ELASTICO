@@ -1093,6 +1093,30 @@ func (e *Elastico)form_identity() {
 }
 
 
+func (e *Elastico) unionViews( nodeData, incomingData []Identity) []Identity{
+	/*
+		nodeData and incomingData are the set of identities
+		Adding those identities of incomingData to nodeData that are not present in nodeData
+	*/
+	for _ , data := range incomingData{
+		
+		flag := false
+		for _ , nodeId := range nodeData{
+
+			// data is present already in nodeData
+			if nodeId.isEqual(data){
+				flag = true
+				break
+			}
+		}
+		if flag == false{
+			// Adding the new identity
+			nodeData = append(nodeData, data)
+		}
+	}
+	return nodeData
+}
+
 func (e *Elastico)form_committee(){
 	/*
 		creates directory committee if not yet created otherwise informs all the directory members
