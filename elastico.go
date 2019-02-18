@@ -1117,6 +1117,29 @@ func (e *Elastico) unionViews( nodeData, incomingData []Identity) []Identity{
 	return nodeData
 }
 
+
+func (e *Elastico) unionTxns(actualTxns , receivedTxns []Transaction) []Transaction{
+	/*
+		union the transactions
+	*/
+	for _ , transaction := range receivedTxns{
+
+		flag := true
+		for _ , txn := range actualTxns{
+			if txn.isEqual(transaction){
+
+				flag = false
+				break
+			}
+		}
+		if flag{
+			actualTxns = append(actualTxns, transaction)
+		}
+	}
+	return actualTxns
+}
+
+
 func (e *Elastico)form_committee(){
 	/*
 		creates directory committee if not yet created otherwise informs all the directory members
