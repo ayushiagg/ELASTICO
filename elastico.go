@@ -536,7 +536,7 @@ func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}) {
 
 		if _, ok := e.newRcommitmentSet[HashRi]; ok {
 
-			e.newset_of_Rs = append(e.newset_of_Rs, Ri)
+			e.newset_of_Rs[Ri] = true
 
 			if len(e.newset_of_Rs) >= c/2+1 {
 				e.state = Elastico_States["ReceivedR"]
