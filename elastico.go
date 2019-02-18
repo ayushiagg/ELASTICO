@@ -655,6 +655,27 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 
 }
 
+func (e *Elastico) verifySign(signature string, data, publickey *rsa.PublicKey) bool {
+	/*
+		verify whether signature is valid or not
+		if public key is not key object then create a key object
+	*/
+	// // decode the signature before verifying
+	// signature = base64.b64decode(signature)
+	// if type(publickey) is str:
+	// 	publickey = publickey.encode()
+	// if type(data) is not str:
+	// 	data = str(data)
+	// if type(publickey) is bytes:
+	// 	publickey = RSA.importKey(publickey)
+	// // create digest of data
+	// digest = SHA256.new()
+	// digest.update(data.encode())
+	// verifier = PKCS1_v1_5.new(publickey)
+	// return verifier.verify(digest,signature)
+	return true
+}
+
 func (e *Elastico) receive(msg map[string]interface{}) {
 	/*
 		method to recieve messages for a node as per the type of a msg
