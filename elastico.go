@@ -1158,6 +1158,21 @@ func (e *Elastico) generate_randomstrings() {
 	}
 }
 
+func (e *Elastico) notify_finalCommittee(){
+	/*
+		notify the members of the final committee that they are the final committee members
+	*/
+	finalCommList := e.committee_list[fin_num]
+	for _ , finalMember := range finalCommList{
+		data := mske(map[string]interface{})
+		data["identity"] = e.identity
+		// construct the msg
+		msg := make(map[string]interface{})
+		msg["data"] = data
+		msg["type"] = "notify final member"
+		finalMember.send(msg)
+	}
+}
 
 
 func (e *Elastico) getCommitment() string{
