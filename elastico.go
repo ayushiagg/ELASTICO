@@ -1366,7 +1366,54 @@ func (e *Elastico) consumeMsg(){
 		}
 	}
 }
+
+
+func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int]bool){
+	/*
+		A process will execute based on its state and then it will consume
+	*/
+	node := network_nodes[nodeIndex]
+	for epoch, epochTxn :=  range epochTxns{
+		// epochTxn holds the txn for the current epoch
 		
+		// delete the entry of the node in sharedobj for the next epoch
+		if _,ok := sharedobj[nodeIndex] ; ok {
+			delete(sharedObj, nodeIndex)
+		}
+
+		// startTime = time.time()
+		for {
+			
+			// execute one step of elastico node, execution of a node is done only when it has not done reset
+			if _,ok := sharedobj[nodeIndex] ; ok == false{
+
+				response := node.execute(epochTxn)
+				if response == "reset"{
+					// now reset the node
+					node.executeReset()
+					// adding the value reset for the node in the sharedobj
+					sharedObj[nodeIndex] = true
+				}
+			}
+			// stop the faulty node in between
+			if node.faulty == true{ //and time.time() - startTime >= 60:
+				log.Warn("bye bye!")
+				break
+			}
+			// All the elastico objects has done their reset
+			if len(sharedObj) == n{
+				break
+			}
+			// process consume the msgs from the queue
+			node.consumeMsg()
+		}
+		// Ensuring that all nodes are reset and sharedobj is not affected
+		// time.sleep(60)
+	}
+}
+
+
+
 func createTxns() []Transaction {
 	/*
 		create txns for an epoch
