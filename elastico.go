@@ -45,7 +45,7 @@ var D int = 6
 var r int64 = 4
 
 // fin_num - final committee id
-var fin_num int = 0
+var fin_num int64 = 0
 
 // network_nodes - list of elastico objects
 var network_nodes []Elastico
@@ -105,7 +105,7 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message")
 }
 
-func MulticastCommittee(commList map[int][]Identity, identityobj Identity, txns map[int][]Transaction) {
+func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txns map[int64][]Transaction) {
 	/*
 		each node getting views of its committee members from directory members
 	*/
@@ -259,7 +259,7 @@ type Elastico struct {
 	identity      Identity
 	committee_id  int64
 	// only when this node is the member of directory committee
-	committee_list map[int][]Identity
+	committee_list map[int64][]Identity
 	// only when this node is not the member of directory committee
 	committee_Members []Identity
 	is_directory      bool
@@ -282,7 +282,7 @@ type Elastico struct {
 	newRcommitmentSet              map[string]bool
 	finalCommitteeMembers          []Identity
 	// only when this is the member of the directory committee
-	txn      map[int][]Transaction
+	txn      map[int64][]Transaction
 	response []Transaction
 	flag     bool
 	views    map[int]bool
@@ -401,9 +401,9 @@ func (e *Elastico) checkCommitteeFull() {
 	*/
 	commList := e.committee_list
 	flag := 0
-	numOfCommittees := int(math.Pow(2, float64(s)))
+	numOfCommittees := int64(math.Pow(2, float64(s)))
 	// iterating over all committee ids
-	for iden := 0; iden < numOfCommittees; iden++ {
+	for iden := int64(0); iden < numOfCommittees; iden++ {
 
 		val, ok := commList[iden]
 		if ok == false || len(commList[iden]) < c {
@@ -474,7 +474,6 @@ func (e *Elastico) receive_newNode(msg map[string]interface{}) {
 			if flag {
 				e.committee_list[identityobj.committee_id] = append(e.committee_list[identityobj.committee_id], identityobj)
 				if len(e.committee_list[identityobj.committee_id]) == c {
-
 					// check that if all committees are full
 					e.checkCommitteeFull()
 				}
@@ -740,7 +739,7 @@ func (e *Elastico) ElasticoInit() {
 
 	e.cur_directory = make([]Identity, 0)
 
-	e.committee_list = make(map[int][]Identity)
+	e.committee_list = make(map[int64][]Identity)
 
 	e.committee_Members = make([]Identity, 0)
 
@@ -805,7 +804,7 @@ func (e *Elastico) reset() {
 
 	e.cur_directory = make([]Identity, 0)
 	// only when this node is the member of directory committee
-	e.committee_list = make(map[int][]Identity)
+	e.committee_list = make(map[int64][]Identity)
 	// only when this node is not the member of directory committee
 	e.committee_Members = make([]Identity, 0)
 
@@ -1375,7 +1374,7 @@ func (e *Elastico) executeReset() {
 	}
 }
 
-func (e *Elastico) execute(epochTxn map[int][]Transaction) {
+func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 	/*
 		executing the functions based on the running state
 	*/
