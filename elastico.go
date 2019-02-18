@@ -758,9 +758,84 @@ func (e* Elastico) ElasticoInit() {
 	e.views = make(map[int]bool)
 	e.primary = false
 	e.viewId = 0
-	e.faulty = false	
+	e.faulty = false
 }
 
+
+func (e *Elastico) reset(){
+	/*
+		reset some of the elastico class members
+	*/
+	e.get_IP()
+	e.get_key()
+
+	// channel = e.connection.channel()
+	// # to delete the queue in rabbitmq for next epoch
+	// channel.queue_delete(queue='hello' + str(e.port))
+	// channel.close()
+
+	// e.port = e.get_port()
+	
+	e.PoW = make(map[string]interface{})
+	e.PoW["hash"] = ""
+	e.PoW["set_of_Rs"] = ""
+	e.PoW["nonce"] = 0
+
+	e.cur_directory = make([]Identity, 0)
+	// only when this node is the member of directory committee
+	e.committee_list = make(map[int][]Identity)
+	// only when this node is not the member of directory committee
+	e.committee_Members = make([]Identity, 0)
+
+	e.identity = ""
+	e.committee_id = ""
+	e.Ri = ""
+
+	e.is_directory = false
+	e.is_final = false
+
+	// only when this node is the member of final committee
+	e.commitments = make(map[string]bool)
+	e.txn_block = make([]Transaction, 0)
+	e.set_of_Rs = e.newset_of_Rs
+	e.newset_of_Rs = make(map[string]bool)
+	e.CommitteeConsensusData = make(map[int]map[string][]string)
+	e.CommitteeConsensusDataTxns = make(map[int]map[string][]Transaction)
+	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
+	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
+	e.state = ELASTICO_STATES["NONE"]
+	e.mergedBlock = make([]Transaction, 0)
+
+
+	e.finalBlock = make(map[string]interface{})
+	e.finalBlock["sent"] = false
+	e.finalBlock["finalBlock"] = make([]Transaction,0)
+
+	e.RcommitmentSet = e.newRcommitmentSet
+	e.newRcommitmentSet = make(map[string]bool)
+	e.finalCommitteeMembers = make([]Identity, 0)
+	
+	// only when this is the member of the directory committee
+	e.txn = make(map[int][]Transaction)
+	e.response = make([]Transaction, 0)
+	e.flag = true
+	e.views = make(map[int]bool)
+	e.primary = false
+	e.viewId = 0
+	e.faulty = false
+	
+	// e.prepareMsgLog = dict()
+	// e.commitMsgLog = dict()
+	// e.preparedData = dict()
+	// e.committedData = dict()
+
+	// // only when this is the part of final committee
+	// e.Finalpre_prepareMsgLog = dict()
+	// e.FinalprepareMsgLog = dict()
+	// e.FinalcommitMsgLog = dict()
+	// e.FinalpreparedData = dict()
+	// e.FinalcommittedData = dict()
+}
 
 func (e *Elastico)get_committeeid(PoW string) int64{
 	/*
