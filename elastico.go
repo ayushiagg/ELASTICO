@@ -1372,6 +1372,14 @@ func (e *Elastico) process_Finalpre_prepareMsg(msg){
 }
 
 
+func (e *Elastico) is_pre_prepared bool(){
+	/*
+		if the node received the pre-prepare msg from the primary
+	*/
+	return len(e.pre_prepareMsgLog) > 0
+}
+
+
 
 func makeMalicious() {
 	/*
