@@ -493,6 +493,38 @@ func(e *Elastico) receive_newNode(msg[string]interface{}) {
 				}
 			}
 		}
+
+	}else {
+			log.Error("PoW not valid in adding new node")
+		}
+}
+
+
+func(e *Elastico) receive_views(msg map[string]interface{}){
+
+	// union of committe members views
+	e.views = append(e.views, msg["data"]["identity"].port)
+	commMembers := msg["data"]["committee members"]
+	finalMembers  := msg["data"]["final Committee members"]
+
+	if _ , ok := msg["data"]["txns"]; ok {
+
+		// update the txn block
+		// ToDo: txnblock should be ordered, not set
+		e.txn_block = e.unionTxns(e.txn_block, msg["data"]["txns"])
+		log.Warn("I am primary", e.port)
+		e.primary =  true
+	}
+	// ToDo: verify this union thing
+	// union of committee members wrt directory member
+	e.committee_Members = e.unionViews(e.committee_Members, commMembers)
+	// union of final committee members wrt directory member
+	e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers , finalMembers)
+	// received the members
+	if e.state == ELASTICO_STATES["Formed Committee"] && len(e.views) >= c /2 + 1{
+
+		e.state = ELASTICO_STATES["Receiving Committee Members"]
+	}
 }
 
 
@@ -506,63 +538,11 @@ func (e *Elastico) receive(msg map[string]interface{}){
 		e.receive_directoryMember(msg)
 		
 	}else if msg["type"] == "newNode" && e.is_directory{
-		// new node is added to the corresponding committee list if committee list has less than c members
-		identityobj := msg["data"]
-		// verify the PoW
-		if e.verify_PoW(identityobj){
-			_ , ok := e.committee_list[identityobj.committee_id]
-			if ok == false{
-				
-				// Add the identity in committee
-				e.committee_list[identityobj.committee_id] = [identityobj]
-
-			}else if len(e.committee_list[identityobj.committee_id]) < c{
-				// Add the identity in committee
-				flag := true
-				for obj in e.committee_list[identityobj.committee_id]{
-					if identityobj.isEqual(obj):
-						flag = false
-						break
-				}
-				if flag{
-
-					e.committee_list[identityobj.committee_id].append(identityobj)
-					if len(e.committee_list[identityobj.committee_id]) == c{
-						
-						// check that if all committees are full
-						e.checkCommitteeFull()
-					}
-				}
-				
-			}
-		}else{
-
-			log.Error("PoW not valid in adding new node")
-		}
-	}else if msg["type"] == "committee members views" && e.verify_PoW(msg["data"]["identity"]) && e.is_directory == false && msg["data"]["identity"].port not in e.views{
-
-		// union of committe members views
-		e.views.add(msg["data"]["identity"].port)
-		commMembers = msg["data"]["committee members"]
-		finalMembers  = msg["data"]["final Committee members"]
-
-		if "txns" in msg["data"]{
-			
-			// update the txn block
-			// ToDo: txnblock should be ordered, not set
-			e.txn_block= e.unionTxns(e.txn_block, msg["data"]["txns"])
-			logging.warning("I am primary %s", str(e.port))
-			e.primary =  true
-		}
-		// ToDo: verify this union thing
-		// union of committee members wrt directory member
-		e.committee_Members = e.unionViews(e.committee_Members, commMembers)
-		// union of final committee members wrt directory member
-		e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers , finalMembers)
-		// received the members
-		if e.state == ELASTICO_STATES["Formed Committee"] && len(e.views) >= c /2 + 1{
-
-			e.state = ELASTICO_STATES["Receiving Committee Members"]
+		e.receive_newNode(msg)
+		
+	}else if msg["type"] == "committee members views" && e.verify_PoW(msg["data"]["identity"]) && e.is_directory == false {
+		if _ok := e.views[msg["data"]["identity"].port] ; ok == false{			
+			e.receive_views(msg)
 		}
 
 	}else if msg["type"] == "hash" && e.isFinalMember(){
