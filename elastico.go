@@ -224,9 +224,9 @@ type Transaction struct {
 }
 
 func (t *Transaction) TransactionInit(sender string, receiver string, amount *big.Int) {
-	e.sender = sender
-	e.receiver = receiver
-	e.amount = amount
+	t.sender = sender
+	t.receiver = receiver
+	t.amount = amount
 }
 
 func (t *Transaction) hexdigest() string {
@@ -246,7 +246,7 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 	/*
 		compare two objs are equal or not
 	*/
-	return e.sender == transaction.sender && e.receiver == transaction.receiver && e.amount == transaction.amount && e.timestamp == transaction.timestamp
+	return t.sender == transaction.sender && t.receiver == transaction.receiver && t.amount == transaction.amount //&& t.timestamp == transaction.timestamp
 }
 
 type Elastico struct {
@@ -399,7 +399,7 @@ func (e *Elastico) checkCommitteeFull() {
 	/*
 		directory member checks whether the committees are full or not
 	*/
-	commList = e.committee_list
+	commList := e.committee_list
 	flag := 0
 	numOfCommittees := int(math.Pow(2, float64(s)))
 	// iterating over all committee ids
@@ -429,7 +429,7 @@ func (e *Elastico) checkCommitteeFull() {
 }
 
 func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
-	identityobj := msg["data"]
+	identityobj, _ := msg["data"].(Identity)
 	// verify the PoW of the sender
 	if e.verify_PoW(identityobj) {
 		if len(e.cur_directory) < c {
@@ -453,7 +453,7 @@ func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
 
 func (e *Elastico) receive_newNode(msg map[string]interface{}) {
 	// new node is added to the corresponding committee list if committee list has less than c members
-	identityobj := msg["data"]
+	identityobj, _ := msg["data"].(Identity)
 	// verify the PoW
 	if e.verify_PoW(identityobj) {
 		_, ok := e.committee_list[identityobj.committee_id]
