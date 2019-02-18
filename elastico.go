@@ -559,6 +559,75 @@ func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}){
 }
 
 
+func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
+		
+	data := msg["data"]
+	identityobj := data["identity"]
+	// verify the PoW of the sender
+	if e.verify_PoW(identityobj){
+
+		sign := data["signature"]
+		received_commitmentSetList := data["commitmentSet"]
+		PK := identityobj.PK
+		finalTxnBlock := data["finalTxnBlock"]
+		finalTxnBlock_signature := data["finalTxnBlock_signature"]
+		// verify the signatures
+		if e.verify_sign(sign, received_commitmentSetList, PK) and e.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK){
+
+			// list init for final txn block
+			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
+			if _ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest] ; ok == false{
+				
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []Transaction{finalTxnBlock} 
+			}
+			
+			// creating the object that contains the identity and signature of the final member
+			identityAndSign := IdentityAndSign(finalTxnBlock_signature, identityobj)
+			
+			// check whether this combination of identity and sign already exists or not
+			flag := true
+			for _ , idSignObj := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]{
+				
+				if idSignObj.isEqual(identityAndSign){	
+					// it exists
+					flag = false
+					break
+				}
+			}
+			if flag {
+				// appending the identity and sign of final member
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = append(e.finalBlockbyFinalCommittee[finaltxnBlockDigest], identityAndSign)
+			}
+
+			// block is signed by sufficient final members and when the final block has not been sent to the client yet
+			if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c/2 + 1 && e.state != ELASTICO_STATES["FinalBlockSentToClient"]{
+				// for final members, their state is updated only when they have also sent the finalblock to ntw
+				if e.isFinalMember() {
+
+					if e.finalBlock["sent"] {
+
+						e.state = ELASTICO_STATES["FinalBlockReceived"]
+					}
+
+				} else {
+
+					e.state = ELASTICO_STATES["FinalBlockReceived"]
+				}
+
+			// union of commitments
+				e.newRcommitmentSet |= set(received_commitmentSetList)
+			}
+
+
+		}else {
+
+			logging.error("Signature invalid in final block received")
+		}
+	}else {
+		logging.error("PoW not valid when final member send the block")
+	}
+}
+
 func (e *Elastico) receive(msg map[string]interface{}){
 	/*
 		method to recieve messages for a node as per the type of a msg
@@ -586,61 +655,8 @@ func (e *Elastico) receive(msg map[string]interface{}){
 		
 	}else if msg["type"] == "finalTxnBlock"{
 
-		data := msg["data"]
-		identityobj := data["identity"]
-		// verify the PoW of the sender
-		if e.verify_PoW(identityobj){
+		e.receive_finalTxnBlock(msg)
 
-			sign := data["signature"]
-			received_commitmentSetList := data["commitmentSet"]
-			PK := identityobj.PK
-			finalTxnBlock := data["finalTxnBlock"]
-			finalTxnBlock_signature := data["finalTxnBlock_signature"]
-			// verify the signatures
-			if e.verify_sign(sign, received_commitmentSetList, PK) and e.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK){
-
-				// list init for final txn block
-				finaltxnBlockDigest = txnHexdigest(finalTxnBlock)
-				if finaltxnBlockDigest not in e.finalBlockbyFinalCommittee:
-					e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []
-					e.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
-				
-				// creating the object that contains the identity and signature of the final member
-				identityAndSign = IdentityAndSign(finalTxnBlock_signature, identityobj)
-				
-				// check whether this combination of identity and sign already exists or not
-				flag := true
-				for idSignObj in  e.finalBlockbyFinalCommittee[finaltxnBlockDigest]:
-					if idSignObj.isEqual(identityAndSign):
-						// it exists
-						flag = false
-						break
-				if flag:
-					// appending the identity and sign of final member
-					e.finalBlockbyFinalCommittee[finaltxnBlockDigest].append(identityAndSign)
-
-				// block is signed by sufficient final members and when the final block has not been sent to the client yet
-				if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c//2 + 1 and e.state != ELASTICO_STATES["FinalBlockSentToClient"]:
-
-					// for final members, their state is updated only when they have also sent the finalblock to ntw
-					if e.isFinalMember():
-						if e.finalBlock["sent"]:
-							e.state = ELASTICO_STATES["FinalBlockReceived"]
-					else:
-						e.state = ELASTICO_STATES["FinalBlockReceived"]
-
-				if e.newRcommitmentSet == "":
-					e.newRcommitmentSet = set()
-				// union of commitments
-				e.newRcommitmentSet |= set(received_commitmentSetList)
-
-			}else{
-
-				logging.error("Signature invalid in final block received")
-			}
-		}else{
-			logging.error("PoW not valid when final member send the block")
-		}
 	}else if msg["type"] == "intraCommitteeBlock" && e.isFinalMember(){
 
 		// final committee member receives the final set of txns along with the signature from the node
