@@ -20,35 +20,35 @@ import (
 	"github.com/streadway/amqp"      // for rabbitmq
 )
 
-// Elastico_States - states reperesenting the running state of the node
-var Elastico_States = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "FinalBlockSent": 26, "FinalBlockReceived": 27, "BroadcastedR": 28, "ReceivedR": 29, "FinalBlockSentToClient": 30, "LedgerUpdated": 31}
+// ElasticoStates - states reperesenting the running state of the node
+var ElasticoStates = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "FinalBlockSent": 26, "FinalBlockReceived": 27, "BroadcastedR": 28, "ReceivedR": 29, "FinalBlockSentToClient": 30, "LedgerUpdated": 31}
 
 // shared lock among processes
 var lock sync.Mutex
 
 // shared port among the processes
-var port int = 49152
+var port = 49152
 
 // n : number of nodes
 var n int64 = 66
 
 // s - where 2^s is the number of committees
-var s int = 2
+var s = 2
 
 // c - size of committee
-var c int = 4
+var c = 4
 
 // D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-var D int = 6
+var D = 6
 
 // r - number of bits in random string
 var r int64 = 4
 
-// fin_num - final committee id
-var fin_num int64 = 0
+// finNum - final committee id
+var finNum int64
 
-// network_nodes - list of elastico objects
-var network_nodes []Elastico
+// networkNodes - list of elastico objects
+var networkNodes []Elastico
 
 func failOnError(err error, msg string) {
 	// logging the error
@@ -105,18 +105,17 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message")
 }
 
+// MulticastCommittee :- each node getting views of its committee members from directory members
 func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txns map[int64][]Transaction) {
-	/*
-		each node getting views of its committee members from directory members
-	*/
+
 	// get the final committee members with the fixed committee id
-	finalCommitteeMembers := commList[fin_num]
-	for committee_id, commMembers := range commList {
+	finalCommitteeMembers := commList[finNum]
+	for committeeID, commMembers := range commList {
 
 		// find the primary identity, Take the first identity
 		// ToDo: fix this, many nodes can be primary
-		primaryId := commMembers[0]
-		for _, memberId := range commMembers {
+		primaryID := commMembers[0]
+		for _, memberID := range commMembers {
 
 			// send the committee members , final committee members
 			data := make(map[string]interface{})
@@ -125,27 +124,25 @@ func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txn
 			data["identity"] = identityobj
 
 			// give txns only to the primary node
-			if memberId.isEqual(&primaryId) {
-				data["txns"] = txns[committee_id]
+			if memberID.isEqual(&primaryID) {
+				data["txns"] = txns[committeeID]
 			}
 			// construct the msg
 			msg := make(map[string]interface{})
 			msg["data"] = data
 			msg["type"] = "committee members views"
 			// send the committee member views to nodes
-			memberId.send(msg)
+			memberID.send(msg)
 		}
 	}
 }
 
-func BroadcastTo_Network(data map[string]interface{}, type_ string) {
-	/*
-		Broadcast data to the whole ntw
-	*/
+// BroadcastToNetwork - Broadcast data to the whole ntw
+func BroadcastToNetwork(data map[string]interface{}, _type string) {
 	// construct msg
 	msg := make(map[string]interface{})
 	msg["data"] = data
-	msg["type"] = type_
+	msg["type"] = _type
 
 	connection := getConnection()
 	defer connection.Close() // close the connection
@@ -153,14 +150,14 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string) {
 	channel := getChannel(connection)
 	defer channel.Close() // close the channel
 
-	for _, node := range network_nodes {
+	for _, node := range networkNodes {
 		nodePort := strconv.Itoa(node.port)
 		queueName := "hello" + nodePort
 		publishMsg(channel, queueName, msg) //publish the message in queue
 	}
 }
 
-func random_gen(r int64) *big.Int {
+func randomGen(r int64) *big.Int {
 	/*
 		generate a random integer
 	*/
@@ -176,16 +173,17 @@ func random_gen(r int64) *big.Int {
 	return randomNum
 }
 
-// structure for identity of nodes
+// Identity :- structure for identity of nodes
 type Identity struct {
-	IP               string
-	PK               *rsa.PublicKey
-	committee_id     int64
-	PoW              map[string]interface{}
-	epoch_randomness string
-	port             int
+	IP              string
+	PK              *rsa.PublicKey
+	committeeID     int64
+	PoW             map[string]interface{}
+	epochRandomness string
+	port            int
 }
 
+// IdentityInit :- initialise of Identity members
 func (i *Identity) IdentityInit() {
 	i.PoW = make(map[string]interface{})
 }
@@ -195,7 +193,7 @@ func (i *Identity) isEqual(identityobj *Identity) bool {
 		checking two objects of Identity class are equal or not
 
 	*/
-	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["set_of_Rs"] == identityobj.PoW["set_of_Rs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
+	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committeeID == identityobj.committeeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["setOfRs"] == identityobj.PoW["setOfRs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epochRandomness == identityobj.epochRandomness && i.port == identityobj.port
 }
 
 func (i *Identity) send(msg map[string]interface{}) {
@@ -216,13 +214,15 @@ func (i *Identity) send(msg map[string]interface{}) {
 	publishMsg(channel, queueName, msg) // publish the msg in queue
 }
 
+// Transaction :- structure for transaction
 type Transaction struct {
 	sender   string
 	receiver string
-	amount   *big.Int // random_gen returns *big.Int
+	amount   *big.Int // randomGen returns *big.Int
 	// ToDo: include timestamp or not
 }
 
+// TransactionInit :- initialise of data members
 func (t *Transaction) TransactionInit(sender string, receiver string, amount *big.Int) {
 	t.sender = sender
 	t.receiver = receiver
@@ -238,8 +238,8 @@ func (t *Transaction) hexdigest() string {
 	digest.Write([]byte(t.receiver))
 	digest.Write([]byte(t.amount.String())) // convert amount(big.Int) to string
 
-	hash_val := fmt.Sprintf("%x", digest.Sum(nil))
-	return hash_val
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+	return hashVal
 }
 
 func (t *Transaction) isEqual(transaction Transaction) bool {
@@ -249,30 +249,31 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 	return t.sender == transaction.sender && t.receiver == transaction.receiver && t.amount == transaction.amount //&& t.timestamp == transaction.timestamp
 }
 
+// Elastico :- structure of elastico node
 type Elastico struct {
-	connection    *amqp.Connection
-	IP            string
-	port          int
-	key           *rsa.PrivateKey
-	PoW           map[string]interface{}
-	cur_directory []Identity
-	identity      Identity
-	committee_id  int64
+	connection   *amqp.Connection
+	IP           string
+	port         int
+	key          *rsa.PrivateKey
+	PoW          map[string]interface{}
+	curDirectory []Identity
+	identity     Identity
+	committeeID  int64
 	// only when this node is the member of directory committee
-	committee_list map[int64][]Identity
+	committeeList map[int64][]Identity
 	// only when this node is not the member of directory committee
-	committee_Members []Identity
-	is_directory      bool
-	is_final          bool
-	epoch_randomness  string
-	Ri                string
+	committeeMembers []Identity
+	isDirectory      bool
+	isFinal          bool
+	epochRandomness  string
+	Ri               string
 	// only when this node is the member of final committee
 	commitments                    map[string]bool
-	txn_block                      []Transaction
-	set_of_Rs                      map[string]bool
-	newset_of_Rs                   map[string]bool
-	CommitteeConsensusData         map[int]map[string][]string
-	CommitteeConsensusDataTxns     map[int]map[string][]Transaction
+	txnBlock                       []Transaction
+	setOfRs                        map[string]bool
+	newsetOfRs                     map[string]bool
+	CommitteeConsensusData         map[int64]map[string][]string
+	CommitteeConsensusDataTxns     map[int64]map[string][]Transaction
 	finalBlockbyFinalCommittee     map[int]map[string][]string
 	finalBlockbyFinalCommitteeTxns map[int]map[string][]Transaction
 	state                          int
@@ -287,7 +288,7 @@ type Elastico struct {
 	flag     bool
 	views    map[int]bool
 	primary  bool
-	viewId   int
+	viewID   int
 	faulty   bool
 	// pre_prepareMsgLog
 	// prepareMsgLog
@@ -301,7 +302,7 @@ type Elastico struct {
 	// FinalcommittedData
 }
 
-func (e *Elastico) get_key() {
+func (e *Elastico) getKey() {
 	/*
 		for each node, it will set key as public pvt key pair
 	*/
@@ -311,7 +312,7 @@ func (e *Elastico) get_key() {
 	failOnError(err, "key generation")
 }
 
-func (e *Elastico) get_IP() {
+func (e *Elastico) getIP() {
 	/*
 		for each node(processor) , get IP addr
 	*/
@@ -330,65 +331,65 @@ func (e *Elastico) initER() {
 		initialise r-bit epoch random string
 	*/
 
-	randomnum := random_gen(r)
+	randomnum := randomGen(r)
 	// set r-bit binary string to epoch randomness
-	e.epoch_randomness = fmt.Sprintf("%0"+strconv.FormatInt(r, 10)+"b\n", randomnum)
+	e.epochRandomness = fmt.Sprintf("%0"+strconv.FormatInt(r, 10)+"b\n", randomnum)
 }
 
-func (e *Elastico) get_port() {
+func (e *Elastico) getPort() {
 	/*
 		get port number for the process
 	*/
 	// acquire the lock
 	lock.Lock()
-	port += 1
+	port++
 	e.port = port
 	// release the lock
 	defer lock.Unlock()
 }
 
-func (e *Elastico) compute_PoW() {
+func (e *Elastico) computePoW() {
 	/*
 		returns hash which satisfies the difficulty challenge(D) : PoW["hash"]
 	*/
-	zero_string := ""
+	zeroString := ""
 	for i := 0; i < D; i++ {
-		zero_string += "0"
+		zeroString += "0"
 	}
 	// ToDo: type assertion for interface
 	nonce := e.PoW["nonce"].(int)
-	if e.state == Elastico_States["NONE"] {
+	if e.state == ElasticoStates["NONE"] {
 		// public key
 		PK := e.key.Public()
 		fmt.Printf("%T", PK)
 		rsaPublickey := PK.(*rsa.PublicKey)
 		IP := e.IP
-		// If it is the first epoch , randomset_R will be an empty set .
-		// otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
-		randomset_R := make(map[string]bool)
-		if len(e.set_of_Rs) > 0 {
+		// If it is the first epoch , randomsetR will be an empty set .
+		// otherwise randomsetR will be any c/2 + 1 random strings Ri that node receives from the previous epoch
+		randomsetR := make(map[string]bool)
+		if len(e.setOfRs) > 0 {
 			// ToDo: complete this for further epochs
-			// e.epoch_randomness, randomset_R = e.xor_R()
+			// e.epochRandomness, randomsetR = e.xor_R()
 		}
 		// 	compute the digest
 		digest := sha256.New()
 		digest.Write([]byte(IP))
 		digest.Write(rsaPublickey.N.Bytes())
 		digest.Write([]byte(strconv.Itoa(rsaPublickey.E)))
-		digest.Write([]byte(e.epoch_randomness))
+		digest.Write([]byte(e.epochRandomness))
 		digest.Write([]byte(strconv.Itoa(nonce)))
 
-		hash_val := fmt.Sprintf("%x", digest.Sum(nil))
-		if strings.HasPrefix(hash_val, zero_string) {
+		hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+		if strings.HasPrefix(hashVal, zeroString) {
 			//hash starts with leading D 0's
-			e.PoW["hash"] = hash_val
-			e.PoW["set_of_Rs"] = randomset_R
+			e.PoW["hash"] = hashVal
+			e.PoW["setOfRs"] = randomsetR
 			e.PoW["nonce"] = nonce
 			// change the state after solving the puzzle
-			e.state = Elastico_States["PoW Computed"]
+			e.state = ElasticoStates["PoW Computed"]
 		} else {
 			// try for other nonce
-			nonce += 1
+			nonce++
 			e.PoW["nonce"] = nonce
 		}
 	}
@@ -398,7 +399,7 @@ func (e *Elastico) checkCommitteeFull() {
 	/*
 		directory member checks whether the committees are full or not
 	*/
-	commList := e.committee_list
+	commList := e.committeeList
 	flag := 0
 	numOfCommittees := int64(math.Pow(2, float64(s)))
 	// iterating over all committee ids
@@ -415,26 +416,26 @@ func (e *Elastico) checkCommitteeFull() {
 	if flag == 0 {
 
 		log.Warn("committees full  - good")
-		if e.state == Elastico_States["RunAsDirectory after-TxnReceived"] {
+		if e.state == ElasticoStates["RunAsDirectory after-TxnReceived"] {
 
 			// notify the final members
-			e.notify_finalCommittee()
+			e.notifyFinalCommittee()
 			// multicast the txns and committee members to the nodes
 			MulticastCommittee(commList, e.identity, e.txn)
 			// change the state after multicast
-			e.state = Elastico_States["RunAsDirectory after-TxnMulticast"]
+			e.state = ElasticoStates["RunAsDirectory after-TxnMulticast"]
 		}
 	}
 }
 
-func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
+func (e *Elastico) receiveDirectoryMember(msg map[string]interface{}) {
 	identityobj, _ := msg["data"].(Identity)
 	// verify the PoW of the sender
-	if e.verify_PoW(identityobj) {
-		if len(e.cur_directory) < c {
+	if e.verifyPoW(identityobj) {
+		if len(e.curDirectory) < c {
 			// check whether identityobj is already present or not
 			flag := true
-			for _, obj := range e.cur_directory {
+			for _, obj := range e.curDirectory {
 				if identityobj.isEqual(&obj) {
 					flag = false
 					break
@@ -442,7 +443,7 @@ func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
 			}
 			if flag {
 				// append the object if not already present
-				e.cur_directory = append(e.cur_directory, identityobj)
+				e.curDirectory = append(e.curDirectory, identityobj)
 			}
 		}
 	} else {
@@ -450,29 +451,29 @@ func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
 	}
 }
 
-func (e *Elastico) receive_newNode(msg map[string]interface{}) {
+func (e *Elastico) receiveNewNode(msg map[string]interface{}) {
 	// new node is added to the corresponding committee list if committee list has less than c members
 	identityobj, _ := msg["data"].(Identity)
 	// verify the PoW
-	if e.verify_PoW(identityobj) {
-		_, ok := e.committee_list[identityobj.committee_id]
+	if e.verifyPoW(identityobj) {
+		_, ok := e.committeeList[identityobj.committeeID]
 		if ok == false {
 
 			// Add the identity in committee
-			e.committee_list[identityobj.committee_id] = []Identity{identityobj}
+			e.committeeList[identityobj.committeeID] = []Identity{identityobj}
 
-		} else if len(e.committee_list[identityobj.committee_id]) < c {
+		} else if len(e.committeeList[identityobj.committeeID]) < c {
 			// Add the identity in committee
 			flag := true
-			for _, obj := range e.committee_list[identityobj.committee_id] {
+			for _, obj := range e.committeeList[identityobj.committeeID] {
 				if identityobj.isEqual(&obj) {
 					flag = false
 					break
 				}
 			}
 			if flag {
-				e.committee_list[identityobj.committee_id] = append(e.committee_list[identityobj.committee_id], identityobj)
-				if len(e.committee_list[identityobj.committee_id]) == c {
+				e.committeeList[identityobj.committeeID] = append(e.committeeList[identityobj.committeeID], identityobj)
+				if len(e.committeeList[identityobj.committeeID]) == c {
 					// check that if all committees are full
 					e.checkCommitteeFull()
 				}
@@ -484,7 +485,7 @@ func (e *Elastico) receive_newNode(msg map[string]interface{}) {
 	}
 }
 
-func (e *Elastico) receive_views(msg map[string]interface{}) {
+func (e *Elastico) receiveViews(msg map[string]interface{}) {
 	data := msg["data"].(map[string]interface{})
 	identityobj := data["identity"].(Identity)
 	// union of committe members views
@@ -498,67 +499,73 @@ func (e *Elastico) receive_views(msg map[string]interface{}) {
 		// update the txn block
 		// ToDo: txnblock should be ordered, not set
 		txns := data["txns"].([]Transaction)
-		e.txn_block = e.unionTxns(e.txn_block, txns)
+		e.txnBlock = e.unionTxns(e.txnBlock, txns)
 		log.Warn("I am primary", e.port)
 		e.primary = true
 	}
 	// ToDo: verify this union thing
 	// union of committee members wrt directory member
-	e.committee_Members = e.unionViews(e.committee_Members, commMembers)
+	e.committeeMembers = e.unionViews(e.committeeMembers, commMembers)
 	// union of final committee members wrt directory member
 	e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers, finalMembers)
 	// received the members
-	if e.state == Elastico_States["Formed Committee"] && len(e.views) >= c/2+1 {
+	if e.state == ElasticoStates["Formed Committee"] && len(e.views) >= c/2+1 {
 
-		e.state = Elastico_States["Receiving Committee Members"]
+		e.state = ElasticoStates["Receiving Committee Members"]
 	}
 }
 
-func (e *Elastico) receive_hash(msg map[string]interface{}) {
+func (e *Elastico) receiveHash(msg map[string]interface{}) {
 
 	// receiving H(Ri) by final committe members
 	data := msg["data"].(map[string]interface{})
 	identityobj := data["identity"].(Identity)
-	if e.verify_PoW(identityobj) {
+	if e.verifyPoW(identityobj) {
 		HashRi := data["Hash_Ri"].(string)
 		e.commitments[HashRi] = true
 	}
 }
 
-func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}) {
+func (e *Elastico) receiveRandomStringBroadcast(msg map[string]interface{}) {
 
 	data := msg["data"].(map[string]interface{})
 	identityobj := data["identity"].(Identity)
-	if e.verify_PoW(identityobj) {
+	if e.verifyPoW(identityobj) {
 
 		Ri := data["Ri"].(string)
 		HashRi := e.hexdigest(Ri)
 
 		if _, ok := e.newRcommitmentSet[HashRi]; ok {
 
-			e.newset_of_Rs[Ri] = true
+			e.newsetOfRs[Ri] = true
 
-			if len(e.newset_of_Rs) >= c/2+1 {
-				e.state = Elastico_States["ReceivedR"]
+			if len(e.newsetOfRs) >= c/2+1 {
+				e.state = ElasticoStates["ReceivedR"]
 			}
 		}
 	}
 }
 
-func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
+func unionSet(newSet map[string]bool, receivedSet map[string]bool) {
+	for commitment := range receivedSet {
+		newSet[commitment] = true
+	}
+}
+
+func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 
 	data := msg["data"].(map[string]interface{})
 	identityobj := data["identity"].(Identity)
 	// verify the PoW of the sender
-	if e.verify_PoW(identityobj) {
+	if e.verifyPoW(identityobj) {
 
 		sign := data["signature"].(string)
-		received_commitmentSetList := data["commitmentSet"]
+		receivedCommitmentSetList := data["commitmentSet"].(map[string]bool)
 		PK := identityobj.PK
-		finalTxnBlock := data["finalTxnBlock"].(map[string]interface{})
-		finalTxnBlock_signature := data["finalTxnBlock_signature"].(string)
+		finalTxnBlock := data["finalTxnBlock"].(Transaction)
+		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
-		if e.verify_sign(sign, received_commitmentSetList, PK) && e.verify_signTxnList(finalTxnBlock_signature, finalTxnBlock, PK) {
+		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verify_signTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
