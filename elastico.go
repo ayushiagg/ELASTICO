@@ -125,7 +125,7 @@ func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txn
 			data["identity"] = identityobj
 
 			// give txns only to the primary node
-			if memberId == primaryId {
+			if memberId.isEqual(&primaryId) {
 				data["txns"] = txns[committee_id]
 			}
 			// construct the msg
@@ -436,7 +436,7 @@ func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
 			// check whether identityobj is already present or not
 			flag := true
 			for _, obj := range e.cur_directory {
-				if identityobj.isEqual(obj) {
+				if identityobj.isEqual(&obj) {
 					flag = false
 					break
 				}
@@ -466,7 +466,7 @@ func (e *Elastico) receive_newNode(msg map[string]interface{}) {
 			// Add the identity in committee
 			flag := true
 			for _, obj := range e.committee_list[identityobj.committee_id] {
-				if identityobj.isEqual(obj) {
+				if identityobj.isEqual(&obj) {
 					flag = false
 					break
 				}
