@@ -527,6 +527,16 @@ func(e *Elastico) receive_views(msg map[string]interface{}){
 	}
 }
 
+func (e *Elastico)receive_hash(msg map[string]interface{}) {
+	
+	// receiving H(Ri) by final committe members
+	data := msg["data"]
+	identityobj := data["identity"]
+	if e.verify_PoW(identityobj){
+		e.commitments = append(e.commitments, data["Hash_Ri"])
+	}
+}
+
 
 func (e *Elastico) receive(msg map[string]interface{}){
 	/*
@@ -547,12 +557,8 @@ func (e *Elastico) receive(msg map[string]interface{}){
 
 	}else if msg["type"] == "hash" && e.isFinalMember(){
 
-		// receiving H(Ri) by final committe members
-		data = msg["data"]
-		identityobj = data["identity"]
-		if e.verify_PoW(identityobj){
-			e.commitments.add(data["Hash_Ri"])
-		}
+		e.receive_hash(msg)
+
 	}else if msg["type"] == "RandomStringBroadcast"{
 
 		data := msg["data"]
