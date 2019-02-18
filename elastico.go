@@ -709,18 +709,22 @@ func (e *Elastico) receive(msg map[string]interface{}){
 			e.runPBFT(e.mergedBlock)
 		}
 	}else if msg["type"] == "send txn set and sign to final committee"{
+
 		if e.is_directory == false{
 			e.SendtoFinal()
 		}
 	}else if msg["type"] == "verify and merge intra consensus data"{
+
 		if e.isFinalMember(){
 			e.verifyAndMergeConsensusData()
 		}
 	}else if msg["type"] == "send commitments of Ris"{
+
 		if e.isFinalMember(){
 			e.sendCommitment()
 		}
 	}else if msg["type"] == "broadcast final set of txns to the ntw"{
+
 		if e.isFinalMember(){
 			e.BroadcastFinalTxn()
 		}
@@ -730,7 +734,9 @@ func (e *Elastico) receive(msg map[string]interface{}){
 		if e.verify_PoW(msg["data"]["identity"]) && e.committee_id == fin_num{
 			e.is_final = true
 		}
+
 	}else if msg["type"] == "Broadcast Ri"{
+
 		if e.isFinalMember(){
 			e.BroadcastR()
 		}
@@ -1406,7 +1412,7 @@ func (e *Elastico) getCommitment() string{
 
 
 
-func (e *Elastico) executeReset{
+func (e *Elastico) executeReset(){
 	/*
 		call for reset
 	*/
@@ -1759,7 +1765,6 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 		// time.sleep(60)
 	}
 }
-
 
 
 func createTxns() []Transaction {
