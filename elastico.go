@@ -464,6 +464,38 @@ func (e *Elastico) receive_directoryMember(msg map[string]interface{}){
 	}
 }
 
+
+func(e *Elastico) receive_newNode(msg[string]interface{}) {
+	// new node is added to the corresponding committee list if committee list has less than c members
+	identityobj := msg["data"]
+	// verify the PoW
+	if e.verify_PoW(identityobj){
+		_ , ok := e.committee_list[identityobj.committee_id]
+		if ok == false{
+			
+			// Add the identity in committee
+			e.committee_list[identityobj.committee_id] = []Identity{identityobj}
+
+		}else if len(e.committee_list[identityobj.committee_id]) < c {
+			// Add the identity in committee
+			flag := true
+			for _,obj := range e.committee_list[identityobj.committee_id]{
+				if identityobj.isEqual(obj):
+					flag = false
+					break
+			}
+			if flag {
+				e.committee_list[identityobj.committee_id] = append(e.committee_list[identityobj.committee_id], identityobj)
+				if len(e.committee_list[identityobj.committee_id]) == c{
+
+					// check that if all committees are full
+					e.checkCommitteeFull()
+				}
+			}
+		}
+}
+
+
 func (e *Elastico) receive(msg map[string]interface{}){
 	/*
 		method to recieve messages for a node as per the type of a msg
