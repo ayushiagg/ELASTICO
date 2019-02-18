@@ -621,11 +621,47 @@ func (e *Elastico) receive_finalTxnBlock(msg map[string]interface{}) {
 
 		}else {
 
-			logging.error("Signature invalid in final block received")
+			log.Error("Signature invalid in final block received")
 		}
 	}else {
-		logging.error("PoW not valid when final member send the block")
+		log.Error("PoW not valid when final member send the block")
 	}
+}
+
+
+func (e *Elastico) receive_intracommitteeblock(msg map[string]interface{}) {
+	// final committee member receives the final set of txns along with the signature from the node
+	data := msg["data"]
+	identityobj := data["identity"]
+
+	if e.verify_PoW(identityobj){
+
+		// verify the signatures
+		if e.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK) {
+
+			if _,ok := e.CommitteeConsensusData[identityobj.committee_id] ; ok == false{
+				
+				e.CommitteeConsensusData[identityobj.committee_id] = make(map[string]interface{})
+				e.CommitteeConsensusDataTxns[identityobj.committee_id] = make(map[string]interface{})
+			}
+			TxnBlockDigest := txnHexdigest( data["txnBlock"] )
+			if _, ok := e.CommitteeConsensusData[identityobj.committee_id][TxnBlockDigest] ; ok == false{
+				// todo: see this
+				e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
+				// store the txns for this digest
+				e.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
+			}
+
+			// add signatures for the txn block
+			e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = append(e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] ,data["sign"] )  
+
+		}else{
+			log.Error("signature invalid for intra committee block")
+		}
+	}else{
+		log.Error("pow invalid for intra committee block")
+	}
+
 }
 
 func (e *Elastico) receive(msg map[string]interface{}){
@@ -659,33 +695,8 @@ func (e *Elastico) receive(msg map[string]interface{}){
 
 	}else if msg["type"] == "intraCommitteeBlock" && e.isFinalMember(){
 
-		// final committee member receives the final set of txns along with the signature from the node
-		data = msg["data"]
-		identityobj = data["identity"]
-
-		logging.warning("%s received the intra committee block from commitee id - %s- %s", str(e.port) , str(identityobj.committee_id) , str(identityobj.port))    
-		if e.verify_PoW(identityobj):
-			// verify the signatures
-			if e.verify_signTxnList( data["sign"], data["txnBlock"] , identityobj.PK):
-				if identityobj.committee_id not in e.CommitteeConsensusData:
-					e.CommitteeConsensusData[identityobj.committee_id] = dict()
-					e.CommitteeConsensusDataTxns[identityobj.committee_id] = dict()
-				TxnBlockDigest = txnHexdigest( data["txnBlock"] )
-				if TxnBlockDigest not in e.CommitteeConsensusData[identityobj.committee_id]:
-					e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ] = set()
-					// store the txns for this digest
-
-					e.CommitteeConsensusDataTxns[identityobj.committee_id][ TxnBlockDigest ] = data["txnBlock"]
-
-				// add signatures for the txn block 
-				e.CommitteeConsensusData[identityobj.committee_id][ TxnBlockDigest ].add( data["sign"] )
-				logging.warning("intra committee block received by state - %s -%s- %s- receiver port%s" , str(e.state) ,str( identityobj.committee_id) , str(identityobj.port) , str(e.port))   
-			else:
-				logging.error("signature invalid for intra committee block")        
-		else{
-			logging.error("pow invalid for intra committee block")
-		}
-
+		e.receive_intracommitteeblock()
+		
 	}else if msg["type"] == "command to run pbft"{
 
 		if e.is_directory == false{
