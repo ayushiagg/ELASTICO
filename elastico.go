@@ -71,6 +71,33 @@ func getConnection() *amqp.Connection{
 	return connection
 }
 
+func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interface{}){
+
+	//create a hello queue to which the message will be delivered
+	queue, err := channel.QueueDeclare(
+		queueName,	//name of the queue
+		false,	// durable
+		false,	// delete when unused
+		false,	// exclusive
+		false,	// no-wait
+		nil,	// arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	body, err := json.Marshal(msg)
+	failOnError(err, "Failed to marshal")
+	err = channel.Publish(
+		"",				// exchange
+		queue.Name,		// routing key
+		false,			// mandatory
+		false,			// immediate
+		amqp.Publishing {
+		ContentType: "text/plain",
+		Body:		body,
+	})
+
+	failOnError(err, "Failed to publish a message")
+}
 
 func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	/*
@@ -90,31 +117,8 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	for _, node :=  range network_nodes{
 		
 		nodePort := strconv.Itoa(node.port)
-
-		//create a hello queue to which the message will be delivered
-		queue, err := channel.QueueDeclare(
-			"hello" + nodePort,	//name of the queue
-			false,	// durable
-			false,	// delete when unused
-			false,	// exclusive
-			false,	// no-wait
-			nil,	// arguments
-		)
-		failOnError(err, "Failed to declare a queue")
-
-		body, err := json.Marshal(msg)
-		failOnError(err, "Failed to marshal")
-		err = channel.Publish(
-			"",				// exchange
-			queue.Name,		// routing key
-			false,			// mandatory
-			false,			// immediate
-			amqp.Publishing {
-			ContentType: "text/plain",
-			Body:		body,
-		})
-
-		failOnError(err, "Failed to publish a message")
+		queueName := "hello" + nodePort
+		publishMsg(channel, queueName, msg)	//publish the message in queue
 	}
 }
 
@@ -164,43 +168,17 @@ func(i *Identity)send(msg map[string]interface{}){
 		send the msg to node based on their identity
 	*/
 	// establish a connection with RabbitMQ server
-	connection , err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	// report the error
-	failOnError(err, "Failed to connect to RabbitMQ")
-	// close the connection
+	connection := getConnection()
 	defer connection.Close()
+	
 	// create a channel
-	ch, er := connection.Channel()
-	// report the error
-	failOnError(er, "Failed to open a channel")
+	channel := getChannel(connection)
 	// close the channel
-	defer ch.Close()
-	port := strconv.Itoa(i.port)
+	defer channel.Close()
 
-	//create a hello queue to which the message will be delivered
-	queue, err := ch.QueueDeclare(
-		"hello" + port,	//name of the queue
-		false,	// durable
-		false,	// delete when unused
-		false,	// exclusive
-		false,	// no-wait
-		nil,	// arguments
-	)
-	failOnError(err, "Failed to declare a queue")
-
-	body, err := json.Marshal(msg)
-	failOnError(err, "Failed to marshal")
-	err = ch.Publish(
-		"",				// exchange
-		queue.Name,		// routing key
-		false,			// mandatory
-		false,			// immediate
-		amqp.Publishing {
-		ContentType: "text/plain",
-		Body:		body,
-	})
-
-	failOnError(err, "Failed to publish a message")
+	nodePort := strconv.Itoa(i.port)
+	queueName := "hello" + nodePort
+	publishMsg(channel, queueName, msg)		// publish the msg in queue
 }
 
 
