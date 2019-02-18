@@ -2,72 +2,78 @@
 package main
 
 import (
-	"fmt"
-	"crypto/sha256"
-	"crypto/rsa"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
+
 	// "reflect"
-	"sync" // for locks
-	"github.com/streadway/amqp" // for rabbitmq
-	log "github.com/sirupsen/logrus" // for logging
-	"os"
 	"encoding/json"
 	"math"
+	"os"
+	"sync" // for locks
+
+	log "github.com/sirupsen/logrus" // for logging
+	"github.com/streadway/amqp"      // for rabbitmq
 )
 
-// ELASTICO_STATES - states reperesenting the running state of the node
-var ELASTICO_STATES = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity" : 2, "Formed Committee": 3, "RunAsDirectory": 4 ,"RunAsDirectory after-TxnReceived" : 5,  "RunAsDirectory after-TxnMulticast" : 6, "Receiving Committee Members" : 7,"PBFT_NONE" : 8 , "PBFT_PRE_PREPARE" : 9, "PBFT_PRE_PREPARE_SENT"  : 10, "PBFT_PREPARE_SENT" : 11, "PBFT_PREPARED" : 12, "PBFT_COMMITTED" : 13, "PBFT_COMMIT_SENT" : 14,  "Intra Consensus Result Sent to Final" : 15,  "Merged Consensus Data" : 16, "FinalPBFT_NONE" : 17,  "FinalPBFT_PRE_PREPARE" : 18, "FinalPBFT_PRE_PREPARE_SENT"  : 19,  "FinalPBFT_PREPARE_SENT" : 20 , "FinalPBFT_PREPARED" : 21, "FinalPBFT_COMMIT_SENT" : 22, "FinalPBFT_COMMITTED" : 23, "PBFT Finished-FinalCommittee" : 24 , "CommitmentSentToFinal" : 25, "FinalBlockSent" : 26, "FinalBlockReceived" : 27,"BroadcastedR" : 28, "ReceivedR" :  29, "FinalBlockSentToClient" : 30,   "LedgerUpdated" : 31}
+// Elastico_States - states reperesenting the running state of the node
+var Elastico_States = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "FinalBlockSent": 26, "FinalBlockReceived": 27, "BroadcastedR": 28, "ReceivedR": 29, "FinalBlockSentToClient": 30, "LedgerUpdated": 31}
 
 // shared lock among processes
 var lock sync.Mutex
-// shared port among the processes 
+
+// shared port among the processes
 var port int = 49152
 
 // n : number of nodes
-var n int64 = 66 
+var n int64 = 66
+
 // s - where 2^s is the number of committees
 var s int = 2
+
 // c - size of committee
 var c int = 4
+
 // D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
 var D int = 6
+
 // r - number of bits in random string
 var r int64 = 4
+
 // fin_num - final committee id
 var fin_num int = 0
-// network_nodes - list of elastico objects
-var network_nodes []Elastico 
 
+// network_nodes - list of elastico objects
+var network_nodes []Elastico
 
 func failOnError(err error, msg string) {
 	// logging the error
 	if err != nil {
 		log.Error("see the error!")
 		log.Error("%s: %s", msg, err)
-		os.Exit()
+		os.Exit(1)
 	}
 }
-
 
 func getChannel(connection *amqp.Connection) *amqp.Channel {
 	/*
 		get channel
 	*/
-	channel, err := connection.Channel()	// create a channel
-	failOnError(err, "Failed to open a channel")		// report the error
+	channel, err := connection.Channel()         // create a channel
+	failOnError(err, "Failed to open a channel") // report the error
 	return channel
 }
 
-
-func getConnection() *amqp.Connection{
+func getConnection() *amqp.Connection {
 	/*
 		establish a connection with RabbitMQ server
 	*/
-	connection , err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")	// report the error
+	connection, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	failOnError(err, "Failed to connect to RabbitMQ") // report the error
 	return connection
 }
 
@@ -75,43 +81,43 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 
 	//create a hello queue to which the message will be delivered
 	queue, err := channel.QueueDeclare(
-		queueName,	//name of the queue
-		false,	// durable
-		false,	// delete when unused
-		false,	// exclusive
-		false,	// no-wait
-		nil,	// arguments
+		queueName, //name of the queue
+		false,     // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	failOnError(err, "Failed to declare a queue")
 
 	body, err := json.Marshal(msg)
 	failOnError(err, "Failed to marshal")
 	err = channel.Publish(
-		"",				// exchange
-		queue.Name,		// routing key
-		false,			// mandatory
-		false,			// immediate
-		amqp.Publishing {
-		ContentType: "text/plain",
-		Body:		body,
-	})
+		"",         // exchange
+		queue.Name, // routing key
+		false,      // mandatory
+		false,      // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        body,
+		})
 
 	failOnError(err, "Failed to publish a message")
 }
 
-func MulticastCommittee(commList map[int][]Identity, identityobj Identity, txns map[int][]Transaction){
+func MulticastCommittee(commList map[int][]Identity, identityobj Identity, txns map[int][]Transaction) {
 	/*
 		each node getting views of its committee members from directory members
 	*/
 	// get the final committee members with the fixed committee id
 	finalCommitteeMembers := commList[fin_num]
-	for committee_id , commMembers :=  range commList{
+	for committee_id, commMembers := range commList {
 
 		// find the primary identity, Take the first identity
 		// ToDo: fix this, many nodes can be primary
 		primaryId := commMembers[0]
-		for _, memberId := range commMembers{
-			
+		for _, memberId := range commMembers {
+
 			// send the committee members , final committee members
 			data := make(map[string]interface{})
 			data["committee members"] = commMembers
@@ -119,50 +125,47 @@ func MulticastCommittee(commList map[int][]Identity, identityobj Identity, txns 
 			data["identity"] = identityobj
 
 			// give txns only to the primary node
-			if memberId == primaryId{
+			if memberId == primaryId {
 				data["txns"] = txns[committee_id]
 			}
 			// construct the msg
-			mag := make(map[string]interface{})
+			msg := make(map[string]interface{})
 			msg["data"] = data
-			msg["type"] = "committee members views"	
+			msg["type"] = "committee members views"
 			// send the committee member views to nodes
 			memberId.send(msg)
 		}
 	}
 }
 
-
-
-func BroadcastTo_Network(data map[string]interface{}, type_ string){
+func BroadcastTo_Network(data map[string]interface{}, type_ string) {
 	/*
 		Broadcast data to the whole ntw
 	*/
 	// construct msg
-	msg:= make(map[string]interface{})
+	msg := make(map[string]interface{})
 	msg["data"] = data
-	msg["type"] = type_	
-	
+	msg["type"] = type_
+
 	connection := getConnection()
-	defer connection.Close()	// close the connection
+	defer connection.Close() // close the connection
 
 	channel := getChannel(connection)
-	defer channel.Close()	// close the channel
- 
-	for _, node :=  range network_nodes{
+	defer channel.Close() // close the channel
+
+	for _, node := range network_nodes {
 		nodePort := strconv.Itoa(node.port)
 		queueName := "hello" + nodePort
-		publishMsg(channel, queueName, msg)	//publish the message in queue
+		publishMsg(channel, queueName, msg) //publish the message in queue
 	}
 }
 
-
-func random_gen(r int64) (*big.Int) {
+func random_gen(r int64) *big.Int {
 	/*
 		generate a random integer
 	*/
 	// n is the base, e is the exponent, creating big.Int variables
-	var num ,e = big.NewInt(2) , big.NewInt(r)
+	var num, e = big.NewInt(2), big.NewInt(r)
 	// taking the exponent n to the power e and nil modulo, and storing the result in n
 	num.Exp(num, e, nil)
 	// generates the random num in the range[0,n)
@@ -174,37 +177,35 @@ func random_gen(r int64) (*big.Int) {
 }
 
 // structure for identity of nodes
-type Identity struct{
-	IP string
-	PK *rsa.PublicKey
-	committee_id int64
-	PoW map[string]interface{}
+type Identity struct {
+	IP               string
+	PK               *rsa.PublicKey
+	committee_id     int64
+	PoW              map[string]interface{}
 	epoch_randomness string
-	port int
+	port             int
 }
 
-func (i *Identity) IdentityInit(){
+func (i *Identity) IdentityInit() {
 	i.PoW = make(map[string]interface{})
 }
 
-
-func (i *Identity)isEqual(identityobj *Identity) bool{
+func (i *Identity) isEqual(identityobj *Identity) bool {
 	/*
 		checking two objects of Identity class are equal or not
-		
+
 	*/
-	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["set_of_Rs"] == identityobj.PoW["set_of_Rs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] &&i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
+	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committee_id == identityobj.committee_id && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["set_of_Rs"] == identityobj.PoW["set_of_Rs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epoch_randomness == identityobj.epoch_randomness && i.port == identityobj.port
 }
 
-
-func(i *Identity)send(msg map[string]interface{}){
+func (i *Identity) send(msg map[string]interface{}) {
 	/*
 		send the msg to node based on their identity
 	*/
 	// establish a connection with RabbitMQ server
 	connection := getConnection()
 	defer connection.Close()
-	
+
 	// create a channel
 	channel := getChannel(connection)
 	// close the channel
@@ -212,14 +213,13 @@ func(i *Identity)send(msg map[string]interface{}){
 
 	nodePort := strconv.Itoa(i.port)
 	queueName := "hello" + nodePort
-	publishMsg(channel, queueName, msg)		// publish the msg in queue
+	publishMsg(channel, queueName, msg) // publish the msg in queue
 }
 
-
-type Transaction struct{
-	sender string
+type Transaction struct {
+	sender   string
 	receiver string
-	amount *big.Int // random_gen returns *big.Int
+	amount   *big.Int // random_gen returns *big.Int
 	// ToDo: include timestamp or not
 }
 
@@ -229,7 +229,7 @@ func (t *Transaction) TransactionInit(sender string, receiver string, amount *bi
 	e.amount = amount
 }
 
-func (t *Transaction) hexdigest() string{
+func (t *Transaction) hexdigest() string {
 	/*
 		Digest of a transaction
 	*/
@@ -237,63 +237,59 @@ func (t *Transaction) hexdigest() string{
 	digest.Write([]byte(t.sender))
 	digest.Write([]byte(t.receiver))
 	digest.Write([]byte(t.amount.String())) // convert amount(big.Int) to string
-		
-	hash_val := fmt.Sprintf("%x" , digest.Sum(nil))
+
+	hash_val := fmt.Sprintf("%x", digest.Sum(nil))
 	return hash_val
 }
 
-
-
-func (t *Transaction)isEqual(transaction) bool{
+func (t *Transaction) isEqual(transaction Transaction) bool {
 	/*
 		compare two objs are equal or not
 	*/
-	return e.sender == transaction.sender and e.receiver == transaction.receiver and e.amount == transaction.amount and e.timestamp == transaction.timestamp
+	return e.sender == transaction.sender && e.receiver == transaction.receiver && e.amount == transaction.amount && e.timestamp == transaction.timestamp
 }
 
-
-type Elastico struct{
-
-	connection *amqp.Connection
-	IP string
-	port int
-	key *rsa.PrivateKey
-	PoW map[string]interface{}
+type Elastico struct {
+	connection    *amqp.Connection
+	IP            string
+	port          int
+	key           *rsa.PrivateKey
+	PoW           map[string]interface{}
 	cur_directory []Identity
-	identity Identity
-	committee_id int64
+	identity      Identity
+	committee_id  int64
 	// only when this node is the member of directory committee
 	committee_list map[int][]Identity
 	// only when this node is not the member of directory committee
 	committee_Members []Identity
-	is_directory bool
-	is_final bool
-	epoch_randomness string
-	Ri string
+	is_directory      bool
+	is_final          bool
+	epoch_randomness  string
+	Ri                string
 	// only when this node is the member of final committee
-	commitments map[string]bool
-	txn_block []Transaction
-	set_of_Rs map[string]bool
-	newset_of_Rs map[string]bool
-	CommitteeConsensusData map[int]map[string][]string
-	CommitteeConsensusDataTxns map[int]map[string][]Transaction
-	finalBlockbyFinalCommittee map[int]map[string][]string
+	commitments                    map[string]bool
+	txn_block                      []Transaction
+	set_of_Rs                      map[string]bool
+	newset_of_Rs                   map[string]bool
+	CommitteeConsensusData         map[int]map[string][]string
+	CommitteeConsensusDataTxns     map[int]map[string][]Transaction
+	finalBlockbyFinalCommittee     map[int]map[string][]string
 	finalBlockbyFinalCommitteeTxns map[int]map[string][]Transaction
-	state int
-	mergedBlock []Transaction
-	finalBlock map[string]interface{}
-	RcommitmentSet map[string]bool
-	newRcommitmentSet map[string]bool
-	finalCommitteeMembers []Identity
+	state                          int
+	mergedBlock                    []Transaction
+	finalBlock                     map[string]interface{}
+	RcommitmentSet                 map[string]bool
+	newRcommitmentSet              map[string]bool
+	finalCommitteeMembers          []Identity
 	// only when this is the member of the directory committee
-	txn map[int][]Transaction
+	txn      map[int][]Transaction
 	response []Transaction
-	flag bool
-	views map[int]bool
-	primary bool
-	viewId int
-	faulty bool
-	 // pre_prepareMsgLog
+	flag     bool
+	views    map[int]bool
+	primary  bool
+	viewId   int
+	faulty   bool
+	// pre_prepareMsgLog
 	// prepareMsgLog
 	// commitMsgLog
 	// preparedData
@@ -305,8 +301,7 @@ type Elastico struct{
 	// FinalcommittedData
 }
 
-
-func (e *Elastico) get_key(){
+func (e *Elastico) get_key() {
 	/*
 		for each node, it will set key as public pvt key pair
 	*/
