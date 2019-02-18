@@ -438,6 +438,32 @@ func (e *Elastico)checkCommitteeFull(){
 }
 
 
+func (e *Elastico) receive_directoryMember(msg map[string]interface{}){
+	identityobj := msg["data"]
+	// verify the PoW of the sender
+	if e.verify_PoW(identityobj){
+		if len(e.cur_directory) < c{
+
+			// check whether identityobj is already present or not
+			flag := true
+			for _ , obj := range e.cur_directory{
+				
+				if identityobj.isEqual(obj){
+					flag = false
+					break
+				}
+			}
+			if flag{
+				
+				// append the object if not already present
+				e.cur_directory = append(e.cur_directory, identityobj)
+			}
+		}
+	} else{
+		log.Error("PoW not valid of an incoming directory member " , identityobj )
+	}
+}
+
 func (e *Elastico) receive(msg map[string]interface{}){
 	/*
 		method to recieve messages for a node as per the type of a msg
@@ -445,31 +471,8 @@ func (e *Elastico) receive(msg map[string]interface{}){
 	// new node is added in directory committee if not yet formed
 	if msg["type"] == "directoryMember"{
 		
-		identityobj := msg["data"]
-		// verify the PoW of the sender
-		if e.verify_PoW(identityobj){
-			if len(e.cur_directory) < c{
-
-				// check whether identityobj is already present or not
-				flag := true
-				for obj in e.cur_directory{
-					
-					if identityobj.isEqual(obj){
-						
-						flag = false
-						break
-					}
-				}
-				if flag{
-					
-					// append the object if not already present
-					e.cur_directory.append(identityobj)
-				}
-			}
-		} else{
-			log.Error("PoW not valid of an incoming directory member " , identityobj )
-		}
-
+		e.receive_directoryMember(msg)
+		
 	}else if msg["type"] == "newNode" && e.is_directory{
 		// new node is added to the corresponding committee list if committee list has less than c members
 		identityobj := msg["data"]
