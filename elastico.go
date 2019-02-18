@@ -71,7 +71,7 @@ func getConnection() *amqp.Connection{
 	return connection
 }
 
-func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interface{}){
+func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interface{}) {
 
 	//create a hello queue to which the message will be delivered
 	queue, err := channel.QueueDeclare(
@@ -115,7 +115,6 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	defer channel.Close()	// close the channel
  
 	for _, node :=  range network_nodes{
-		
 		nodePort := strconv.Itoa(node.port)
 		queueName := "hello" + nodePort
 		publishMsg(channel, queueName, msg)	//publish the message in queue
@@ -1147,6 +1146,18 @@ func (e *Elastico) BroadcastR(){
 		log.Error("non final member broadcasting R")
 	}
 }
+
+
+func (e *Elastico) generate_randomstrings() {
+	/*
+		Generate r-bit random strings
+	*/
+	if e.isFinalMember() {
+		Ri := random_gen(r)
+		e.Ri = fmt.Sprintf("%0"+ strconv.FormatInt(r, 10) + "b\n", Ri)
+	}
+}
+
 
 
 func (e *Elastico) getCommitment() string{
