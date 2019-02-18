@@ -438,29 +438,26 @@ func (e *Elastico)checkCommitteeFull(){
 }
 
 
-func (e *Elastico) receive_directoryMember(msg map[string]interface{}){
+func (e *Elastico) receive_directoryMember(msg map[string]interface{}) {
 	identityobj := msg["data"]
 	// verify the PoW of the sender
-	if e.verify_PoW(identityobj){
-		if len(e.cur_directory) < c{
-
+	if e.verify_PoW(identityobj) {
+		if len(e.cur_directory) < c {
 			// check whether identityobj is already present or not
 			flag := true
-			for _ , obj := range e.cur_directory{
-				
-				if identityobj.isEqual(obj){
+			for _ , obj := range e.cur_directory {
+				if identityobj.isEqual(obj) {
 					flag = false
 					break
 				}
 			}
-			if flag{
-				
+			if flag {
 				// append the object if not already present
 				e.cur_directory = append(e.cur_directory, identityobj)
 			}
 		}
-	} else{
-		log.Error("PoW not valid of an incoming directory member " , identityobj )
+	} else {
+		log.Error("PoW not valid of an incoming directory member" , identityobj )
 	}
 }
 
