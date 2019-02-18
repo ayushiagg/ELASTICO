@@ -1299,6 +1299,21 @@ func (e *Elastico) execute(epochTxn){
 	}
 }
 
+
+func (e *Elastico)Send_to_Directory(){
+	/*
+		Send about new nodes to directory committee members
+	*/
+	// Add the new processor in particular committee list of directory committee nodes
+	for _, nodeId := range e.cur_directory{
+		msg := make(map[string]interafce{})
+		msg["data"] =  e.identity
+		msg["type"] = "newNode"
+		nodeId.send(msg)
+	}
+}
+
+
 func (e *Elastico) receiveTxns(epochTxn) {
 	/*
 		directory node will receive transactions from client
