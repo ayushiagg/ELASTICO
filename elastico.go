@@ -51,6 +51,16 @@ func failOnError(err error, msg string) {
 	}
 }
 
+
+func getChannel(connection *amqp.Connection) channel *amqp.Channel{
+	/*
+		get channel
+	*/
+	channel, err := connection.Channel()	// create a channel
+	failOnError(err, "Failed to open a channel")		// report the error
+	return channel
+}
+
 func getConnection() *amqp.Connection{
 	/*
 		establish a connection with RabbitMQ server
@@ -59,7 +69,6 @@ func getConnection() *amqp.Connection{
 	failOnError(err, "Failed to connect to RabbitMQ")	// report the error
 	return connection
 }
-
 
 
 func BroadcastTo_Network(data map[string]interface{}, type_ string){
@@ -74,16 +83,15 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	connection := getConnection()
 	defer connection.Close()	// close the connection
 
-	ch, err := connection.Channel()	// create a channel
-	failOnError(err, "Failed to open a channel")		// report the error
-	defer ch.Close()	// close the channel
+	channel := getChannel(connection)
+	defer channel.Close()	// close the channel
  
 	for _, node :=  range network_nodes{
 		
 		nodePort := strconv.Itoa(node.port)
 
 		//create a hello queue to which the message will be delivered
-		queue, err := ch.QueueDeclare(
+		queue, err := channel.QueueDeclare(
 			"hello" + nodePort,	//name of the queue
 			false,	// durable
 			false,	// delete when unused
@@ -95,7 +103,7 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
 
 		body, err := json.Marshal(msg)
 		failOnError(err, "Failed to marshal")
-		err = ch.Publish(
+		err = channel.Publish(
 			"",				// exchange
 			queue.Name,		// routing key
 			false,			// mandatory
