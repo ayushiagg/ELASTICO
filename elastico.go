@@ -538,6 +538,27 @@ func (e *Elastico)receive_hash(msg map[string]interface{}) {
 }
 
 
+func (e *Elastico) receive_RandomStringBroadcast(msg map[string]interface{}){
+
+	data := msg["data"]
+	identityobj := data["identity"]
+	if e.verify_PoW(identityobj){
+		
+		Ri := data["Ri"]
+		HashRi := e.hexdigest(Ri)
+
+		if _,ok := e.newRcommitmentSet[HashRi] : ok {
+
+			e.newset_of_Rs = append(e.newset_of_Rs , Ri)
+
+			if len(e.newset_of_Rs) >= c/2 + 1 {
+				e.state = ELASTICO_STATES["ReceivedR"]
+			}
+		}
+	}
+}
+
+
 func (e *Elastico) receive(msg map[string]interface{}){
 	/*
 		method to recieve messages for a node as per the type of a msg
@@ -561,21 +582,8 @@ func (e *Elastico) receive(msg map[string]interface{}){
 
 	}else if msg["type"] == "RandomStringBroadcast"{
 
-		data := msg["data"]
-		identityobj := data["identity"]
-		if e.verify_PoW(identityobj){
-			
-			Ri := data["Ri"]
-			HashRi := e.hexdigest(Ri)
-
-			if HashRi in e.newRcommitmentSet{
-				
-				e.newset_of_Rs.add(Ri)
-				if len(e.newset_of_Rs) >= c/2 + 1{
-					e.state = ELASTICO_STATES["ReceivedR"]
-				}
-			}
-		}
+		e.receive_RandomStringBroadcast(msg)
+		
 	}else if msg["type"] == "finalTxnBlock"{
 
 		data := msg["data"]
