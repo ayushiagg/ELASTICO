@@ -1128,6 +1128,25 @@ func (e *Elastico) process_FinalprepareMsg(msg map[string]interface{}){
 	}
 }
 
+func (e *Elastico) BroadcastR(){
+	/*
+		broadcast Ri to all the network, final member will do this
+	*/
+	if e.isFinalMember(){
+		data := make(map[string]interface{})
+		data["Ri"] = e.Ri
+		data["identity"] = e.identity
+		msg := make(map[string]interface{})
+		msg["data"] = data
+		msg["type"] = "RandomStringBroadcast"
+
+		e.state = ELASTICO_STATES["BroadcastedR"]
+		BroadcastTo_Network(data, "RandomStringBroadcast")
+
+	}else{
+		log.Error("non final member broadcasting R")
+	}
+}
 
 
 
