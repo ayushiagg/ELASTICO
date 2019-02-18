@@ -99,6 +99,41 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message")
 }
 
+func MulticastCommittee(commList map[int][]Identity, identityobj Identity, txns map[int][]Transaction){
+	/*
+		each node getting views of its committee members from directory members
+	*/
+	// get the final committee members with the fixed committee id
+	finalCommitteeMembers := commList[fin_num]
+	for committee_id , commMembers :=  range commList{
+
+		// find the primary identity, Take the first identity
+		// ToDo: fix this, many nodes can be primary
+		primaryId := commMembers[0]
+		for _, memberId := range commMembers{
+			
+			// send the committee members , final committee members
+			data := make(map[string]interface{})
+			data["committee members"] = commMembers
+			data["final Committee members"] = finalCommitteeMembers
+			data["identity"] = identityobj
+
+			// give txns only to the primary node
+			if memberId == primaryId{
+				data["txns"] = txns[committee_id]
+			}
+			// construct the msg
+			mag := make(map[string]interface{})
+			msg["data"] = data
+			msg["type"] = "committee members views"	
+			// send the committee member views to nodes
+			memberId.send(msg)
+		}
+	}
+}
+
+
+
 func BroadcastTo_Network(data map[string]interface{}, type_ string){
 	/*
 		Broadcast data to the whole ntw
