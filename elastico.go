@@ -52,7 +52,7 @@ func failOnError(err error, msg string) {
 }
 
 
-func getChannel(connection *amqp.Connection) channel *amqp.Channel{
+func getChannel(connection *amqp.Connection) *amqp.Channel {
 	/*
 		get channel
 	*/
@@ -60,6 +60,7 @@ func getChannel(connection *amqp.Connection) channel *amqp.Channel{
 	failOnError(err, "Failed to open a channel")		// report the error
 	return channel
 }
+
 
 func getConnection() *amqp.Connection{
 	/*
