@@ -361,8 +361,7 @@ func (e *Elastico) compute_PoW() {
 		// public key
 		PK := e.key.Public()
 		fmt.Printf("%T", PK)
-		rsaPublickey, err := PK.(*rsa.PublicKey)
-		failOnError(err, "rsa Public key conversion")
+		rsaPublickey := PK.(*rsa.PublicKey)
 		IP := e.IP
 		// If it is the first epoch , randomset_R will be an empty set .
 		// otherwise randomset_R will be any c/2 + 1 random strings Ri that node receives from the previous epoch
@@ -486,17 +485,20 @@ func (e *Elastico) receive_newNode(msg map[string]interface{}) {
 }
 
 func (e *Elastico) receive_views(msg map[string]interface{}) {
-
+	data := msg["data"].(map[string]interface{})
+	identityobj := data["identity"].(Identity)
 	// union of committe members views
-	e.views = append(e.views, msg["data"]["identity"].port)
-	commMembers := msg["data"]["committee members"]
-	finalMembers := msg["data"]["final Committee members"]
+	e.views[identityobj.port] = true
 
-	if _, ok := msg["data"]["txns"]; ok {
+	commMembers := data["committee members"].([]Identity)
+	finalMembers := data["final Committee members"].([]Identity)
+
+	if _, ok := data["txns"]; ok {
 
 		// update the txn block
 		// ToDo: txnblock should be ordered, not set
-		e.txn_block = e.unionTxns(e.txn_block, msg["data"]["txns"])
+		txns := data["txns"].([]Transaction)
+		e.txn_block = e.unionTxns(e.txn_block, txns)
 		log.Warn("I am primary", e.port)
 		e.primary = true
 	}
@@ -515,10 +517,11 @@ func (e *Elastico) receive_views(msg map[string]interface{}) {
 func (e *Elastico) receive_hash(msg map[string]interface{}) {
 
 	// receiving H(Ri) by final committe members
-	data := msg["data"]
-	identityobj := data["identity"]
+	data := msg["data"].(map[string]interface{})
+	identityobj := data["identity"].(Identity)
 	if e.verify_PoW(identityobj) {
-		e.commitments = append(e.commitments, data["Hash_Ri"])
+		HashRi := data["Hash_Ri"].(string)
+		e.commitments[HashRi] = true
 	}
 }
 
@@ -1172,7 +1175,7 @@ func (e *Elastico) form_committee() {
 	}
 }
 
-func (e *Elastico) verify_PoW(identityobj Identity) {
+func (e *Elastico) verify_PoW(identityobj Identity) bool {
 	/*
 		verify the PoW of the node identityobj
 	*/
