@@ -608,7 +608,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 				}
 
 				// union of commitments
-				e.newRcommitmentSet |= set(received_commitmentSetList)
+				unionSet(e.newRcommitmentSet, receivedCommitmentSetList)
 			}
 
 		} else {
@@ -976,57 +976,57 @@ func (e *Elastico) runFinalPBFT() {
 	/*
 		Run PBFT by final committee members
 	*/
-	if e.state == Elastico_States["FinalPBFT_NONE"] {
+	if e.state == ElasticoStates["FinalPBFT_NONE"] {
 
 		if e.primary {
 
 			// construct pre-prepare msg
-			finalpre_preparemsg := e.construct_Finalpre_prepare()
+			finalPrePreparemsg := e.construct_Finalpre_prepare()
 			// multicasts the pre-prepare msg to replicas
-			e.send_pre_prepare(finalpre_preparemsg)
+			e.send_pre_prepare(finalPrePreparemsg)
 
 			// change the state of primary to pre-prepared
-			e.state = Elastico_States["FinalPBFT_PRE_PREPARE_SENT"]
+			e.state = ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"]
 			// primary will log the pre-prepare msg for itself
-			e.logFinalPre_prepareMsg(finalpre_preparemsg)
+			e.logFinalPre_prepareMsg(finalPrePreparemsg)
 
 		} else {
 
 			// for non-primary members
-			if e.is_Finalpre_prepared() {
-				e.state = Elastico_States["FinalPBFT_PRE_PREPARE"]
+			if e.isFinalprePrepared() {
+				e.state = ElasticoStates["FinalPBFT_PRE_PREPARE"]
 			}
 		}
 
-	} else if e.state == Elastico_States["FinalPBFT_PRE_PREPARE"] {
+	} else if e.state == ElasticoStates["FinalPBFT_PRE_PREPARE"] {
 
 		if e.primary == false {
 
 			// construct prepare msg
 			FinalpreparemsgList := e.construct_Finalprepare()
 			e.send_prepare(FinalpreparemsgList)
-			e.state = Elastico_States["FinalPBFT_PREPARE_SENT"]
+			e.state = ElasticoStates["FinalPBFT_PREPARE_SENT"]
 		}
-	} else if e.state == Elastico_States["FinalPBFT_PREPARE_SENT"] || e.state == Elastico_States["FinalPBFT_PRE_PREPARE_SENT"] {
+	} else if e.state == ElasticoStates["FinalPBFT_PREPARE_SENT"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"] {
 
 		// ToDo: primary has not changed its state to "FinalPBFT_PREPARE_SENT"
 		if e.isFinalPrepared() {
 
-			e.state = Elastico_States["FinalPBFT_PREPARED"]
+			e.state = ElasticoStates["FinalPBFT_PREPARED"]
 		}
-	} else if e.state == Elastico_States["FinalPBFT_PREPARED"] {
+	} else if e.state == ElasticoStates["FinalPBFT_PREPARED"] {
 
 		commitMsgList := e.construct_Finalcommit()
 		e.send_commit(commitMsgList)
-		e.state = Elastico_States["FinalPBFT_COMMIT_SENT"]
+		e.state = ElasticoStates["FinalPBFT_COMMIT_SENT"]
 
-	} else if e.state == Elastico_States["FinalPBFT_COMMIT_SENT"] {
+	} else if e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] {
 
 		if e.isFinalCommitted() {
 
-			// for viewId in e.FinalcommittedData:
-			// 	for seqnum in e.FinalcommittedData[viewId]:
-			// 		msgList = e.FinalcommittedData[viewId][seqnum]
+			// for viewID in e.FinalcommittedData:
+			// 	for seqnum in e.FinalcommittedData[viewID]:
+			// 		msgList = e.FinalcommittedData[viewID][seqnum]
 			// 		for msg in msgList:
 			// 			e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msg)
 			// finalTxnBlock = e.finalBlock["finalBlock"]
@@ -1034,17 +1034,17 @@ func (e *Elastico) runFinalPBFT() {
 			// # order them! Reason : to avoid errors in signatures as sets are unordered
 			// # e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
 			// logging.warning("final block by port %s with final block %s" , str(e.port), str(e.finalBlock["finalBlock"]))
-			e.state = Elastico_States["FinalPBFT_COMMITTED"]
+			e.state = ElasticoStates["FinalPBFT_COMMITTED"]
 		}
 	}
 }
 
-func (e *Elastico) compute_fakePoW() {
+func (e *Elastico) computeFakePoW() {
 	/*
 		bad node generates the fake PoW
 	*/
 	// random fakeness
-	x := random_gen(32)
+	x := randomGen(32)
 	_, index := x.DivMod(x, big.NewInt(3), big.NewInt(0))
 
 	if index == 0 {
@@ -1052,73 +1052,73 @@ func (e *Elastico) compute_fakePoW() {
 		// Random hash with initial D hex digits 0s
 		digest := sha256.New()
 		ranHash := fmt.Sprintf("%x", digest.Sum(nil))
-		hash_val := ""
+		hashVal := ""
 		for i := 0; i < D; i++ {
-			hash_val += "0"
+			hashVal += "0"
 		}
-		e.PoW["hash"] = hash_val + ranHash[D:]
+		e.PoW["hash"] = hashVal + ranHash[D:]
 
 	} else if index == 1 {
 
 		// computing an invalid PoW using less number of values in digest
-		randomset_R := set()
-		zero_string = ""
+		randomsetR := set()
+		zeroString = ""
 		for i := 0; i < D; i++ {
-			zero_string += "0"
+			zeroString += "0"
 		}
-		// if len(e.set_of_Rs) > 0:
-		// 	e.epoch_randomness, randomset_R = e.xor_R()
+		// if len(e.setOfRs) > 0:
+		// 	e.epochRandomness, randomsetR = e.xor_R()
 		for {
 
 			digest := sha256.New()
 			nonce := e.PoW["nonce"]
 			digest.Write([]byte(strconv.Itoa(nonce)))
-			hash_val := fmt.Sprintf("%x", digest.Sum(nil))
-			if strings.HasPrefix(hash_val, zero_string) {
-				e.PoW["hash"] = hash_val
-				e.PoW["set_of_Rs"] = randomset_R
+			hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+			if strings.HasPrefix(hashVal, zeroString) {
+				e.PoW["hash"] = hashVal
+				e.PoW["setOfRs"] = randomsetR
 				e.PoW["nonce"] = nonce
 			} else {
 				// try for other nonce
-				nonce += 1
+				nonce++
 				e.PoW["nonce"] = nonce
 			}
 		}
 	} else if index == 2 {
 
 		// computing a random PoW
-		randomset_R := set()
-		// if len(e.set_of_Rs) > 0:
-		// 	e.epoch_randomness, randomset_R := e.xor_R()
+		randomsetR := set()
+		// if len(e.setOfRs) > 0:
+		// 	e.epochRandomness, randomsetR := e.xor_R()
 		digest := sha256.New()
 		ranHash := fmt.Sprintf("%x", digest.Sum(nil))
-		nonce := random_gen()
+		nonce := randomGen()
 		e.PoW["hash"] = ranHash
-		e.PoW["set_of_Rs"] = randomset_R
+		e.PoW["setOfRs"] = randomsetR
 		// ToDo: nonce has to be in int instead of big.Int
 		e.PoW["nonce"] = nonce
 	}
 
 	log.Warn("computed fake POW ", index)
-	e.state = Elastico_States["PoW Computed"]
+	e.state = ElasticoStates["PoW Computed"]
 
 }
 
-func (e *Elastico) form_identity() {
+func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
 		identity consists of public key, ip, committee id, PoW, nonce, epoch randomness
 	*/
-	if e.state == Elastico_States["PoW Computed"] {
+	if e.state == ElasticoStates["PoW Computed"] {
 		// export public key
 		PK := e.key.Public().(*rsa.PublicKey)
 
 		// set the committee id acc to PoW solution
-		e.committee_id = e.get_committeeid(e.PoW["hash"].(string))
+		e.committeeID = e.getCommitteeid(e.PoW["hash"].(string))
 
-		e.identity = Identity{e.IP, PK, e.committee_id, e.PoW, e.epoch_randomness, e.port}
+		e.identity = Identity{e.IP, PK, e.committeeID, e.PoW, e.epochRandomness, e.port}
 		// changed the state after identity formation
-		e.state = Elastico_States["Formed Identity"]
+		e.state = ElasticoStates["Formed Identity"]
 	}
 }
 
@@ -1130,10 +1130,10 @@ func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 	for _, data := range incomingData {
 
 		flag := false
-		for _, nodeId := range nodeData {
+		for _, nodeID := range nodeData {
 
 			// data is present already in nodeData
-			if nodeId.isEqual(data) {
+			if nodeID.isEqual(data) {
 				flag = true
 				break
 			}
@@ -1167,35 +1167,35 @@ func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transacti
 	return actualTxns
 }
 
-func (e *Elastico) form_committee() {
+func (e *Elastico) formCommittee() {
 	/*
 		creates directory committee if not yet created otherwise informs all the directory members
 	*/
-	if len(e.cur_directory) < c {
+	if len(e.curDirectory) < c {
 
-		e.is_directory = true
+		e.isDirectory = true
 		// broadcast the identity to whole ntw
-		BroadcastTo_Network(e.identity, "directoryMember")
+		BroadcastToNetwork(e.identity, "directoryMember")
 		// change the state as it is the directory member
-		e.state = Elastico_States["RunAsDirectory"]
+		e.state = ElasticoStates["RunAsDirectory"]
 	} else {
 
-		e.Send_to_Directory()
-		if e.state != Elastico_States["Receiving Committee Members"] {
+		e.SendToDirectory()
+		if e.state != ElasticoStates["Receiving Committee Members"] {
 
-			e.state = Elastico_States["Formed Committee"]
+			e.state = ElasticoStates["Formed Committee"]
 		}
 	}
 }
 
-func (e *Elastico) verify_PoW(identityobj Identity) bool {
+func (e *Elastico) verifyPoW(identityobj Identity) bool {
 	/*
 		verify the PoW of the node identityobj
 	*/
-	zero_string := ""
+	zeroString := ""
 	for i := 0; i < D; i++ {
 
-		zero_string += "0"
+		zeroString += "0"
 	}
 
 	PoW := identityobj.PoW
@@ -1206,23 +1206,23 @@ func (e *Elastico) verify_PoW(identityobj Identity) bool {
 	}
 
 	// Valid Hash has D leading '0's (in hex)
-	if !strings.HasPrefix(Pow["hash"], zero_string) {
+	if !strings.HasPrefix(Pow["hash"], zeroString) {
 		return false
 	}
 
 	// check Digest for set of Ri strings
-	// for Ri in PoW["set_of_Rs"]:
+	// for Ri in PoW["setOfRs"]:
 	// 	digest = e.hexdigest(Ri)
 	// 	if digest not in e.RcommitmentSet:
 	// 		return false
 
 	// reconstruct epoch randomness
-	epoch_randomness := identityobj.epoch_randomness
-	// if len(PoW["set_of_Rs"]) > 0:
+	epochRandomness := identityobj.epochRandomness
+	// if len(PoW["setOfRs"]) > 0:
 	// 	xor_val = 0
-	// 	for R in PoW["set_of_Rs"]:
+	// 	for R in PoW["setOfRs"]:
 	// 		xor_val = xor_val ^ int(R, 2)
-	// 	epoch_randomness = ("{:0" + str(r) +  "b}").format(xor_val)
+	// 	epochRandomness = ("{:0" + str(r) +  "b}").format(xor_val)
 
 	// recompute PoW
 	PK := identityobj.PK
@@ -1232,37 +1232,36 @@ func (e *Elastico) verify_PoW(identityobj Identity) bool {
 	digest := sha256.New()
 	digest.Write([]byte(IP))
 	digest.update(PK.encode())
-	digest.update([]byte(epoch_randomness))
+	digest.update([]byte(epochRandomness))
 	digest.update(str(nonce).encode())
-	hash_val = digest.hexdigest()
-	if hash_val.startswith('0'*D) && hash_val == PoW["hash"] {
+	hashVal = digest.hexdigest()
+	if hashVal.startswith('0'*D) && hashVal == PoW["hash"] {
 		// Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
 		return true
 	}
 	return false
 }
 
-func (e *Elastico) Finalpbft_process_message(msg map[string]interface{}) {
-	/*
-		Process the messages related to Pbft!
-	*/
+// FinalpbftProcessMessage :- Process the messages related to Pbft!
+func (e *Elastico) FinalpbftProcessMessage(msg map[string]interface{}) {
+
 	if msg["type"] == "Finalpre-prepare" {
-		self.process_Finalpre_prepareMsg(msg)
+		self.processFinalprePrepareMsg(msg)
 
 	} else if msg["type"] == "Finalprepare" {
-		self.process_FinalprepareMsg(msg)
+		self.processFinalprepareMsg(msg)
 
 	} else if msg["type"] == "Finalcommit" {
-		self.process_FinalcommitMsg(msg)
+		self.processFinalcommitMsg(msg)
 	}
 }
 
-func (e *Elastico) process_commitMsg(msg map[string]interface{}) {
+func (e *Elastico) processCommitMsg(msg map[string]interface{}) {
 	/*
 		process the commit msg
 	*/
 	// verify the commit message
-	verified := e.verify_commit(msg)
+	verified := e.verifyCommit(msg)
 	if verified {
 
 		// Log the commit msgs!
@@ -1270,12 +1269,12 @@ func (e *Elastico) process_commitMsg(msg map[string]interface{}) {
 	}
 }
 
-func (e *Elastico) process_FinalcommitMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalcommitMsg(msg map[string]interface{}) {
 	/*
 		process the final commit msg
 	*/
 	// verify the commit message
-	verified := e.verify_commit(msg)
+	verified := e.verifyCommit(msg)
 	if verified {
 
 		// Log the commit msgs!
@@ -1283,7 +1282,7 @@ func (e *Elastico) process_FinalcommitMsg(msg map[string]interface{}) {
 	}
 }
 
-func (e *Elastico) process_prepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processPrepareMsg(msg map[string]interface{}) {
 	/*
 		process prepare msg
 	*/
@@ -1296,7 +1295,7 @@ func (e *Elastico) process_prepareMsg(msg map[string]interface{}) {
 	}
 }
 
-func (e *Elastico) process_FinalprepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalprepareMsg(msg map[string]interface{}) {
 	/*
 		process final prepare msg
 	*/
@@ -1309,10 +1308,9 @@ func (e *Elastico) process_FinalprepareMsg(msg map[string]interface{}) {
 	}
 }
 
+// BroadcastR :- broadcast Ri to all the network, final member will do this
 func (e *Elastico) BroadcastR() {
-	/*
-		broadcast Ri to all the network, final member will do this
-	*/
+
 	if e.isFinalMember() {
 		data := make(map[string]interface{})
 		data["Ri"] = e.Ri
@@ -1321,29 +1319,29 @@ func (e *Elastico) BroadcastR() {
 		msg["data"] = data
 		msg["type"] = "RandomStringBroadcast"
 
-		e.state = Elastico_States["BroadcastedR"]
-		BroadcastTo_Network(data, "RandomStringBroadcast")
+		e.state = ElasticoStates["BroadcastedR"]
+		BroadcastToNetwork(data, "RandomStringBroadcast")
 
 	} else {
 		log.Error("non final member broadcasting R")
 	}
 }
 
-func (e *Elastico) generate_randomstrings() {
+func (e *Elastico) generateRandomstrings() {
 	/*
 		Generate r-bit random strings
 	*/
 	if e.isFinalMember() {
-		Ri := random_gen(r)
+		Ri := randomGen(r)
 		e.Ri = fmt.Sprintf("%0"+strconv.FormatInt(r, 10)+"b\n", Ri)
 	}
 }
 
-func (e *Elastico) notify_finalCommittee() {
+func (e *Elastico) notifyFinalCommittee() {
 	/*
 		notify the members of the final committee that they are the final committee members
 	*/
-	finalCommList := e.committee_list[fin_num]
+	finalCommList := e.committeeList[finNum]
 	for _, finalMember := range finalCommList {
 		data := mske(map[string]interface{})
 		data["identity"] = e.identity
@@ -1362,12 +1360,12 @@ func (e *Elastico) getCommitment() string {
 	if e.isFinalMember() {
 
 		if e.Ri == "" {
-			e.generate_randomstrings()
+			e.generateRandomstrings()
 		}
 		commitment := sha256.New()
 		commitment.Write([]byte(e.Ri))
-		hash_val := fmt.Sprintf("%x", commitment.Sum(nil))
-		return hash_val
+		hashVal := fmt.Sprintf("%x", commitment.Sum(nil))
+		return hashVal
 	}
 }
 
@@ -1395,111 +1393,110 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 		executing the functions based on the running state
 	*/
 	// # print the current state of node for debug purpose
-	// 		print(e.identity ,  list(Elastico_States.keys())[ list(Elastico_States.values()).index(e.state)], "STATE of a committee member")
+	// 		print(e.identity ,  list(ElasticoStates.keys())[ list(ElasticoStates.values()).index(e.state)], "STATE of a committee member")
 
 	// initial state of elastico node
-	if e.state == Elastico_States["NONE"] {
+	if e.state == ElasticoStates["NONE"] {
 
 		e.executePoW()
 
-	} else if e.state == Elastico_States["PoW Computed"] {
+	} else if e.state == ElasticoStates["PoW Computed"] {
 
 		// form identity, when PoW computed
-		e.form_identity()
-	} else if e.state == Elastico_States["Formed Identity"] {
+		e.formIdentity()
+	} else if e.state == ElasticoStates["Formed Identity"] {
 
 		// form committee, when formed identity
-		e.form_committee()
+		e.formCommittee()
 
-	} else if e.is_directory && e.state == Elastico_States["RunAsDirectory"] {
+	} else if e.isDirectory && e.state == ElasticoStates["RunAsDirectory"] {
 
 		log.Info("The directory member :- ", e.port)
 		e.receiveTxns(epochTxn)
 		// directory member has received the txns for all committees
-		e.state = Elastico_States["RunAsDirectory after-TxnReceived"]
+		e.state = ElasticoStates["RunAsDirectory after-TxnReceived"]
 
-	} else if e.state == Elastico_States["Receiving Committee Members"] {
+	} else if e.state == ElasticoStates["Receiving Committee Members"] {
 		// when a node is part of some committee
 		if e.flag == false {
 
 			// logging the bad nodes
-			logging.error("member with invalid POW %s with commMembers : %s", e.identity, e.committee_Members)
+			logging.error("member with invalid POW %s with commMembers : %s", e.identity, e.committeeMembers)
 		}
 		// Now The node should go for Intra committee consensus
 		// initial state for the PBFT
-		e.state = Elastico_States["PBFT_NONE"]
+		e.state = ElasticoStates["PBFT_NONE"]
 		// run PBFT for intra-committee consensus
 		e.runPBFT()
 
-	} else if e.state == Elastico_States["PBFT_NONE"] || e.state == Elastico_States["PBFT_PRE_PREPARE"] || e.state == Elastico_States["PBFT_PREPARE_SENT"] || e.state == Elastico_States["PBFT_PREPARED"] || e.state == Elastico_States["PBFT_COMMIT_SENT"] || e.state == Elastico_States["PBFT_PRE_PREPARE_SENT"] {
+	} else if e.state == ElasticoStates["PBFT_NONE"] || e.state == ElasticoStates["PBFT_PRE_PREPARE"] || e.state == ElasticoStates["PBFT_PREPARE_SENT"] || e.state == ElasticoStates["PBFT_PREPARED"] || e.state == ElasticoStates["PBFT_COMMIT_SENT"] || e.state == ElasticoStates["PBFT_PRE_PREPARE_SENT"] {
 
 		// run pbft for intra consensus
 		e.runPBFT()
-	} else if e.state == Elastico_States["PBFT_COMMITTED"] {
+	} else if e.state == ElasticoStates["PBFT_COMMITTED"] {
 
 		// send pbft consensus blocks to final committee members
 		log.Info("pbft finished by members %s", str(e.port))
 		e.SendtoFinal()
 
-	} else if e.isFinalMember() && e.state == Elastico_States["Intra Consensus Result Sent to Final"] {
+	} else if e.isFinalMember() && e.state == ElasticoStates["Intra Consensus Result Sent to Final"] {
 
 		// final committee node will collect blocks and merge them
 		e.checkCountForConsensusData()
 
-	} else if e.isFinalMember() && e.state == Elastico_States["Merged Consensus Data"] {
+	} else if e.isFinalMember() && e.state == ElasticoStates["Merged Consensus Data"] {
 
 		// final committee member runs final pbft
-		e.state = Elastico_States["FinalPBFT_NONE"]
+		e.state = ElasticoStates["FinalPBFT_NONE"]
 		e.runFinalPBFT()
 
-	} else if e.state == Elastico_States["FinalPBFT_NONE"] || e.state == Elastico_States["FinalPBFT_PRE_PREPARE"] || e.state == Elastico_States["FinalPBFT_PREPARE_SENT"] || e.state == Elastico_States["FinalPBFT_PREPARED"] || e.state == Elastico_States["FinalPBFT_COMMIT_SENT"] || e.state == Elastico_States["FinalPBFT_PRE_PREPARE_SENT"] {
+	} else if e.state == ElasticoStates["FinalPBFT_NONE"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE"] || e.state == ElasticoStates["FinalPBFT_PREPARE_SENT"] || e.state == ElasticoStates["FinalPBFT_PREPARED"] || e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"] {
 
 		e.runFinalPBFT()
 
-	} else if e.isFinalMember() && e.state == Elastico_States["FinalPBFT_COMMITTED"] {
+	} else if e.isFinalMember() && e.state == ElasticoStates["FinalPBFT_COMMITTED"] {
 
 		// send the commitment to other final committee members
 		e.sendCommitment()
 		log.Warn("pbft finished by final committee %s", str(e.port))
 
-	} else if e.isFinalMember() && e.state == Elastico_States["CommitmentSentToFinal"] {
+	} else if e.isFinalMember() && e.state == ElasticoStates["CommitmentSentToFinal"] {
 
 		// broadcast final txn block to ntw
 		if len(e.commitments) >= c/2+1 {
 			e.BroadcastFinalTxn()
 		}
-	} else if e.state == Elastico_States["FinalBlockReceived"] {
+	} else if e.state == ElasticoStates["FinalBlockReceived"] {
 
 		e.checkCountForFinalData()
 
-	} else if e.isFinalMember() && e.state == Elastico_States["FinalBlockSentToClient"] {
+	} else if e.isFinalMember() && e.state == ElasticoStates["FinalBlockSentToClient"] {
 
 		// broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 		if len(e.newRcommitmentSet) >= c/2+1 {
 			e.BroadcastR()
 		}
-	} else if e.state == Elastico_States["ReceivedR"] {
+	} else if e.state == ElasticoStates["ReceivedR"] {
 
 		e.appendToLedger()
-		e.state = Elastico_States["LedgerUpdated"]
+		e.state = ElasticoStates["LedgerUpdated"]
 
-	} else if e.state == Elastico_States["LedgerUpdated"] {
+	} else if e.state == ElasticoStates["LedgerUpdated"] {
 
 		// Now, the node can be reset
 		return "reset"
 	}
 }
 
-func (e *Elastico) Send_to_Directory() {
-	/*
-		Send about new nodes to directory committee members
-	*/
+// SendToDirectory :- Send about new nodes to directory committee members
+func (e *Elastico) SendToDirectory() {
+
 	// Add the new processor in particular committee list of directory committee nodes
-	for _, nodeId := range e.cur_directory {
+	for _, nodeID := range e.curDirectory {
 		msg := make(map[string]interafce{})
 		msg["data"] = e.identity
 		msg["type"] = "newNode"
-		nodeId.send(msg)
+		nodeID.send(msg)
 	}
 }
 
@@ -1524,24 +1521,24 @@ func (e *Elastico) receiveTxns(epochTxn map[int][]Transaction) {
 	}
 }
 
-func (e *Elastico) pbft_process_message(msg map[string]interface{}) {
+func (e *Elastico) pbftProcessMessage(msg map[string]interface{}) {
 	/*
 		Process the messages related to Pbft!
 	*/
 	if msg["type"] == "pre-prepare" {
 
-		e.process_pre_prepareMsg(msg)
+		e.processPrePrepareMsg(msg)
 
 	} else if msg["type"] == "prepare" {
 
-		e.process_prepareMsg(msg)
+		e.processPrepareMsg(msg)
 
 	} else if msg["type"] == "commit" {
-		e.process_commitMsg(msg)
+		e.processCommitMsg(msg)
 	}
 }
 
-func (e *Elastico) process_pre_prepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processPrePrepareMsg(msg map[string]interface{}) {
 	/*
 		Process Pre-Prepare msg
 	*/
@@ -1552,35 +1549,35 @@ func (e *Elastico) process_pre_prepareMsg(msg map[string]interface{}) {
 		e.logPre_prepareMsg(msg)
 
 	} else {
-		log.Error("error in verification of process_pre_prepareMsg")
+		log.Error("error in verification of processPrePrepareMsg")
 	}
 }
 
-func (e *Elastico) process_Finalpre_prepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalprePrepareMsg(msg map[string]interface{}) {
 	/*
 		Process Final Pre-Prepare msg
 	*/
 
 	// verify the Final pre-prepare message
-	verified := e.verify_Finalpre_prepare(msg)
+	verified := e.verifyFinalprePrepare(msg)
 	if verified {
 
 		// Log the final pre-prepare msgs!
 		e.logFinalPre_prepareMsg(msg)
 
 	} else {
-		log.Error("error in verification of Final process_pre_prepareMsg")
+		log.Error("error in verification of Final processPrePrepareMsg")
 	}
 }
 
-func (e *Elastico) is_pre_prepared() bool {
+func (e *Elastico) isPrePrepared() bool {
 	/*
 		if the node received the pre-prepare msg from the primary
 	*/
 	return len(e.pre_prepareMsgLog) > 0
 }
 
-func (e *Elastico) is_Finalpre_prepared() bool {
+func (e *Elastico) isFinalprePrepared() bool {
 
 	return len(e.Finalpre_prepareMsgLog) > 0
 }
@@ -1589,12 +1586,12 @@ func makeMalicious() {
 	/*
 		make some nodes malicious who will compute wrong PoW
 	*/
-	malicious_count := 0
-	for i := 0; i < malicious_count; i++ {
-		randomNum := random_gen(32).Int64() // converting random num big.Int to Int64
+	maliciousCount := 0
+	for i := 0; i < maliciousCount; i++ {
+		randomNum := randomGen(32).Int64() // converting random num big.Int to Int64
 		badNodeIndex := randomNum % n
 		// set the flag false for bad nodes
-		network_nodes[badNodeIndex].flag = false
+		networkNodes[badNodeIndex].flag = false
 	}
 }
 
@@ -1603,21 +1600,21 @@ func makeFaulty() {
 		make some nodes faulty who will stop participating in the protocol after sometime
 	*/
 	// making some(4 here) nodes as faulty
-	faulty_count := 0
-	for i := 0; i < faulty_count; i++ {
-		randomNum := random_gen(32).Int64() // converting random num big.Int to Int64
+	faultyCount := 0
+	for i := 0; i < faultyCount; i++ {
+		randomNum := randomGen(32).Int64() // converting random num big.Int to Int64
 		faultyNodeIndex := randomNum % n
 		// set the flag false for bad nodes
-		network_nodes[faultyNodeIndex].faulty = true
+		networkNodes[faultyNodeIndex].faulty = true
 	}
 }
 
-func (e *Elastico) verify_commit(msg map[string]interface{}) {
+func (e *Elastico) verifyCommit(msg map[string]interface{}) {
 	/*
 		verify commit msgs
 	*/
 	// verify Pow
-	if !e.verify_PoW(msg["identity"]) {
+	if !e.verifyPoW(msg["identity"]) {
 		return false
 	}
 	// verify signatures of the received msg
@@ -1626,7 +1623,7 @@ func (e *Elastico) verify_commit(msg map[string]interface{}) {
 	}
 
 	// check the view is same or not
-	if msg["commitData"]["viewId"] != e.viewId {
+	if msg["commitData"]["viewID"] != e.viewID {
 		return false
 	}
 	return true
@@ -1671,7 +1668,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 	/*
 		A process will execute based on its state and then it will consume
 	*/
-	node := network_nodes[nodeIndex]
+	node := networkNodes[nodeIndex]
 	for epoch, epochTxn := range epochTxns {
 		// epochTxn holds the txn for the current epoch
 
@@ -1719,8 +1716,8 @@ func createTxns() []Transaction {
 	// txns is the list of the transactions in one epoch to which the committees will agree on
 	txns := make([]Transaction, numOfTxns)
 	for i := 0; i < numOfTxns; i++ {
-		random_num := random_gen(32)                     // random amount
-		transaction := Transaction{"a", "b", random_num} // create the dummy transaction
+		randomNum := randomGen(32)                      // random amount
+		transaction := Transaction{"a", "b", randomNum} // create the dummy transaction
 		txns[i] = transaction
 	}
 	return txns
