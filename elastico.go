@@ -1149,6 +1149,23 @@ func (e *Elastico) BroadcastR(){
 }
 
 
+func (e *Elastico) getCommitment() string{
+	/*
+		generate commitment for random string Ri. This is done by a final committee member
+	*/
+	if e.isFinalMember() {
+		
+		if e.Ri == ""{
+			e.generate_randomstrings()
+		}
+		commitment := sha256.New()
+		commitment.Write([]byte(e.Ri))
+		hash_val := fmt.Sprintf("%x" , commitment.Sum(nil))
+		return hash_val
+	}
+}
+
+
 
 func (e *Elastico) executeReset{
 	/*
