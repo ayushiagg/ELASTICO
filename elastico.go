@@ -72,11 +72,11 @@ func BroadcastTo_Network(data map[string]interface{}, type_ string){
  
 	for _, node :=  range network_nodes{
 		
-		port := strconv.Itoa(node.port)
+		nodePort := strconv.Itoa(node.port)
 
 		//create a hello queue to which the message will be delivered
 		queue, err := ch.QueueDeclare(
-			"hello" + port,	//name of the queue
+			"hello" + nodePort,	//name of the queue
 			false,	// durable
 			false,	// delete when unused
 			false,	// exclusive
