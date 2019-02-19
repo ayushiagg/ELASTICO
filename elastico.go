@@ -175,6 +175,12 @@ func randomGen(r int64) *big.Int {
 	return randomNum
 }
 
+// for signature and its identity which can be used for verification
+type IdentityAndSign struct {
+	sign        string
+	identityobj Identity
+}
+
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
