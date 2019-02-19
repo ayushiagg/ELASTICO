@@ -1249,6 +1249,31 @@ func(e *Elastico)constructFinalPrepare(){
 	 return FinalprepareMsgList 
 }
 
+func (e *Elastico) constructCommit(){
+	/* 
+		Construct commit msgs
+	 */
+	 commitMsges := []map[string]interface{}
+	 for viewId := range e.preparedData{
+
+		 for seqnum := range e.preparedData[viewId] {
+
+			 for msg :=  range e.preparedData[viewId][seqnum] {
+
+				 digest := txnHexdigest(msg)
+				// make commit_contents Ordered Dict for signatures purpose
+				 commitContents := map[string]interface{}{"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest": digest }
+				 commitContentsDigest := e.digestCommitMsg(commitContents)
+				 commitMsg := map[string]interface{}{"type" : "commit" , "sign" : e.sign(commitContentsDigest) , "commitData" : commitContents, "identity" : e.identity}
+				 commitMsges = append(commitMsges , commitMsg)
+			 }
+		 }
+	 }
+
+	 return commitMsges
+}
+
+
 func (e *Elastico) digestPrePrepareMsg(msg map[string]interface{}) []byte {
 	digest := sha256.New()
 	digest.Write([]byte("type"))
