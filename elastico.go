@@ -1583,8 +1583,21 @@ func (e *Elastico) logPrePrepareMsg(msg map[string]interface{}) {
 	IP := identityobj.IP
 	port := identityobj.port
 	// create a socket
-	socket = IP + ":" + strconv.Itoa(port)
+	socket := IP + ":" + strconv.Itoa(port)
 	e.prePrepareMsgLog[socket] = msg
+}
+
+func (e *Elastico) logFinalPrePrepareMsg(msg map[string]interface{}) {
+	/*
+		log the pre-prepare msg
+	*/
+	identityobj := msg["identity"].(Identity)
+	IP := identityobj.IP
+	port := identityobj.port
+	// create a socket
+	socket := IP + ":" + strconv.Itoa(port)
+	e.FinalPrePrepareMsgLog[socket] = msg
+
 }
 
 // BroadcastR :- broadcast Ri to all the network, final member will do this
