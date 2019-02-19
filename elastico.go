@@ -1814,7 +1814,7 @@ func (e *Elastico) executeReset() {
 	/*
 		call for reset
 	*/
-	logging.warning("call for reset for ", e.port)
+	log.Warn("call for reset for ", e.port)
 	if isinstance(e.identity, Identity) {
 
 		// if node has formed its identity
