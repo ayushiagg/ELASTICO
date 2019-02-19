@@ -1221,7 +1221,7 @@ func (e *Elastico) constructPrepare() []map[string]interface{} {
 		//  make prepare_contents Ordered Dict for signatures purpose
 		 prepareContents :=  map[string]interface{}{ "type" : "prepare" , "viewId" : e.viewId,  "seq" : seqnum , "digest" : digest}
 		 PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
-		 preparemsg := map[string]interface{}{"type" : "prepare",  "prepareData" : prepareContents, "sign" : PrepareContentsDigest , "identity" : e.identity}
+		 preparemsg := map[string]interface{}{"type" : "prepare",  "prepareData" : prepareContents, "sign" : e.sign(PrepareContentsDigest) , "identity" : e.identity}
 		 prepareMsgList = append(prepareMsgList , preparemsg)
 	 }
 	 return prepareMsgList
