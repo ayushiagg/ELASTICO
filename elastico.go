@@ -276,8 +276,8 @@ type Elastico struct {
 	newsetOfRs                     map[string]bool
 	CommitteeConsensusData         map[int64]map[string][]string
 	CommitteeConsensusDataTxns     map[int64]map[string][]Transaction
-	finalBlockbyFinalCommittee     map[string]map[string][]string
-	finalBlockbyFinalCommitteeTxns map[string]map[string][]Transaction
+	finalBlockbyFinalCommittee     map[string][]string
+	finalBlockbyFinalCommitteeTxns map[string][]Transaction
 	state                          int
 	mergedBlock                    []Transaction
 	finalBlock                     map[string]interface{}
@@ -824,9 +824,9 @@ func (e *Elastico) ElasticoInit() {
 
 	e.CommitteeConsensusDataTxns = make(map[int64]map[string][]Transaction)
 
-	e.finalBlockbyFinalCommittee = make(map[string]map[string][]string)
+	e.finalBlockbyFinalCommittee = make(map[string][]string)
 
-	e.finalBlockbyFinalCommitteeTxns = make(map[string]map[string][]Transaction)
+	e.finalBlockbyFinalCommitteeTxns = make(map[string][]Transaction)
 
 	e.state = ElasticoStates["NONE"]
 
@@ -888,8 +888,8 @@ func (e *Elastico) reset() {
 	e.newsetOfRs = make(map[string]bool)
 	e.CommitteeConsensusData = make(map[int64]map[string][]string)
 	e.CommitteeConsensusDataTxns = make(map[int64]map[string][]Transaction)
-	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
-	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
+	e.finalBlockbyFinalCommittee = make(map[string][]string)
+	e.finalBlockbyFinalCommitteeTxns = make(map[string][]Transaction)
 	e.state = ElasticoStates["NONE"]
 	e.mergedBlock = make([]Transaction, 0)
 
