@@ -219,6 +219,18 @@ func (is *IdentityAndSign) isEqual(data IdentityAndSign) bool {
 	return is.sign == data.sign && is.identityobj.isEqual(&data.identityobj)
 }
 
+// final committed block that consists of txns and list of signatures and identities
+type FinalCommittedBlock struct{
+	txnList []Transaction
+	listSignaturesAndIdentityobjs []IdentityAndSign
+}
+
+func (fb *FinalCommittedBlock)FinalBlockInit(txnList []Transaction, listSignaturesAndIdentityobjs []IdentityAndSign){
+	fb.txnList = txnList
+	fb.listSignaturesAndIdentityobjs = listSignaturesAndIdentityobjs
+}
+
+
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
