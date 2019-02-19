@@ -349,23 +349,23 @@ type Elastico struct {
 	newRcommitmentSet              map[string]bool
 	finalCommitteeMembers          []Identity
 	// only when this is the member of the directory committee
-	txn      map[int64][]Transaction
-	response []Transaction
-	flag     bool
-	views    map[int]bool
-	primary  bool
-	viewID   int
-	faulty   bool
-	// pre_prepareMsgLog
-	// prepareMsgLog
-	// commitMsgLog
-	// preparedData
-	// committedData
-	// Finalpre_prepareMsgLog
-	// FinalprepareMsgLog
-	// FinalcommitMsgLog
-	// FinalpreparedData
-	// FinalcommittedData
+	txn                   map[int64][]Transaction
+	response              []Transaction
+	flag                  bool
+	views                 map[int]bool
+	primary               bool
+	viewID                int
+	faulty                bool
+	prePrepareMsgLog      map[string]interface{}
+	prepareMsgLog         map[int]interface{}
+	commitMsgLog          map[int]interface{}
+	preparedData          map[int]interface{}
+	committedData         map[int]interface{}
+	FinalPrePrepareMsgLog map[string]interface{}
+	FinalPrepareMsgLog    map[int]interface{}
+	FinalcommitMsgLog     map[int]interface{}
+	FinalpreparedData     map[int]interface{}
+	FinalcommittedData    map[int]interface{}
 }
 
 func (e *Elastico) getKey() {
