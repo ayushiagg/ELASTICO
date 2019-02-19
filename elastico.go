@@ -632,11 +632,10 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 		TxnBlock := data["txnBlock"].([]Transaction)
 		// verify the signatures
 		if e.verifySignTxnList(signature, TxnBlock, identityobj.PK) {
-
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID]; ok == false {
 
-				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string]interface{})
-				e.CommitteeConsensusDataTxns[identityobj.committeeID] = make(map[string]interface{})
+				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string][]string)
+				e.CommitteeConsensusDataTxns[identityobj.committeeID] = make(map[string][]Transaction)
 			}
 			TxnBlockDigest := txnHexdigest(data["txnBlock"])
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest]; ok == false {
