@@ -181,6 +181,12 @@ type IdentityAndSign struct {
 	identityobj Identity
 }
 
+func (is *IdentityAndSign) IdentityAndSignInit(sign string, identityobj Identity) {
+
+	is.sign = sign
+	is.identityobj = identityobj
+}
+
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
