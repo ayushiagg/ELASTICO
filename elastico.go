@@ -991,17 +991,16 @@ func (e *Elastico) reset() {
 	e.viewID = 0
 	e.faulty = false
 
-	// e.prepareMsgLog = dict()
-	// e.commitMsgLog = dict()
-	// e.preparedData = dict()
-	// e.committedData = dict()
-
-	// // only when this is the part of final committee
-	// e.Finalpre_prepareMsgLog = dict()
-	// e.FinalprepareMsgLog = dict()
-	// e.FinalcommitMsgLog = dict()
-	// e.FinalpreparedData = dict()
-	// e.FinalcommittedData = dict()
+	e.prePrepareMsgLog = make(map[string]interface{})
+	e.prepareMsgLog = make(map[int]interface{})
+	e.commitMsgLog = make(map[int]interface{})
+	e.preparedData = make(map[int]interface{})
+	e.committedData = make(map[int]interface{})
+	e.FinalPrePrepareMsgLog = make(map[string]interface{})
+	e.FinalPrepareMsgLog = make(map[int]interface{})
+	e.FinalcommitMsgLog = make(map[int]interface{})
+	e.FinalpreparedData = make(map[int]interface{})
+	e.FinalcommittedData = make(map[int]interface{})
 }
 
 func (e *Elastico) getCommitteeid(PoW string) int64 {
