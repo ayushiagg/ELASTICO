@@ -1094,6 +1094,17 @@ func (e *Elastico) runFinalPBFT() {
 	}
 }
 
+func (e *Elastico) constructPrePrepare() map[string]interface{} {
+	/*
+		construct pre-prepare msg , done by primary
+	*/
+	txnBlockList := e.txn_block
+	// make prePrepareContents Ordered Dict for signatures purpose
+	prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "identity": e.identity}
+	return prePrepareMsg
+}
+
 func (e *Elastico) computeFakePoW() {
 	/*
 		bad node generates the fake PoW
