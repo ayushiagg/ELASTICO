@@ -628,9 +628,10 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 	identityobj := data["identity"].(Identity)
 
 	if e.verifyPoW(identityobj) {
-
+		signature := data["sign"].(string)
+		TxnBlock := data["txnBlock"].([]Transaction)
 		// verify the signatures
-		if e.verifySignTxnList(data["sign"], data["txnBlock"], identityobj.PK) {
+		if e.verifySignTxnList(signature, TxnBlock, identityobj.PK) {
 
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID]; ok == false {
 
