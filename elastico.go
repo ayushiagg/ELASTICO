@@ -267,6 +267,18 @@ func (bd *BlockData)BlockDataInit( transactions []Transaction){
 	bd.transactions = transactions
 }
 
+func (bd *BlockData)hexdigest() []byte{
+	/*
+		Digest of a block data
+	 */
+	digest := sha256.New()
+	// take the digest of the txnBlock
+	txndigest := txnHexdigest(bd.transactions)
+	digest.Write([]byte(txndigest))
+	
+	return digest.Sum(nil)
+
+}
 
 // Identity :- structure for identity of nodes
 type Identity struct {
