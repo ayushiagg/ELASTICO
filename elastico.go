@@ -256,6 +256,15 @@ func(bh *BlockHeader) hexdigest () []byte{
 	 return digest.Sum(nil)
 }
 
+type BlockData struct{
+	/* 
+		class for block data consists of txns and merkle tree
+	 */
+	 transactions []Transaction
+}
+
+
+
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
