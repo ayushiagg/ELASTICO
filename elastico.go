@@ -1695,6 +1695,21 @@ func (e *Elastico) consumeMsg() {
 	}
 }
 
+// txnHexdigest - Hex digest of txn List
+func txnHexdigest(txnList []Transaction) string {
+	/*
+		return hexdigest for a list of transactions
+	*/
+	// ToDo : Sort the Txns based on hash value
+	digest = SHA256.new()
+	for i := 0; i < len(txnList); i++ {
+		txnDigest := txnList[i].hexdigest()
+		digest.Write([]byte(txnDigest))
+	}
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil)) // hash of the list of txns
+	return hashVal
+}
+
 func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int]bool) {
 	/*
 		A process will execute based on its state and then it will consume
