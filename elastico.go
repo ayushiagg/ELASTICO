@@ -2,6 +2,7 @@
 package main
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -663,7 +664,7 @@ func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
 		digest.Write([]byte(txnDigest))
 	}
-	signed, err := e.key.Sign(digest.Sum(nil)) // sign the digest of Txn List
+	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest.Sum(nil)) // sign the digest of Txn List
 	failOnError(err, "Error in Signing Txn List")
 	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
 	return signature
