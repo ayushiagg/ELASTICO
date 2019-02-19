@@ -572,8 +572,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
 			if _, ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
-
-				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []Transaction{finalTxnBlock}
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = finalTxnBlock
 			}
 
 			// creating the object that contains the identity and signature of the final member
