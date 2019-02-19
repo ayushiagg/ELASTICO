@@ -1101,8 +1101,22 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	txnBlockList := e.txn_block
 	// ToDo: make prePrepareContents Ordered Dict for signatures purpose
 	prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
-	prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "identity": e.identity}
+	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
+	prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContentsDigest), "identity": e.identity}
 	return prePrepareMsg
+}
+
+func (e *Elastico) digestPrePrepareMsg(msg map[string]interface{}) []byte {
+	digest := sha256.New()
+	digest.Write([]byte("type"))
+	digest.Write([]byte(msg["type"]))
+	digest.Write([]byte("viewId"))
+	digest.Write([]byte(strconv.Itoa(msg["viewId"])))
+	digest.Write([]byte("seq"))
+	digest.Write([]byte(strconv.Itoa(msg["seq"])))
+	digest.Write([]byte("digest"))
+	digest.Write([]byte(msg["digest"]))
+	return digest.Sum(nil)
 }
 
 func (e *Elastico) constructFinalPrePrepare() {
