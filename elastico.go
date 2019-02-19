@@ -1300,6 +1300,19 @@ func (e *Elastico) digestPrepareMsg( msg map[string]interface{})[]byte {
 	return digest.Sum(nil)
 }
 
+func (e *Elastico) digestCommitMsg( msg map[string]interface{})[]byte {
+	digest := sha256.New()
+	digest.Write([]byte("type"))
+	digest.Write([]byte(msg["type"]))
+	digest.Write([]byte("viewId"))
+	digest.Write([]byte(strconv.Itoa(msg["viewId"])))
+	digest.Write([]byte("seq"))
+	digest.Write([]byte(strconv.Itoa(msg["seq"])))
+	digest.Write([]byte("digest"))
+	digest.Write([]byte(msg["digest"]))
+	return digest.Sum(nil)
+}
+
 func (e *Elastico) constructFinalPrePrepare() {
 	/*
 		construct pre-prepare msg , done by primary final
