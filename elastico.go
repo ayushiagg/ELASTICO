@@ -1117,6 +1117,22 @@ func (e *Elastico) constructFinalPrePrepare() {
 	return prePrepareMsg
 }
 
+func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
+	/*
+		Send pre-prepare msgs to all committee members
+	*/
+	// send pre-prepare msg to committee members
+	for _, nodeID := range e.committeeMembers {
+
+		// dont send pre-prepare msg to e
+		if e.identity.isEqual(nodeID) == false {
+
+			prePrepareMsgDigest := e.digest(prePrepareMsg)
+			nodeID.send(prePrepareMsgDigest)
+		}
+	}
+}
+
 func (e *Elastico) computeFakePoW() {
 	/*
 		bad node generates the fake PoW
