@@ -1618,8 +1618,9 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) {
 		return false
 	}
 	// verify signatures of the received msg
+	sign := msg["sign"].(string)
 	prePreparedDataDigest := e.digestPrePrepareMsg(prePreparedData)
-	if e.verifySign(msg["sign"], prePreparedDataDigest, identityobj.PK) == false {
+	if e.verifySign(sign, prePreparedDataDigest, identityobj.PK) == false {
 
 		log.Warn("wrong sign in  verify pre-prepare")
 		return false
