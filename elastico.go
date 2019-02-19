@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	// "reflect"
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"os"
@@ -662,8 +663,10 @@ func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
 		digest.Write([]byte(txnDigest))
 	}
-	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
-	return hashVal
+	signed, err := e.key.Sign(digest.Sum(nil)) // sign the digest of Txn List
+	failOnError(err, "Error in Signing Txn List")
+	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
+	return signature
 }
 
 func (e *Elastico) verify_signTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) {
