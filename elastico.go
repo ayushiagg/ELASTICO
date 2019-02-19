@@ -1099,9 +1099,21 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 		construct pre-prepare msg , done by primary
 	*/
 	txnBlockList := e.txn_block
-	// make prePrepareContents Ordered Dict for signatures purpose
+	// ToDo: make prePrepareContents Ordered Dict for signatures purpose
 	prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
 	prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "identity": e.identity}
+	return prePrepareMsg
+}
+
+func (e *Elastico) constructFinalPrePrepare() {
+	/*
+		construct pre-prepare msg , done by primary final
+	*/
+	txnBlockList := e.mergedBlock
+	// ToDo :- make pre_prepare_contents Ordered Dict for signatures purpose
+	prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+
+	prePrepareMsg := map[string]interface{}{"type": "Finalpre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "identity": e.identity}
 	return prePrepareMsg
 }
 
