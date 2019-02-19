@@ -263,6 +263,9 @@ type BlockData struct{
 	 transactions []Transaction
 }
 
+func (bd *BlockData)BlockDataInit( transactions []Transaction){
+	bd.transactions = transactions
+}
 
 
 // Identity :- structure for identity of nodes
