@@ -230,6 +230,13 @@ func (fb *FinalCommittedBlock)FinalBlockInit(txnList []Transaction, listSignatur
 	fb.listSignaturesAndIdentityobjs = listSignaturesAndIdentityobjs
 }
 
+type BlockHeader struct{
+	prevBlockHash string
+	numAncestorBlocks int
+	txnCount int
+	rootHash string
+}
+
 
 // Identity :- structure for identity of nodes
 type Identity struct {
