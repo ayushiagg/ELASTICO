@@ -670,7 +670,7 @@ func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 	return signature
 }
 
-func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) {
+func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) bool {
 	signed, err := base64.StdEncoding.DecodeString(TxnBlockSignature) // Decode the base64 encoded signature
 	failOnError(err, "Decode error of signature")
 	// Sign the array of Transactions
