@@ -567,7 +567,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 		finalTxnBlock := data["finalTxnBlock"].(Transaction)
 		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
-		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verify_signTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
+		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
@@ -630,7 +630,7 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 	if e.verifyPoW(identityobj) {
 
 		// verify the signatures
-		if e.verify_signTxnList(data["sign"], data["txnBlock"], identityobj.PK) {
+		if e.verifySignTxnList(data["sign"], data["txnBlock"], identityobj.PK) {
 
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID]; ok == false {
 
