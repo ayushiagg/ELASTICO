@@ -998,9 +998,9 @@ func (e *Elastico) runPBFT() {
 
 			// construct prepare msg
 			// ToDo: verify whether the pre-prepare msg comes from various primaries or not
-			preparemsgList := e.construct_prepare()
+			preparemsgList := e.constructPrepare()
 			// logging.warning("constructing prepares with port %s" , str(e.port))
-			e.send_prepare(preparemsgList)
+			e.sendPrepare(preparemsgList)
 			e.state = ElasticoStates["PBFT_PREPARE_SENT"]
 		}
 
@@ -1013,8 +1013,8 @@ func (e *Elastico) runPBFT() {
 
 		} else if e.state == ElasticoStates["PBFT_PREPARED"] {
 
-			commitMsgList := e.construct_commit()
-			e.send_commit(commitMsgList)
+			commitMsgList := e.constructCommit()
+			e.sendCommit(commitMsgList)
 			e.state = ElasticoStates["PBFT_COMMIT_SENT"]
 
 		} else if e.state == ElasticoStates["PBFT_COMMIT_SENT"] {
@@ -1060,7 +1060,7 @@ func (e *Elastico) runFinalPBFT() {
 
 			// construct prepare msg
 			FinalpreparemsgList := e.construct_Finalprepare()
-			e.send_prepare(FinalpreparemsgList)
+			e.sendPrepare(FinalpreparemsgList)
 			e.state = ElasticoStates["FinalPBFT_PREPARE_SENT"]
 		}
 	} else if e.state == ElasticoStates["FinalPBFT_PREPARE_SENT"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"] {
@@ -1073,7 +1073,7 @@ func (e *Elastico) runFinalPBFT() {
 	} else if e.state == ElasticoStates["FinalPBFT_PREPARED"] {
 
 		commitMsgList := e.construct_Finalcommit()
-		e.send_commit(commitMsgList)
+		e.sendCommit(commitMsgList)
 		e.state = ElasticoStates["FinalPBFT_COMMIT_SENT"]
 
 	} else if e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] {
@@ -1160,7 +1160,7 @@ func (e *Elastico) sendCommit(commitMsgList []map[string]interface{}) {
 	}
 }
 
-func sendPrepare(prepareMsgList []map[string]interface{}) {
+func (e *Elastico) sendPrepare(prepareMsgList []map[string]interface{}) {
 	/*
 		send the prepare msgs to the committee members
 	*/
@@ -1739,7 +1739,7 @@ func (e *Elastico) processPrePrepareMsg(msg map[string]interface{}) {
 	verified := e.verify_pre_prepare(msg)
 	if verified {
 		// Log the pre-prepare msgs!
-		e.logPre_prepareMsg(msg)
+		e.logPrePrepareMsg(msg)
 
 	} else {
 		log.Error("error in verification of processPrePrepareMsg")
