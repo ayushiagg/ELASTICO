@@ -272,6 +272,51 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 
 // Elastico :- structure of elastico node
 type Elastico struct {
+	/*
+		connection - rabbitmq connection
+		IP - IP address of a node
+		port - unique number for a process
+		key - public key and private key pair for a node
+		PoW - dict containing 256 bit hash computed by the node, set of Rs needed for epoch randomness, and a nonce
+		cur_directory - list of directory members in view of the node
+		identity - identity consists of Public key, an IP, PoW, committee id, epoch randomness, port
+		committee_id - integer value to represent the committee to which the node belongs
+		committee_list - list of nodes in all committees
+		committee_Members - set of committee members in its own committee
+		is_directory - whether the node belongs to directory committee or not
+		is_final - whether the node belongs to final committee or not
+		epoch_randomness - r-bit random string generated at the end of previous epoch
+		Ri - r-bit random string
+		commitments - set of H(Ri) received by final committee node members and H(Ri) is sent by the final committee node only
+		txn_block - block of txns that the committee will agree on(intra committee consensus block)
+		set_of_Rs - set of Ris obtained from the final committee of previous epoch
+		newset_of_Rs - In the present epoch, set of Ris obtained from the final committee
+		CommitteeConsensusData - a dictionary of committee ids that contains a dictionary of the txn block and the signatures
+		finalBlockbyFinalCommittee - a dictionary of txn block and the signatures by the final committee members
+		state - state in which a node is running
+		mergedBlock - list of txns of different committees after their intra committee consensus
+		finalBlock - agreed list of txns after pbft run by final committee
+		RcommitmentSet - set of H(Ri)s received from the final committee after the consistency protocol [previous epoch values]
+		newRcommitmentSet - For the present it contains the set of H(Ri)s received from the final committee after the consistency protocol
+		finalCommitteeMembers - members of the final committee received from the directory committee
+		txn- transactions stored by the directory members
+		response - final block to be received by the client
+		flag- to denote a bad or good node
+		views - stores the ports of processes from which committee member views have been received
+		primary- boolean to denote the primary node in the committee for PBFT run
+		viewId - view number of the pbft
+		pre_prepareMsgLog - log of pre-prepare msgs received during PBFT
+		prepareMsgLog - log of prepare msgs received during PBFT
+		commitMsgLog - log of commit msgs received during PBFT
+		preparedData - data after prepared state
+		committedData - data after committed state
+		Finalpre_prepareMsgLog - log of pre-prepare msgs received during PBFT run by final committee
+		FinalprepareMsgLog - log of prepare msgs received during PBFT run by final committee
+		FinalcommitMsgLog - log of commit msgs received during PBFT run by final committee
+		FinalpreparedData - data after prepared state in final pbft run
+		FinalcommittedData - data after committed state in final pbft run
+		faulty - Flag denotes whether this node is faulty or not
+	*/
 	connection   *amqp.Connection
 	IP           string
 	port         int
