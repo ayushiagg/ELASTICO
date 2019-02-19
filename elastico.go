@@ -1204,7 +1204,7 @@ func (e *Elastico) runFinalPBFT() {
 			// change the state of primary to pre-prepared
 			e.state = ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"]
 			// primary will log the pre-prepare msg for itself
-			e.logFinalPre_prepareMsg(finalPrePreparemsg)
+			e.logFinalPrePrepareMsg(finalPrePreparemsg)
 
 		} else {
 
@@ -1452,6 +1452,35 @@ func (e *Elastico) sendPrepare(prepareMsgList []map[string]interface{}) {
 		}
 	}
 }
+
+func (e *Elastico) checkCountForFinalData(){
+	/* 
+		check the sufficient counts for final data
+	 */
+	//  collect final blocks sent by final committee and add the blocks to the response
+	 for txnBlockDigest := range e.finalBlockbyFinalCommittee{
+		 
+		 if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2 + 1{
+
+			 TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
+			//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
+			 finalCommittedBlock := FinalCommittedBlock(TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest])
+			//  add the block to the response
+			 e.response = append(e.response , finalCommittedBlock)
+
+		 } else {
+
+			 log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
+		 }
+	 }
+
+	 if len(e.response) > 0{
+		 
+		 log.Warn("final block sent the block to client by", e.port)
+		 e.state = ElasticoStates["FinalBlockSentToClient"]
+	 }
+}
+
 
 //Sign :- sign the byte array
 func (e *Elastico) Sign(digest []byte) string {
@@ -2248,7 +2277,6 @@ func (e *Elastico) verifyCommit(msg map[string]interface{}) {
 		return false
 	}
 	return true
-
 }
 
 func (e *Elastico) consumeMsg() {
