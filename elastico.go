@@ -554,6 +554,14 @@ func unionSet(newSet map[string]bool, receivedSet map[string]bool) {
 	}
 }
 
+func (e *Elastico) digestCommitments(receivedCommitments map[string]bool) []byte {
+	digest := sha256.New()
+	for commitment := range receivedCommitments {
+		digest.Write([]byte(commitment))
+	}
+	return digest.Sum(nil)
+}
+
 func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 
 	data := msg["data"].(map[string]interface{})
