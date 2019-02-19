@@ -1754,6 +1754,17 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 	}
 }
 
+func (e *Elastico) hexdigest(data string) string {
+	/*
+		Digest of data
+	*/
+	digest := sha256.New()
+	digest.Write([]byte(data))
+
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil)) // convert to hexdigest
+	return hashVal
+}
+
 func createTxns() []Transaction {
 	/*
 		create txns for an epoch
