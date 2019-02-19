@@ -1133,6 +1133,25 @@ func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
 	}
 }
 
+//Sign :- sign the byte array
+func (e *Elastico) Sign(data []byte) string {
+	// keys := make([]string, 0)
+	// for k := range data {
+	// 	keys = append(keys, k)
+	// }
+	// sort.Ints(keys)
+
+	// digest := sha256.New()
+
+	// for _, k := range keys {
+	// 	digest.Write([]byte(k))
+	// }
+	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest.Sum(nil)) // sign the digest of Txn List
+	failOnError(err, "Error in Signing byte array")
+	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
+	return signature
+}
+
 func (e *Elastico) computeFakePoW() {
 	/*
 		bad node generates the fake PoW
