@@ -237,7 +237,7 @@ type BlockHeader struct{
 	rootHash string
 }
 
-func (bh *BlockHeader)BlockHeaderInit()(prevBlockHash string, numAncestorBlocks int, txnCount int,  rootHash string){
+func (bh *BlockHeader)BlockHeaderInit(prevBlockHash string, numAncestorBlocks int, txnCount int,  rootHash string) {
 	bh.prevBlockHash = prevBlockHash
 	bh.numAncestorBlocks = numAncestorBlocks
 	bh.txnCount = txnCount
