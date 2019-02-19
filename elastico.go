@@ -572,7 +572,8 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
 			if _, ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
-				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = finalTxnBlock
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = make([]string, 0)
+				e.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
 			}
 
 			// creating the object that contains the identity and signature of the final member
@@ -636,16 +637,17 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string][]string)
 				e.CommitteeConsensusDataTxns[identityobj.committeeID] = make(map[string][]Transaction)
 			}
-			TxnBlockDigest := txnHexdigest(data["txnBlock"])
+			txnBlock := data["txnBlock"].([]Transaction)
+			TxnBlockDigest := txnHexdigest(txnBlock)
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest]; ok == false {
-				e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest] = make(map[string]bool)
+				e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest] = make([]string, 0)
 				// store the txns for this digest
-				e.CommitteeConsensusDataTxns[identityobj.committeeID][TxnBlockDigest] = data["txnBlock"]
+				e.CommitteeConsensusDataTxns[identityobj.committeeID][TxnBlockDigest] = txnBlock
 			}
 
 			// add signatures for the txn block
-
-			e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest][data["sign"]] = true
+			signature := data["sign"].(string)
+			e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest] = append(e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest], signature)
 
 		} else {
 			log.Error("signature invalid for intra committee block")
@@ -674,13 +676,14 @@ func (e *Elastico) verifySign(signature string, data, publickey *rsa.PublicKey) 
 	// digest.update(data.encode())
 	// verifier = PKCS1_v1_5.new(publickey)
 	// return verifier.verify(digest,signature)
+	return true
 }
 
 func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 	// Sign the array of Transactions
 	digest := sha256.New()
 	for i := 0; i < len(TxnBlock); i++ {
-		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		txnDigest := TxnBlock[i].hexdigest() // Get the transaction digest
 		digest.Write([]byte(txnDigest))
 	}
 	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest.Sum(nil)) // sign the digest of Txn List
@@ -695,7 +698,7 @@ func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transa
 	// Sign the array of Transactions
 	digest := sha256.New()
 	for i := 0; i < len(TxnBlock); i++ {
-		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		txnDigest := TxnBlock[i].hexdigest() // Get the transaction digest
 		digest.Write([]byte(txnDigest))
 	}
 	err = rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, digest.Sum(nil), signed) // verify the sign of digest of Txn List
@@ -765,7 +768,9 @@ func (e *Elastico) receive(msg map[string]interface{}) {
 		}
 	} else if msg["type"] == "notify final member" {
 		log.Warn("notifying final member ", e.port)
-		if e.verifyPoW(msg["data"]["identity"]) && e.committeeID == finNum {
+		data := msg["data"].(map[string]interface{})
+		identityobj := data["identity"].(Identity)
+		if e.verifyPoW(identityobj) && e.committeeID == finNum {
 			e.isFinal = true
 		}
 	} else if msg["type"] == "Broadcast Ri" {
@@ -840,7 +845,7 @@ func (e *Elastico) ElasticoInit() {
 	e.newRcommitmentSet = make(map[string]bool)
 	e.finalCommitteeMembers = make([]Identity, 0)
 
-	e.txn = make(map[int][]Transaction)
+	e.txn = make(map[int64][]Transaction)
 	e.response = make([]Transaction, 0)
 	e.flag = true
 	e.views = make(map[int]bool)
@@ -874,8 +879,8 @@ func (e *Elastico) reset() {
 	// only when this node is not the member of directory committee
 	e.committeeMembers = make([]Identity, 0)
 
-	e.identity = ""
-	e.committeeID = ""
+	e.identity = Identity{}
+	e.committeeID = -1
 	e.Ri = ""
 
 	e.isDirectory = false
@@ -902,7 +907,7 @@ func (e *Elastico) reset() {
 	e.finalCommitteeMembers = make([]Identity, 0)
 
 	// only when this is the member of the directory committee
-	e.txn = make(map[int][]Transaction)
+	e.txn = make(map[int64][]Transaction)
 	e.response = make([]Transaction, 0)
 	e.flag = true
 	e.views = make(map[int]bool)
@@ -968,15 +973,15 @@ func (e *Elastico) runPBFT() {
 	if e.state == ElasticoStates["PBFT_NONE"] {
 		if e.primary {
 			// construct pre-prepare msg
-			prePrepareMsg := e.construct_pre_prepare()
+			prePrepareMsg := e.constructPrePrepare()
 			// multicasts the pre-prepare msg to replicas
 			// ToDo: what if primary does not send the pre-prepare to one of the nodes
-			e.send_pre_prepare(prePrepareMsg)
+			e.sendPrePrepare(prePrepareMsg)
 
 			// change the state of primary to pre-prepared
 			e.state = ElasticoStates["PBFT_PRE_PREPARE_SENT"]
 			// primary will log the pre-prepare msg for itself
-			e.logPre_prepareMsg(prePrepareMsg)
+			e.logPrePrepareMsg(prePrepareMsg)
 
 		} else {
 
@@ -1033,7 +1038,7 @@ func (e *Elastico) runFinalPBFT() {
 			// construct pre-prepare msg
 			finalPrePreparemsg := e.construct_Finalpre_prepare()
 			// multicasts the pre-prepare msg to replicas
-			e.send_pre_prepare(finalPrePreparemsg)
+			e.sendPrePrepare(finalPrePreparemsg)
 
 			// change the state of primary to pre-prepared
 			e.state = ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"]
