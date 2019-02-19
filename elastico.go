@@ -917,6 +917,17 @@ func (e *Elastico) ElasticoInit() {
 	e.primary = false
 	e.viewID = 0
 	e.faulty = false
+
+	e.prePrepareMsgLog = make(map[string]interface{})
+	e.prepareMsgLog = make(map[int]interface{})
+	e.commitMsgLog = make(map[int]interface{})
+	e.preparedData = make(map[int]interface{})
+	e.committedData = make(map[int]interface{})
+	e.FinalPrePrepareMsgLog = make(map[string]interface{})
+	e.FinalPrepareMsgLog = make(map[int]interface{})
+	e.FinalcommitMsgLog = make(map[int]interface{})
+	e.FinalpreparedData = make(map[int]interface{})
+	e.FinalcommittedData = make(map[int]interface{})
 }
 
 func (e *Elastico) reset() {
