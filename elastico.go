@@ -244,7 +244,17 @@ func (bh *BlockHeader)BlockHeaderInit(prevBlockHash string, numAncestorBlocks in
 	bh.rootHash = rootHash
 }
 
-
+func(bh *BlockHeader) hexdigest () []byte{
+	/* 
+		Digest of a block header
+	 */
+	 digest := sha256.New()
+	 digest.Write([]byte(bh.prevBlockHash))
+	 digest.Write([]byte(strconv.Itoa(bh.numAncestorBlocks)))
+	 digest.Write([]byte(strconv.Itoa(bh.txnCount)))
+	 digest.Write([]byte(bh.rootHash))
+	 return digest.Sum(nil)
+}
 
 // Identity :- structure for identity of nodes
 type Identity struct {
