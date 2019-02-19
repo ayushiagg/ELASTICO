@@ -107,6 +107,31 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message")
 }
 
+func consistencyProtocol() bool {
+	/*
+		Agrees on a single set of Hash values(S)
+		presently selecting random c hash of Ris from the total set of commitments
+	*/
+	// ToDo: implement interactive consistency Protocol
+	// for node in network_nodes:
+	// 	 if node.isFinalMember():
+	// 		 if len(node.commitments) <= c//2:
+	// 			 logging.warning("insufficientCommitments")
+	// 			 return False, "insufficientCommitments"
+
+	//  if len(commitmentSet) == 0:
+	// 	 flag = True
+	// 	 for node in network_nodes:
+	// 		 if node.isFinalMember():
+	// 			 if flag and len(commitmentSet) == 0:
+	// 				 flag = False
+	// 				 commitmentSet = node.commitments
+	// 			 else:
+	// 				 commitmentSet = commitmentSet.intersection(node.commitments)
+	//  return True,commitmentSet
+	return true
+}
+
 // MulticastCommittee :- each node getting views of its committee members from directory members
 func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txns map[int64][]Transaction) {
 
