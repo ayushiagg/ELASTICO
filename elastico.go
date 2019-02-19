@@ -237,6 +237,14 @@ type BlockHeader struct{
 	rootHash string
 }
 
+func (bh *BlockHeader)BlockHeaderInit()(prevBlockHash string, numAncestorBlocks int, txnCount int,  rootHash string){
+	bh.prevBlockHash = prevBlockHash
+	bh.numAncestorBlocks = numAncestorBlocks
+	bh.txnCount = txnCount
+	bh.rootHash = rootHash
+}
+
+
 
 // Identity :- structure for identity of nodes
 type Identity struct {
