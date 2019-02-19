@@ -655,6 +655,21 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 
 }
 
+func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
+	// Sign the array of Transactions
+	digest := sha256.New()
+	for i := 0; i < len(TxnBlock); i++ {
+		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		digest.Write([]byte(txnDigest))
+	}
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+	return hashVal
+}
+
+func (e *Elastico) verify_signTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) {
+
+}
+
 func (e *Elastico) receive(msg map[string]interface{}) {
 	/*
 		method to recieve messages for a node as per the type of a msg
