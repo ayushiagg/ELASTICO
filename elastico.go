@@ -1206,6 +1206,28 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	return prePrepareMsg
 }
 
+func (e *Elastico) constructPrepare() []map[string]interface{} {
+	/* 
+		construct prepare msg in the prepare phase
+	 */
+	 prepareMsgList := []map[string]interface{}
+	//  loop over all pre-prepare msgs
+	 for socketID := range e.prePrepareMsgLog{
+
+		msg := e.prePrepareMsgLog[socketID].(map[string]interface{})
+		prePreparedData := msg["pre-prepareData"].(map[string]interface{})
+		seqnum := prePreparedData["seq"].(int)
+		digest:= prePreparedData["digest"].(string)
+		//  make prepare_contents Ordered Dict for signatures purpose
+		 prepareContents :=  map[string]interface{}{ "type" : "prepare" , "viewId" : e.viewId,  "seq" : seqnum , "digest" : digest}
+		 PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
+		 preparemsg := map[string]interface{}{"type" : "prepare",  "prepareData" : prepareContents, "sign" : PrepareContentsDigest , "identity" : e.identity}
+		 prepareMsgList = append(prepareMsgList , preparemsg)
+	 }
+	 return prepareMsgList
+
+}
+
 func (e *Elastico) digestPrePrepareMsg(msg map[string]interface{}) []byte {
 	digest := sha256.New()
 	digest.Write([]byte("type"))
