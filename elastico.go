@@ -187,6 +187,13 @@ func (is *IdentityAndSign) IdentityAndSignInit(sign string, identityobj Identity
 	is.identityobj = identityobj
 }
 
+func (is *IdentityAndSign) isEqual(data IdentityAndSign) bool {
+	/*
+		compare two objects
+	*/
+	return is.sign == data.sign && is.identityobj.isEqual(&data.identityobj)
+}
+
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
