@@ -564,7 +564,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 		sign := data["signature"].(string)
 		receivedCommitmentSetList := data["commitmentSet"].(map[string]bool)
 		PK := identityobj.PK
-		finalTxnBlock := data["finalTxnBlock"].(Transaction)
+		finalTxnBlock := data["finalTxnBlock"].([]Transaction)
 		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
 		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
