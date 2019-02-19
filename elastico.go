@@ -670,8 +670,20 @@ func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 	return signature
 }
 
-func (e *Elastico) verify_signTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) {
-
+func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) {
+	signed, err := base64.StdEncoding.DecodeString(TxnBlockSignature) // Decode the base64 encoded signature
+	failOnError(err, "Decode error of signature")
+	// Sign the array of Transactions
+	digest := sha256.New()
+	for i := 0; i < len(TxnBlock); i++ {
+		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		digest.Write([]byte(txnDigest))
+	}
+	err = rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, digest.Sum(nil), signed) // verify the sign of digest of Txn List
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (e *Elastico) receive(msg map[string]interface{}) {
