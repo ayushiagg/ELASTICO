@@ -1141,8 +1141,21 @@ func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
 		// dont send pre-prepare msg to e
 		if e.identity.isEqual(nodeID) == false {
 
-			prePrepareMsgDigest := e.digestPrePrepareMsg()
-			nodeID.send(prePrepareMsgDigest)
+			nodeID.send(prePrepareMsg)
+		}
+	}
+}
+
+func sendPrepare(prepareMsgList []map[string]interface{}) {
+	/*
+		send the prepare msgs to the committee members
+	*/
+	// send prepare msg list to committee members
+	for _, preparemsg := range prepareMsgList {
+
+		for _, nodeID := range e.committeeMembers {
+
+			nodeID.send(preparemsg)
 		}
 	}
 }
