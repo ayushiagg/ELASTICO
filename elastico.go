@@ -1575,6 +1575,65 @@ func (e *Elastico) processFinalprepareMsg(msg map[string]interface{}) {
 	}
 }
 
+func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) {
+	/*
+		Verify pre-prepare msgs
+	*/
+	// prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	// prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
+	// prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContentsDigest), "identity": e.identity}
+
+	identityobj := msg["identity"].(Identity)
+	prePreparedData := msg["pre-prepareData"].(map[string]interface{})
+	txnBlockList := msg["message"].([]Transaction)
+	// verify Pow
+	if e.verifyPoW(identityobj) == false {
+
+		log.Warn("wrong pow in  verify pre-prepare")
+		return false
+	}
+	// verify signatures of the received msg
+	prePreparedDataDigest := e.digestPrePrepareMsg(prePreparedData)
+	if e.verifySign(msg["sign"], prePreparedDataDigest, identityobj.PK) == false {
+
+		log.Warn("wrong sign in  verify pre-prepare")
+		return false
+	}
+	// verifying the digest of request msg
+	prePreparedDataTxnDigest := prePreparedData["digest"].(string)
+	if txnHexdigest(txnBlockList) != prePreparedDataTxnDigest {
+
+		log.Warn("wrong digest in  verify pre-prepare")
+		return false
+	}
+	// check the view is same or not
+	prePreparedDataView := prePreparedData["viewId"].(int)
+	if prePreparedDataView != e.viewId {
+
+		log.Warn("wrong view in  verify pre-prepare")
+		return false
+	}
+	// check if already accepted a pre-prepare msg for view v and sequence num n with different digest
+	seqnum := prePreparedData["seq"].(int)
+	for socket := range e.pre_prepareMsgLog {
+
+		prePrepareMsgLogSocket := e.pre_prepareMsgLog[socket].(string)
+		prePrepareMsgLogData := prePrepareMsgLogSocket["pre-prepareData"].(map[string]interface{})
+		prePrepareMsgLogView := prePrepareMsgLogData["viewId"].(int)
+		prePrepareMsgLogSeq := prePrepareMsgLogData["seq"].(int)
+		prePrepareMsgLogTxnDigest := prePrepareMsgLogData["digest"].(string)
+		if prePrepareMsgLogView == e.viewId && prePrepareMsgLogSeq == seqnum {
+
+			if prePreparedDataTxnDigest != prePrepareMsgLogTxnDigest {
+
+				return false
+			}
+		}
+	}
+	// If msg is discarded then what to do
+	return true
+}
+
 func (e *Elastico) logPrePrepareMsg(msg map[string]interface{}) {
 	/*
 		log the pre-prepare msg
