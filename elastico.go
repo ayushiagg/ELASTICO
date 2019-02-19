@@ -570,12 +570,13 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 	if e.verifyPoW(identityobj) {
 
 		sign := data["signature"].(string)
-		receivedCommitmentSetList := data["commitmentSet"].(map[string]bool)
+		receivedCommitments := data["commitmentSet"].(map[string]bool)
 		PK := identityobj.PK
 		finalTxnBlock := data["finalTxnBlock"].([]Transaction)
 		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
-		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
+		receivedCommitmentDigest := e.digestCommitments(receivedCommitments)
+		if e.verifySign(sign, receivedCommitmentDigest, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
@@ -618,7 +619,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 				}
 
 				// union of commitments
-				unionSet(e.newRcommitmentSet, receivedCommitmentSetList)
+				unionSet(e.newRcommitmentSet, receivedCommitments)
 			}
 
 		} else {
