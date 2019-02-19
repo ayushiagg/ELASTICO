@@ -2,6 +2,7 @@
 package main
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	// "reflect"
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"os"
@@ -274,8 +276,8 @@ type Elastico struct {
 	newsetOfRs                     map[string]bool
 	CommitteeConsensusData         map[int64]map[string][]string
 	CommitteeConsensusDataTxns     map[int64]map[string][]Transaction
-	finalBlockbyFinalCommittee     map[int]map[string][]string
-	finalBlockbyFinalCommitteeTxns map[int]map[string][]Transaction
+	finalBlockbyFinalCommittee     map[string]map[string][]string
+	finalBlockbyFinalCommitteeTxns map[string]map[string][]Transaction
 	state                          int
 	mergedBlock                    []Transaction
 	finalBlock                     map[string]interface{}
@@ -562,16 +564,15 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 		sign := data["signature"].(string)
 		receivedCommitmentSetList := data["commitmentSet"].(map[string]bool)
 		PK := identityobj.PK
-		finalTxnBlock := data["finalTxnBlock"].(Transaction)
+		finalTxnBlock := data["finalTxnBlock"].([]Transaction)
 		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
-		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verify_signTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
+		if e.verify_sign(sign, receivedCommitmentSetList, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
 			if _, ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
-
-				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = []Transaction{finalTxnBlock}
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = finalTxnBlock
 			}
 
 			// creating the object that contains the identity and signature of the final member
@@ -626,14 +627,14 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 	identityobj := data["identity"].(Identity)
 
 	if e.verifyPoW(identityobj) {
-
+		signature := data["sign"].(string)
+		TxnBlock := data["txnBlock"].([]Transaction)
 		// verify the signatures
-		if e.verify_signTxnList(data["sign"], data["txnBlock"], identityobj.PK) {
-
+		if e.verifySignTxnList(signature, TxnBlock, identityobj.PK) {
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID]; ok == false {
 
-				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string]interface{})
-				e.CommitteeConsensusDataTxns[identityobj.committeeID] = make(map[string]interface{})
+				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string][]string)
+				e.CommitteeConsensusDataTxns[identityobj.committeeID] = make(map[string][]Transaction)
 			}
 			TxnBlockDigest := txnHexdigest(data["txnBlock"])
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID][TxnBlockDigest]; ok == false {
@@ -673,6 +674,34 @@ func (e *Elastico) verifySign(signature string, data, publickey *rsa.PublicKey) 
 	// digest.update(data.encode())
 	// verifier = PKCS1_v1_5.new(publickey)
 	// return verifier.verify(digest,signature)
+}
+
+func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
+	// Sign the array of Transactions
+	digest := sha256.New()
+	for i := 0; i < len(TxnBlock); i++ {
+		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		digest.Write([]byte(txnDigest))
+	}
+	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest.Sum(nil)) // sign the digest of Txn List
+	failOnError(err, "Error in Signing Txn List")
+	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
+	return signature
+}
+
+func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) bool {
+	signed, err := base64.StdEncoding.DecodeString(TxnBlockSignature) // Decode the base64 encoded signature
+	failOnError(err, "Decode error of signature")
+	// Sign the array of Transactions
+	digest := sha256.New()
+	for i := 0; i < len(TxnBlock); i++ {
+		txnDigest = TxnBlock[i].hexdigest() // Get the transaction digest
+		digest.Write([]byte(txnDigest))
+	}
+	err = rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, digest.Sum(nil), signed) // verify the sign of digest of Txn List
+	if err != nil {
+		return false
+	}
 	return true
 }
 
@@ -795,9 +824,9 @@ func (e *Elastico) ElasticoInit() {
 
 	e.CommitteeConsensusDataTxns = make(map[int64]map[string][]Transaction)
 
-	e.finalBlockbyFinalCommittee = make(map[int]map[string][]string)
+	e.finalBlockbyFinalCommittee = make(map[string]map[string][]string)
 
-	e.finalBlockbyFinalCommitteeTxns = make(map[int]map[string][]Transaction)
+	e.finalBlockbyFinalCommitteeTxns = make(map[string]map[string][]Transaction)
 
 	e.state = ElasticoStates["NONE"]
 
@@ -1685,6 +1714,21 @@ func (e *Elastico) consumeMsg() {
 	}
 }
 
+// txnHexdigest - Hex digest of txn List
+func txnHexdigest(txnList []Transaction) string {
+	/*
+		return hexdigest for a list of transactions
+	*/
+	// ToDo : Sort the Txns based on hash value
+	digest = SHA256.new()
+	for i := 0; i < len(txnList); i++ {
+		txnDigest := txnList[i].hexdigest()
+		digest.Write([]byte(txnDigest))
+	}
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil)) // hash of the list of txns
+	return hashVal
+}
+
 func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int]bool) {
 	/*
 		A process will execute based on its state and then it will consume
@@ -1727,6 +1771,17 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 		// Ensuring that all nodes are reset and sharedobj is not affected
 		// time.sleep(60)
 	}
+}
+
+func (e *Elastico) hexdigest(data string) string {
+	/*
+		Digest of data
+	*/
+	digest := sha256.New()
+	digest.Write([]byte(data))
+
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil)) // convert to hexdigest
+	return hashVal
 }
 
 func createTxns() []Transaction {
