@@ -1188,6 +1188,69 @@ func (e *Elastico) runPBFT() {
 	}
 }
 
+
+func (e *Elastico) isPrepared(){
+	/* 
+		Check if the state is prepared or not
+	*/
+		// collect prepared data
+		preparedData := map[int]interface{}
+		f := (c - 1)/3
+		// check for received request messages
+		for socket := range e.prePrepareMsgLog{
+
+			// In current View Id
+			prePrepareData := e.pre_prepareMsgLog[socket]["pre-prepareData"].(map[string]interface{})
+			if prePrepareData["viewId"] == e.viewId{
+
+				// request msg of pre-prepare request
+				requestMsg := e.pre_prepareMsgLog[socket]["message"]
+				// digest of the message
+				digest := e.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
+				// get sequence number of this msg
+				seqnum := e.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
+				// find Prepare msgs for this view and sequence number
+				if e.viewId in e.prepareMsgLog and seqnum in e.prepareMsgLog[e.viewId]{
+
+					// need to find matching prepare msgs from different replicas atleast c/2 + 1
+					count := 0
+					for replicaId in e.prepareMsgLog[e.viewId][seqnum]{
+						
+						for msg in e.prepareMsgLog[e.viewId][seqnum][replicaId]{
+							
+							if msg["digest"] == digest{
+								
+								count += 1
+								break
+							}
+						}
+					}
+					// condition for Prepared state
+					if count >= 2*f{
+
+						if _ , ok := preparedData[e.viewId] ; ok == false{
+
+							preparedData[e.viewId] = map[int]interface{}
+						}
+						if  _ , ok := preparedData[e.viewId][seqnum] ; ok == false{
+							
+							preparedData[e.viewId][seqnum] = []Transaction
+						}
+						preparedData[e.viewId][seqnum] = append(preparedData[e.viewId][seqnum], requestMsg)
+					}
+				}
+   
+			}
+		}
+		if len(preparedData) > 0{
+			
+			e.preparedData = preparedData
+			return true
+		}
+		return false
+}
+
+
 func (e *Elastico) runFinalPBFT() {
 	/*
 		Run PBFT by final committee members
