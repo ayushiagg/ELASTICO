@@ -249,6 +249,13 @@ class BlockData:
 	def __init__(self, transactions, merkleTree):
 		self.transactions = transactions
 		self.merkleTree = merkleTree
+		self.commitMsgs = []
+
+	def addCommitMsg(self, msg):
+		"""
+			Add commit msgs to block data
+		"""
+		self.commitMsgs.append(msg)
 
 	def hexdigest(self):
 		"""
