@@ -249,13 +249,20 @@ class BlockData:
 	def __init__(self, transactions, merkleTree):
 		self.transactions = transactions
 		self.merkleTree = merkleTree
-		self.commitMsgs = []
+		self.intraCommitMsgs = []
+		self.finalCommitMsgs = []
 
-	def addCommitMsg(self, msg):
+	def addintraCommitMsg(self, msg):
 		"""
 			Add commit msgs to block data
 		"""
-		self.commitMsgs.append(msg)
+		self.intraCommitMsgs.append(msg)
+
+	def addfinalCommitMsg(self, msg):
+		"""
+			Add commit msgs to block data
+		"""
+		self.finalCommitMsgs.append(msg)
 
 	def hexdigest(self):
 		"""
@@ -287,6 +294,7 @@ class IdentityAndSign:
 		"""
 		return self.sign == data.sign and self.identityobj.isEqual(data.identityobj)
 
+	
 
 class Block:
 	"""
@@ -319,6 +327,18 @@ class Block:
 						break
 				if flag == False:
 					self.IdentitiesAndSignatures.append(newobj)
+
+	def addintraCommitMsg(self, msg):
+		"""
+		"""
+		self.data.addintraCommitMsg(msg)
+
+	def addfinalCommitMsg(self, msg):
+		"""
+			Add commit msgs to block data
+		"""
+		self.data.addfinalCommitMsg(msg)
+	
 
 	def verifyBlock(self):
 		"""
@@ -2133,8 +2153,13 @@ class Elastico:
 			if len(ledger) > 0:
 				LastBlock = ledger[-1]
 				if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
-					# ToDo: Add signs here
+					# Add signs here
 					LastBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
+					# Add commit msgs
+					if is_directory == false and len(self.committee_Members) >= c:
+						LastBlock.addintraCommitMsg(self.committedData)
+						if self.isFinalMember():
+							LastBlock.addfinalCommitMsg(self.FinalcommittedData)
 					signUpdated = True
 				else:
 					prevBlockHash = LastBlock.hexdigest()
