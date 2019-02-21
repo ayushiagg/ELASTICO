@@ -52,6 +52,11 @@ var finNum int64
 // networkNodes - list of elastico objects
 var networkNodes []Elastico
 
+var sharedObj map[int]bool
+
+// commitmentSet - set of commitments S
+var commitmentSet map[string]bool
+
 func failOnError(err error, msg string) {
 	// logging the error
 	if err != nil {
