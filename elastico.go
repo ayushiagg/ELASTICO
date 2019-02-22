@@ -1686,6 +1686,42 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 	// 	logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
 }
 
+func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
+	/*
+		log the final commit msg
+	*/
+	// viewId = msg["commitData"]["viewId"]
+	// seqnum = msg["commitData"]["seq"]
+	// socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
+	// // add msgs for this view
+	//  _ , ok := e.FinalcommitMsgLog[viewId]
+	// if ok == false{
+
+	// 	e.FinalcommitMsgLog[viewId] = dict()
+	// }
+
+	// // add msgs for this sequence num
+	// _ , okk := e.FinalcommitMsgLog[viewId][seqnum]
+	// if okk == false{
+
+	// 	e.FinalcommitMsgLog[viewId][seqnum] = dict()
+	// }
+
+	// // add all msgs from this sender
+	//  _ , okkk := e.FinalcommitMsgLog[viewId][seqnum][socketId]
+	// if okkk == false{
+
+	// 	e.FinalcommitMsgLog[viewId][seqnum][socketId] = list()
+	// }
+
+	// // log only required details from the commit msg
+	// identityobj := msg["identity"].(Identity)
+	// msgDetails := map[string]interface{}{"digest" : msg["commitData"]["digest"], "identity" : identityobj}
+	// // append msg
+	// log.Warn("Log committed msg for view , seqnum ", viewId , seqnum)
+	// e.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
