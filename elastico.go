@@ -2130,51 +2130,44 @@ func (e *Elastico) getCommitment() string {
 	/*
 		generate commitment for random string Ri. This is done by a final committee member
 	*/
-	if e.isFinalMember() {
 
-		if e.Ri == "" {
-			e.generateRandomstrings()
-		}
-		commitment := sha256.New()
-		commitment.Write([]byte(e.Ri))
-		hashVal := fmt.Sprintf("%x", commitment.Sum(nil))
-		return hashVal
+	if e.Ri == "" {
+		e.generateRandomstrings()
 	}
+	commitment := sha256.New()
+	commitment.Write([]byte(e.Ri))
+	hashVal := fmt.Sprintf("%x", commitment.Sum(nil))
+	return hashVal
 }
 
 func (e *Elastico) executeReset() {
 	/*
 		call for reset
 	*/
-	log.Warn("call for reset for ", e.port)
-	if isinstance(e.identity, Identity) {
+	// log.Warn("call for reset for ", e.port)
+	// if isinstance(e.identity, Identity) {
 
-		// if node has formed its identity
-		msg := make(map[string]interface{})
-		msg["type"] = "reset-all"
-		msg["data"] = e.identity
-		e.identity.send(msg)
-	} else {
+	// 	// if node has formed its identity
+	// 	msg := make(map[string]interface{})
+	// 	msg["type"] = "reset-all"
+	// 	msg["data"] = e.identity
+	// 	e.identity.send(msg)
+	// } else {
 
-		// this node has not computed its identity,calling reset explicitly for node
-		e.reset()
-	}
+	// 	// this node has not computed its identity,calling reset explicitly for node
+	// 	e.reset()
+	// }
 }
 
-func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
+func (e *Elastico) execute(epochTxn []Transaction) string {
 	/*
 		executing the functions based on the running state
 	*/
-	// # print the current state of node for debug purpose
-	// 		print(e.identity ,  list(ElasticoStates.keys())[ list(ElasticoStates.values()).index(e.state)], "STATE of a committee member")
-
 	// initial state of elastico node
 	if e.state == ElasticoStates["NONE"] {
-
 		e.executePoW()
-
 	} else if e.state == ElasticoStates["PoW Computed"] {
-
+		log.Info("PoW state")
 		// form identity, when PoW computed
 		e.formIdentity()
 	} else if e.state == ElasticoStates["Formed Identity"] {
@@ -2592,7 +2585,7 @@ func main() {
 
 	log.SetOutput(file)
 	log.SetLevel(log.InfoLevel) // set the log level
-
+	log.Info("started")
 	// run all the epochs
 	Run(epochTxns)
 	wg.Wait()
