@@ -1664,6 +1664,28 @@ func (e *Elastico) checkCountForFinalData() {
 	}
 }
 
+func (e *Elastico) verifyAndMergeConsensusData() {
+	/*
+		each final committee member validates that the values received from the committees are signed by
+		atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
+
+	*/
+	// logging.warning("verify and merge %s -- %s" , str(self.port) ,str(self.committee_id))
+	// for committeeid in range(pow(2,s)):
+	// 	if committeeid in self.CommitteeConsensusData:
+	// 		for txnBlockDigest in self.CommitteeConsensusData[committeeid]:
+	// 			if len(self.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c//2 + 1:
+	// 				# get the txns from the digest
+	// 				txnBlock = self.CommitteeConsensusDataTxns[committeeid][txnBlockDigest]
+	// 				if len(txnBlock) > 0:
+	// 					# set_of_txns = ast.literal_eval(txnBlockDigest)
+	// 					# self.mergedBlock.extend(set_of_txns)
+	// 					self.mergedBlock = self.unionTxns(self.mergedBlock, txnBlock)
+	// if len(self.mergedBlock) > 0:
+	// 	self.state = ELASTICO_STATES["Merged Consensus Data"]
+	// 	logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
