@@ -1580,6 +1580,19 @@ func (e *Elastico) digestCommitMsg(msg map[string]interface{}) []byte {
 	return digest.Sum(nil)
 }
 
+func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
+	/*
+		construct pre-prepare msg , done by primary final
+	*/
+	txnBlockList := e.mergedBlock
+	// ToDo :- make pre_prepare_contents Ordered Dict for signatures purpose
+	prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+
+	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
+	prePrepareMsg := map[string]interface{}{"type": "Finalpre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.Sign(prePrepareContentsDigest), "identity": e.identity}
+	return prePrepareMsg
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
