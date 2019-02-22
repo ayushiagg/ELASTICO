@@ -1441,6 +1441,27 @@ func (e *Elastico) constructPrepare() []map[string]interface{} {
 
 }
 
+func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
+	/*
+		construct prepare msg in the prepare phase
+	*/
+	FinalprepareMsgList := make([]map[string]interface{}, 0)
+	for socketID := range e.FinalPrePrepareMsgLog {
+
+		msg := e.FinalPrePrepareMsgLog[socketID].(map[string]interface{})
+		prePreparedData := msg["pre-prepareData"].(map[string]interface{})
+		seqnum := prePreparedData["seq"].(int)
+		digest := prePreparedData["digest"].(string)
+		//  make prepare_contents Ordered Dict for signatures purpose
+
+		prepareContents := map[string]interface{}{"type": "Finalprepare", "viewId": e.viewID, "seq": seqnum, "digest": digest}
+		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
+		prepareMsg := map[string]interface{}{"type": "Finalprepare", "prepareData": prepareContents, "sign": e.Sign(PrepareContentsDigest), "identity": e.identity}
+		FinalprepareMsgList = append(FinalprepareMsgList, prepareMsg)
+	}
+	return FinalprepareMsgList
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
