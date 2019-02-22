@@ -1541,6 +1541,19 @@ func (e *Elastico) constructFinalCommit() []map[string]interface{} {
 	return commitMsges
 }
 
+func (e *Elastico) digestPrePrepareMsg(msg map[string]interface{}) []byte {
+	digest := sha256.New()
+	digest.Write([]byte("type"))
+	digest.Write([]byte(msg["type"].(string)))
+	digest.Write([]byte("viewId"))
+	digest.Write([]byte(strconv.Itoa(msg["viewId"].(int))))
+	digest.Write([]byte("seq"))
+	digest.Write([]byte(strconv.Itoa(msg["seq"].(int))))
+	digest.Write([]byte("digest"))
+	digest.Write([]byte(msg["digest"].(string)))
+	return digest.Sum(nil)
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
