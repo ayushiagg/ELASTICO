@@ -117,29 +117,43 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message")
 }
 
-func consistencyProtocol() bool {
+func consistencyProtocol() (bool, map[string]bool) {
 	/*
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	*/
-	// ToDo: implement interactive consistency Protocol
-	// for node in network_nodes:
-	// 	 if node.isFinalMember():
-	// 		 if len(node.commitments) <= c//2:
-	// 			 logging.warning("insufficientCommitments")
-	// 			 return False, "insufficientCommitments"
+	// // ToDo: implement interactive consistency Protocol
+	// for node := range networkNodes{
 
-	//  if len(commitmentSet) == 0:
-	// 	 flag = True
-	// 	 for node in network_nodes:
-	// 		 if node.isFinalMember():
-	// 			 if flag and len(commitmentSet) == 0:
-	// 				 flag = False
+	// 	if node.isFinalMember(){
+
+	// 		if len(node.commitments) <= c/2{
+
+	// 			log.Warn("insufficientCommitments")
+	// 			return false, "insufficientCommitments"
+	// 		}
+	// 	}
+	// }
+
+	//  if len(commitmentSet) == 0{
+
+	// 	 flag := true
+	// 	 for node := range networkNodes{
+
+	// 		 if node.isFinalMember(){
+
+	// 			 if flag && len(commitmentSet) == 0{
+
+	// 				 flag = false
 	// 				 commitmentSet = node.commitments
-	// 			 else:
+	// 			 } else{
+
 	// 				 commitmentSet = commitmentSet.intersection(node.commitments)
-	//  return True,commitmentSet
-	return true
+	// 			 }
+	// 		 }
+	// 	 }
+	//  }
+	return true, commitmentSet
 }
 
 // MulticastCommittee :- each node getting views of its committee members from directory members
