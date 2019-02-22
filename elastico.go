@@ -553,20 +553,16 @@ func (e *Elastico) computePoW() {
 	for i := 0; i < D; i++ {
 		zeroString += "0"
 	}
-	// ToDo: type assertion for interface
-	nonce := e.PoW["nonce"].(int)
 	if e.state == ElasticoStates["NONE"] {
-		// public key
-		PK := e.key.Public()
-		fmt.Printf("%T", PK)
-		rsaPublickey := PK.(*rsa.PublicKey)
+		nonce := e.PoW["nonce"].(int)       // type assertion
+		PK := e.key.Public()                // public key
+		rsaPublickey := PK.(*rsa.PublicKey) //converted to rsa public key object
 		IP := e.IP
 		// If it is the first epoch , randomsetR will be an empty set .
 		// otherwise randomsetR will be any c/2 + 1 random strings Ri that node receives from the previous epoch
-		randomsetR := make(map[string]bool)
+		randomsetR := make([]string, 0)
 		if len(e.setOfRs) > 0 {
-			// ToDo: complete this for further epochs
-			// e.epochRandomness, randomsetR = e.xor_R()
+			e.epochRandomness, randomsetR = e.xorR()
 		}
 		// 	compute the digest
 		digest := sha256.New()
