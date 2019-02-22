@@ -1593,6 +1593,21 @@ func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
 	return prePrepareMsg
 }
 
+func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
+	/*
+		Send pre-prepare msgs to all committee members
+	*/
+	// send pre-prepare msg to committee members
+	for _, nodeID := range e.committeeMembers {
+
+		// dont send pre-prepare msg to e
+		if e.identity.isEqual(&nodeID) == false {
+
+			nodeID.send(prePrepareMsg)
+		}
+	}
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
