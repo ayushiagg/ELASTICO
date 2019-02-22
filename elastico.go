@@ -1608,6 +1608,19 @@ func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
 	}
 }
 
+func (e *Elastico) sendCommit(commitMsgList []map[string]interface{}) {
+	/*
+		send the commit msgs to the committee members
+	*/
+	for _, commitMsg := range commitMsgList {
+
+		for _, nodeID := range e.committeeMembers {
+
+			nodeID.send(commitMsg)
+		}
+	}
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
