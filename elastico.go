@@ -1516,6 +1516,31 @@ func (e *Elastico) constructCommit() []map[string]interface{} {
 	return commitMsges
 }
 
+func (e *Elastico) constructFinalCommit() []map[string]interface{} {
+	/*
+		Construct commit msgs
+	*/
+	commitMsges := make([]map[string]interface{}, 0)
+	/*
+		 for viewId := range e.FinalpreparedData{
+
+			 for seqnum := range e.FinalpreparedData[viewId]{
+
+				 for msg := range e.FinalpreparedData[viewId][seqnum]{
+
+					 digest := txnHexdigest(msg)
+					//  make commit_contents Ordered Dict for signatures purpose
+					 commitContents := map[string]interface{}{"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest }
+					 commitContentsDigest := e.digestCommitments(commitContents)
+					 commitMsg := map[string]interface{}{"type" : "Finalcommit" , "sign" : e.Sign(commitContentsDigest) , "commitData" : commitContents, "identity" : e.identity}
+					 commitMsges = append(commitMsges, commitMsg)
+				 }
+			 }
+		 }
+	*/
+	return commitMsges
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
