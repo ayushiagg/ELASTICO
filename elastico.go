@@ -2386,16 +2386,23 @@ func (e *Elastico) verifyCommit(msg map[string]interface{}) bool {
 		verify commit msgs
 	*/
 	// verify Pow
-	if !e.verifyPoW(msg["identity"]) {
+	identityobj := msg["identity"].(Identity)
+	if !e.verifyPoW(identityobj) {
 		return false
 	}
 	// verify signatures of the received msg
-	if !e.verifySign(msg["sign"], msg["commitData"], msg["identity"].PK) {
+
+	sign := msg["sign"].(string)
+	commitData := msg["commitData"].(map[string]interface{})
+	digestCommitData := e.digestCommitMsg(commitData)
+	PK := identityobj.PK
+	if !e.verifySign(sign, digestCommitData, PK) {
 		return false
 	}
 
 	// check the view is same or not
-	if msg["commitData"]["viewID"] != e.viewID {
+	viewID := commitData["viewID"].(int)
+	if viewID != e.viewID {
 		return false
 	}
 	return true
