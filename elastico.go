@@ -2544,22 +2544,14 @@ func createNodes() {
 	}
 }
 
-func createProcesses(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
 	/*
-		create the processes for each elastico node
+		create a Go Routine for each elastico node
 	*/
 
-	// list of processes
-	// processes = []
 	for nodeIndex := int64(0); nodeIndex < n; nodeIndex++ {
-		// create a process
-		fmt.Println("Go thread", nodeIndex)
-		go executeSteps(nodeIndex, epochTxns, sharedObj)
-		// process = Process(target= executeSteps, args=(nodeIndex, epochTxns, sharedObj))
-		// # add to the list of processes
-		// processes.append(process)
+		go executeSteps(nodeIndex, epochTxns, sharedObj) // start thread
 	}
-	// return processes
 }
 
 // Run :- run all the epochs
@@ -2575,11 +2567,8 @@ func Run(epochTxns map[int][]Transaction) {
 	makeMalicious()
 	makeFaulty()
 
-	// create the processes
-	// processes =
-	createProcesses(epochTxns, sharedObj)
-	// start and join the processes
-	// startAndJoinProcesses(processes)
+	// create the threads
+	createRoutines(epochTxns, sharedObj)
 
 	// log.Warn("LEDGER- , length - ", ledger, len(ledger))
 	// for block in ledger:
