@@ -840,6 +840,28 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 	}
 }
 
+// BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
+func (e *Elastico) BroadcastFinalTxn() {
+	/*
+		final committee members will broadcast S(commitmentSet), along with final set of
+		X(txn_block) to everyone in the network
+	*/
+	// boolVal , S = consistencyProtocol()
+	// if boolVal == False:
+	// 	return S
+	// commitmentList = list(S)
+	// PK = self.key.publickey().exportKey().decode()
+	// data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "identity" : self.identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.signTxnList(self.finalBlock["finalBlock"])}
+	// logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
+	// # final Block sent to ntw
+	// self.finalBlock["sent"] = True
+	// # A final node which is already in received state should not change its state
+	// if self.state != ELASTICO_STATES["FinalBlockReceived"]:
+	// 	logging.warning("change state to FinalBlockSent by %s" , str(self.port))
+	// 	self.state = ELASTICO_STATES["FinalBlockSent"]
+	// BroadcastTo_Network(data, "finalTxnBlock")
+}
+
 func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 	// final committee member receives the final set of txns along with the signature from the node
 	data := msg["data"].(map[string]interface{})
