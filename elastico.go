@@ -205,12 +205,13 @@ func randomGen(r int64) *big.Int {
 	return randomNum
 }
 
-// for signature and its identity which can be used for verification
+// IdentityAndSign :- for signature and its identity which can be used for verification
 type IdentityAndSign struct {
 	sign        string
 	identityobj Identity
 }
 
+// IdentityAndSignInit :- initialise the members of structure
 func (is *IdentityAndSign) IdentityAndSignInit(sign string, identityobj Identity) {
 
 	is.sign = sign
@@ -224,63 +225,65 @@ func (is *IdentityAndSign) isEqual(data IdentityAndSign) bool {
 	return is.sign == data.sign && is.identityobj.isEqual(&data.identityobj)
 }
 
-// final committed block that consists of txns and list of signatures and identities
-type FinalCommittedBlock struct{
-	txnList []Transaction
+// FinalCommittedBlock :- final committed block that consists of txns and list of signatures and identities
+type FinalCommittedBlock struct {
+	txnList                       []Transaction
 	listSignaturesAndIdentityobjs []IdentityAndSign
 }
 
-func (fb *FinalCommittedBlock)FinalBlockInit(txnList []Transaction, listSignaturesAndIdentityobjs []IdentityAndSign){
+//FinalBlockInit :- initialise the members
+func (fb *FinalCommittedBlock) FinalBlockInit(txnList []Transaction, listSignaturesAndIdentityobjs []IdentityAndSign) {
 	fb.txnList = txnList
 	fb.listSignaturesAndIdentityobjs = listSignaturesAndIdentityobjs
 }
 
-type BlockHeader struct{
-	prevBlockHash string
+// BlockHeader :- structure for block header
+type BlockHeader struct {
+	prevBlockHash     string
 	numAncestorBlocks int
-	txnCount int
-	rootHash string
+	txnCount          int
+	rootHash          string
 }
 
-func (bh *BlockHeader)BlockHeaderInit(prevBlockHash string, numAncestorBlocks int, txnCount int,  rootHash string) {
+// BlockHeaderInit :- init for block header
+func (bh *BlockHeader) BlockHeaderInit(prevBlockHash string, numAncestorBlocks int, txnCount int, rootHash string) {
 	bh.prevBlockHash = prevBlockHash
 	bh.numAncestorBlocks = numAncestorBlocks
 	bh.txnCount = txnCount
 	bh.rootHash = rootHash
 }
 
-func(bh *BlockHeader) hexdigest () []byte{
-	/* 
+func (bh *BlockHeader) hexdigest() []byte {
+	/*
 		Digest of a block header
-	 */
-	 digest := sha256.New()
-	 digest.Write([]byte(bh.prevBlockHash))
-	 digest.Write([]byte(strconv.Itoa(bh.numAncestorBlocks)))
-	 digest.Write([]byte(strconv.Itoa(bh.txnCount)))
-	 digest.Write([]byte(bh.rootHash))
-	 return digest.Sum(nil)
+	*/
+	digest := sha256.New()
+	digest.Write([]byte(bh.prevBlockHash))
+	digest.Write([]byte(strconv.Itoa(bh.numAncestorBlocks)))
+	digest.Write([]byte(strconv.Itoa(bh.txnCount)))
+	digest.Write([]byte(bh.rootHash))
+	return digest.Sum(nil)
 }
 
-type BlockData struct{
-	/* 
-		class for block data consists of txns and merkle tree
-	 */
-	 transactions []Transaction
+// BlockData :- block data consists of txns and merkle tree
+type BlockData struct {
+	transactions []Transaction
 }
 
-func (bd *BlockData)BlockDataInit( transactions []Transaction){
+// BlockDataInit :- init for block data
+func (bd *BlockData) BlockDataInit(transactions []Transaction) {
 	bd.transactions = transactions
 }
 
-func (bd *BlockData)hexdigest() []byte{
+func (bd *BlockData) hexdigest() []byte {
 	/*
 		Digest of a block data
-	 */
+	*/
 	digest := sha256.New()
 	// take the digest of the txnBlock
 	txndigest := txnHexdigest(bd.transactions)
 	digest.Write([]byte(txndigest))
-	
+
 	return digest.Sum(nil)
 
 }
@@ -396,7 +399,7 @@ type Elastico struct {
 		views - stores the ports of processes from which committee member views have been received
 		primary- boolean to denote the primary node in the committee for PBFT run
 		viewId - view number of the pbft
-		pre_prepareMsgLog - log of pre-prepare msgs received during PBFT
+		prePrepareMsgLog - log of pre-prepare msgs received during PBFT
 		prepareMsgLog - log of prepare msgs received during PBFT
 		commitMsgLog - log of commit msgs received during PBFT
 		preparedData - data after prepared state
@@ -431,7 +434,7 @@ type Elastico struct {
 	newsetOfRs                     map[string]bool
 	CommitteeConsensusData         map[int64]map[string][]string
 	CommitteeConsensusDataTxns     map[int64]map[string][]Transaction
-	finalBlockbyFinalCommittee     map[string][]string
+	finalBlockbyFinalCommittee     map[string][]IdentityAndSign
 	finalBlockbyFinalCommitteeTxns map[string][]Transaction
 	state                          int
 	mergedBlock                    []Transaction
@@ -586,7 +589,8 @@ func (e *Elastico) checkCommitteeFull() {
 }
 
 func (e *Elastico) receiveDirectoryMember(msg map[string]interface{}) {
-	identityobj, _ := msg["data"].(Identity)
+	data := msg["data"].(map[string]interface{})
+	identityobj, _ := data["identity"].(Identity)
 	// verify the PoW of the sender
 	if e.verifyPoW(identityobj) {
 		if len(e.curDirectory) < c {
@@ -736,12 +740,12 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
 			if _, ok := e.finalBlockbyFinalCommittee[finaltxnBlockDigest]; ok == false {
-				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = make([]string, 0)
+				e.finalBlockbyFinalCommittee[finaltxnBlockDigest] = make([]IdentityAndSign, 0)
 				e.finalBlockbyFinalCommitteeTxns[finaltxnBlockDigest] = finalTxnBlock
 			}
 
 			// creating the object that contains the identity and signature of the final member
-			identityAndSign := IdentityAndSign(finalTxnBlockSignature, identityobj)
+			identityAndSign := IdentityAndSign{finalTxnBlockSignature, identityobj}
 
 			// check whether this combination of identity and sign already exists or not
 			flag := true
@@ -985,7 +989,7 @@ func (e *Elastico) ElasticoInit() {
 
 	e.CommitteeConsensusDataTxns = make(map[int64]map[string][]Transaction)
 
-	e.finalBlockbyFinalCommittee = make(map[string][]string)
+	e.finalBlockbyFinalCommittee = make(map[string][]IdentityAndSign)
 
 	e.finalBlockbyFinalCommitteeTxns = make(map[string][]Transaction)
 
@@ -1060,7 +1064,7 @@ func (e *Elastico) reset() {
 	e.newsetOfRs = make(map[string]bool)
 	e.CommitteeConsensusData = make(map[int64]map[string][]string)
 	e.CommitteeConsensusDataTxns = make(map[int64]map[string][]Transaction)
-	e.finalBlockbyFinalCommittee = make(map[string][]string)
+	e.finalBlockbyFinalCommittee = make(map[string][]IdentityAndSign)
 	e.finalBlockbyFinalCommitteeTxns = make(map[string][]Transaction)
 	e.state = ElasticoStates["NONE"]
 	e.mergedBlock = make([]Transaction, 0)
@@ -1193,68 +1197,76 @@ func (e *Elastico) runPBFT() {
 	}
 }
 
-
-func (e *Elastico) isPrepared(){
-	/* 
+func (e *Elastico) isPrepared() bool {
+	/*
 		Check if the state is prepared or not
 	*/
+	/*
 		// collect prepared data
-		preparedData := map[int]interface{}
+		preparedData := make(map[int]interface{})
 		f := (c - 1)/3
 		// check for received request messages
 		for socket := range e.prePrepareMsgLog{
 
 			// In current View Id
-			prePrepareData := e.pre_prepareMsgLog[socket]["pre-prepareData"].(map[string]interface{})
-			if prePrepareData["viewId"] == e.viewId{
+			socketMap := e.prePrepareMsgLog[socket].(map[string]interface{})
+			prePrepareData := socketMap["pre-prepareData"].(map[string]interface{})
+			if prePrepareData["viewId"] == e.viewID{
 
 				// request msg of pre-prepare request
-				requestMsg := e.pre_prepareMsgLog[socket]["message"]
+				requestMsg := socketMap["message"].([]Transaction)
 				// digest of the message
-				digest := e.pre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
+				digest := prePrepareData["digest"].(string)
 				// get sequence number of this msg
-				seqnum := e.pre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
+				seqnum := prePrepareData["seq"].(int)
 				// find Prepare msgs for this view and sequence number
-				if e.viewId in e.prepareMsgLog and seqnum in e.prepareMsgLog[e.viewId]{
+				_ , ok := e.prepareMsgLog[e.viewID]
 
-					// need to find matching prepare msgs from different replicas atleast c/2 + 1
-					count := 0
-					for replicaId in e.prepareMsgLog[e.viewId][seqnum]{
-						
-						for msg in e.prepareMsgLog[e.viewId][seqnum][replicaId]{
-							
-							if msg["digest"] == digest{
-								
-								count += 1
-								break
+				if ok == true{
+					prepareMsgLogViewID := e.prepareMsgLog[e.viewID].(map[int]interface{})
+					_ , okk :=  prepareMsgLogViewID[seqnum]
+					if okk == true{
+						// need to find matching prepare msgs from different replicas atleast c/2 + 1
+						count := 0
+						prepareMsgLogSeq := prepareMsgLogViewID[seqnum].(map[string]interface{})
+						for replicaId := range prepareMsgLogSeq{
+							prepareMsgLogReplica := prepareMsgLogSeq[replicaId].([]map[string]interface{})
+							for _, msg := range prepareMsgLogReplica{
+								checkdigest := msg["digest"]
+								if checkdigest == digest{
+									count += 1
+									break
+								}
 							}
 						}
-					}
-					// condition for Prepared state
-					if count >= 2*f{
+						// condition for Prepared state
+						if count >= 2*f{
 
-						if _ , ok := preparedData[e.viewId] ; ok == false{
+							if _ , ok := preparedData[e.viewID] ; ok == false{
 
-							preparedData[e.viewId] = map[int]interface{}
+								preparedData[e.viewID] = make(map[int]interface{})
+							}
+							preparedViewId := preparedData[e.viewID].(map[int]interface{})
+							if  _ , ok := preparedViewId[seqnum] ; ok == false{
+
+								preparedViewId[seqnum] = make([]Transaction,0)
+							}
+							preparedViewId[seqnum] = append(preparedViewId[seqnum], requestMsg)
 						}
-						if  _ , ok := preparedData[e.viewId][seqnum] ; ok == false{
-							
-							preparedData[e.viewId][seqnum] = []Transaction
-						}
-						preparedData[e.viewId][seqnum] = append(preparedData[e.viewId][seqnum], requestMsg)
+
 					}
 				}
-   
+
 			}
 		}
 		if len(preparedData) > 0{
-			
+
 			e.preparedData = preparedData
 			return true
 		}
-		return false
+	*/
+	return false
 }
-
 
 func (e *Elastico) runFinalPBFT() {
 	/*
@@ -1265,7 +1277,7 @@ func (e *Elastico) runFinalPBFT() {
 		if e.primary {
 
 			// construct pre-prepare msg
-			finalPrePreparemsg := e.construct_Finalpre_prepare()
+			finalPrePreparemsg := e.constructFinalPrePrepare()
 			// multicasts the pre-prepare msg to replicas
 			e.sendPrePrepare(finalPrePreparemsg)
 
@@ -1287,7 +1299,7 @@ func (e *Elastico) runFinalPBFT() {
 		if e.primary == false {
 
 			// construct prepare msg
-			FinalpreparemsgList := e.construct_Finalprepare()
+			FinalpreparemsgList := e.constructFinalPrepare()
 			e.sendPrepare(FinalpreparemsgList)
 			e.state = ElasticoStates["FinalPBFT_PREPARE_SENT"]
 		}
@@ -1300,7 +1312,7 @@ func (e *Elastico) runFinalPBFT() {
 		}
 	} else if e.state == ElasticoStates["FinalPBFT_PREPARED"] {
 
-		commitMsgList := e.construct_Finalcommit()
+		commitMsgList := e.constructFinalCommit()
 		e.sendCommit(commitMsgList)
 		e.state = ElasticoStates["FinalPBFT_COMMIT_SENT"]
 
@@ -1633,7 +1645,7 @@ func (e *Elastico) sendCommitment() {
 		for _, nodeID := range e.committeeMembers {
 
 			log.Warn("sent the commitment by", e.port)
-			data := map[string]interface{}{"identity": e.identity, "HashRi": Hash_Ri}
+			data := map[string]interface{}{"identity": e.identity, "HashRi": HashRi}
 			msg := map[string]interface{}{"data": data, "type": "hash"}
 			nodeID.send(msg)
 		}
@@ -1744,7 +1756,8 @@ func (e *Elastico) formCommittee() {
 
 		e.isDirectory = true
 		// broadcast the identity to whole ntw
-		BroadcastToNetwork(e.identity, "directoryMember")
+		data := map[string]interface{}{"identity": e.identity}
+		BroadcastToNetwork(data, "directoryMember")
 		// change the state as it is the directory member
 		e.state = ElasticoStates["RunAsDirectory"]
 	} else {
@@ -1794,34 +1807,40 @@ func (e *Elastico) verifyPoW(identityobj Identity) bool {
 	// 	epochRandomness = ("{:0" + str(r) +  "b}").format(xor_val)
 
 	// recompute PoW
-	PK := identityobj.PK
+
+	// public key
+	rsaPublickey := identityobj.PK
 	IP := identityobj.IP
 	nonce := PoW["nonce"].(int)
 
+	// 	compute the digest
 	digest := sha256.New()
 	digest.Write([]byte(IP))
-	digest.update(PK.encode())
-	digest.update([]byte(epochRandomness))
-	digest.update(str(nonce).encode())
-	hashVal = digest.hexdigest()
-	if hashVal.startswith('0'*D) && hashVal == PoW["hash"] {
+	digest.Write(rsaPublickey.N.Bytes())
+	digest.Write([]byte(strconv.Itoa(rsaPublickey.E)))
+	digest.Write([]byte(e.epochRandomness))
+	digest.Write([]byte(strconv.Itoa(nonce)))
+
+	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+	if strings.HasPrefix(hashVal, zeroString) && hashVal == hash {
 		// Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
 		return true
 	}
 	return false
+
 }
 
 // FinalpbftProcessMessage :- Process the messages related to Pbft!
 func (e *Elastico) FinalpbftProcessMessage(msg map[string]interface{}) {
 
 	if msg["type"] == "Finalpre-prepare" {
-		self.processFinalprePrepareMsg(msg)
+		e.processFinalprePrepareMsg(msg)
 
 	} else if msg["type"] == "Finalprepare" {
-		self.processFinalprepareMsg(msg)
+		e.processFinalprepareMsg(msg)
 
 	} else if msg["type"] == "Finalcommit" {
-		self.processFinalcommitMsg(msg)
+		e.processFinalcommitMsg(msg)
 	}
 }
 
@@ -1834,7 +1853,7 @@ func (e *Elastico) processCommitMsg(msg map[string]interface{}) {
 	if verified {
 
 		// Log the commit msgs!
-		e.log_commitMsg(msg)
+		e.logCommitMsg(msg)
 	}
 }
 
@@ -1847,7 +1866,7 @@ func (e *Elastico) processFinalcommitMsg(msg map[string]interface{}) {
 	if verified {
 
 		// Log the commit msgs!
-		e.log_FinalcommitMsg(msg)
+		e.logFinalCommitMsg(msg)
 	}
 }
 
@@ -1856,11 +1875,11 @@ func (e *Elastico) processPrepareMsg(msg map[string]interface{}) {
 		process prepare msg
 	*/
 	// verify the prepare message
-	verified := e.verify_prepare(msg)
+	verified := e.verifyPrepare(msg)
 	if verified {
 
 		// Log the prepare msgs!
-		e.log_prepareMsg(msg)
+		e.logPrepareMsg(msg)
 	}
 }
 
