@@ -1499,7 +1499,7 @@ func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
 	for _, nodeID := range e.committeeMembers {
 
 		// dont send pre-prepare msg to e
-		if e.identity.isEqual(nodeID) == false {
+		if e.identity.isEqual(&nodeID) == false {
 
 			nodeID.send(prePrepareMsg)
 		}
@@ -1714,7 +1714,7 @@ func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 		for _, nodeID := range nodeData {
 
 			// data is present already in nodeData
-			if nodeID.isEqual(data) {
+			if nodeID.isEqual(&data) {
 				flag = true
 				break
 			}
