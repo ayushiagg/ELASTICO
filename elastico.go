@@ -2253,8 +2253,9 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 	} else if e.state == ElasticoStates["LedgerUpdated"] {
 
 		// Now, the node can be reset
-		// return "reset"
+		return "reset"
 	}
+	return ""
 }
 
 // SendToDirectory :- Send about new nodes to directory committee members
