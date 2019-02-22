@@ -27,6 +27,8 @@ import (
 // ElasticoStates - states reperesenting the running state of the node
 var ElasticoStates = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "FinalBlockSent": 26, "FinalBlockReceived": 27, "BroadcastedR": 28, "ReceivedR": 29, "FinalBlockSentToClient": 30, "LedgerUpdated": 31}
 
+var wg sync.WaitGroup
+
 // shared lock among processes
 var lock sync.Mutex
 
@@ -2461,6 +2463,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 	/*
 		A process will execute based on its state and then it will consume
 	*/
+	defer wg.Done()
 	node := networkNodes[nodeIndex]
 	for _, epochTxn := range epochTxns {
 		// epochTxn holds the txn for the current epoch
@@ -2583,6 +2586,9 @@ func Run(epochTxns map[int][]Transaction) {
 }
 
 func main() {
+
+	wg.Add(int(n))
+
 	// delete the file
 	os.Remove("logfile.log")
 	// open the logging file
@@ -2599,5 +2605,6 @@ func main() {
 
 	// run all the epochs
 	Run(epochTxns)
+	wg.Wait()
 
 }
