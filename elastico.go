@@ -2527,6 +2527,19 @@ func createTxns() []Transaction {
 	return txns
 }
 
+func createNodes() {
+	/*
+		create the elastico nodes
+	*/
+	// network_nodes is the list of elastico objects
+	if len(networkNodes) == 0 {
+		networkNodes = make([]Elastico, n)
+		for i := int64(0); i < n; i++ {
+			networkNodes[i].ElasticoInit() //initialise elastico nodes
+		}
+	}
+}
+
 func main() {
 	// delete the file
 	os.Remove("logfile.log")
