@@ -1781,14 +1781,14 @@ func (e *Elastico) verifyPoW(identityobj Identity) bool {
 	}
 
 	PoW := identityobj.PoW
-
+	hash := PoW["hash"].(string)
 	// length of hash in hex
-	if len(PoW["hash"]) != 64 {
+	if len(hash) != 64 {
 		return false
 	}
 
 	// Valid Hash has D leading '0's (in hex)
-	if !strings.HasPrefix(Pow["hash"], zeroString) {
+	if !strings.HasPrefix(hash, zeroString) {
 		return false
 	}
 
@@ -1888,19 +1888,19 @@ func (e *Elastico) processFinalprepareMsg(msg map[string]interface{}) {
 		process final prepare msg
 	*/
 	// verify the prepare message
-	verified := e.verify_Finalprepare(msg)
-	if verified {
+	// verified := e.verifyFinalPrepare(msg)
+	// if verified {
 
-		// Log the prepare msgs!
-		e.log_FinalprepareMsg(msg)
-	}
+	// 	// Log the prepare msgs!
+	// 	e.logFinalPrepareMsg(msg)
+	// }
 }
 
-func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) {
+func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
 	/*
 		Verify pre-prepare msgs
 	*/
-	// prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	// prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
 	// prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
 	// prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContentsDigest), "identity": e.identity}
 
@@ -1930,21 +1930,21 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) {
 	}
 	// check the view is same or not
 	prePreparedDataView := prePreparedData["viewId"].(int)
-	if prePreparedDataView != e.viewId {
+	if prePreparedDataView != e.viewID {
 
 		log.Warn("wrong view in  verify pre-prepare")
 		return false
 	}
 	// check if already accepted a pre-prepare msg for view v and sequence num n with different digest
 	seqnum := prePreparedData["seq"].(int)
-	for socket := range e.pre_prepareMsgLog {
+	for socket := range e.prePrepareMsgLog {
 
-		prePrepareMsgLogSocket := e.pre_prepareMsgLog[socket].(string)
+		prePrepareMsgLogSocket := e.prePrepareMsgLog[socket].(map[string]interface{})
 		prePrepareMsgLogData := prePrepareMsgLogSocket["pre-prepareData"].(map[string]interface{})
 		prePrepareMsgLogView := prePrepareMsgLogData["viewId"].(int)
 		prePrepareMsgLogSeq := prePrepareMsgLogData["seq"].(int)
 		prePrepareMsgLogTxnDigest := prePrepareMsgLogData["digest"].(string)
-		if prePrepareMsgLogView == e.viewId && prePrepareMsgLogSeq == seqnum {
+		if prePrepareMsgLogView == e.viewID && prePrepareMsgLogSeq == seqnum {
 
 			if prePreparedDataTxnDigest != prePrepareMsgLogTxnDigest {
 
@@ -1956,12 +1956,12 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) {
 	return true
 }
 
-func (e *Elastico) verifyFinalPrePrepare(msg map[string]interface{}) {
+func (e *Elastico) verifyFinalPrePrepare(msg map[string]interface{}) bool {
 	/*
 		Verify final pre-prepare msgs
 	*/
 	// txnBlockList := e.mergedBlock
-	// prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewId, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	// prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
 
 	// prePrepareMsg := map[string]interface{}{"type": "Finalpre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "identity": e.identity}
 
@@ -1993,22 +1993,22 @@ func (e *Elastico) verifyFinalPrePrepare(msg map[string]interface{}) {
 	}
 	// check the view is same or not
 	prePreparedDataView := prePreparedData["viewId"].(int)
-	if prePreparedDataView != e.viewId {
+	if prePreparedDataView != e.viewID {
 
 		log.Warn("wrong view in  verify final pre-prepare")
 		return false
 	}
 	// check if already accepted a pre-prepare msg for view v and sequence num n with different digest
 	seqnum := prePreparedData["seq"].(int)
-	for socket := range e.Finalpre_prepareMsgLog {
+	for socket := range e.FinalPrePrepareMsgLog {
 
-		prePrepareMsgLogSocket := e.pre_prepareMsgLog[socket].(string)
+		prePrepareMsgLogSocket := e.prePrepareMsgLog[socket].(map[string]interface{})
 		prePrepareMsgLogData := prePrepareMsgLogSocket["pre-prepareData"].(map[string]interface{})
 		prePrepareMsgLogView := prePrepareMsgLogData["viewId"].(int)
 		prePrepareMsgLogSeq := prePrepareMsgLogData["seq"].(int)
 		prePrepareMsgLogTxnDigest := prePrepareMsgLogData["digest"].(string)
 
-		if prePrepareMsgLogView == e.viewId && prePrepareMsgLogSeq == seqnum {
+		if prePrepareMsgLogView == e.viewID && prePrepareMsgLogSeq == seqnum {
 
 			if prePreparedDataTxnDigest != prePrepareMsgLogTxnDigest {
 
@@ -2080,7 +2080,7 @@ func (e *Elastico) notifyFinalCommittee() {
 	*/
 	finalCommList := e.committeeList[finNum]
 	for _, finalMember := range finalCommList {
-		data := mske(map[string]interface{})
+		data := make(map[string]interface{})
 		data["identity"] = e.identity
 		// construct the msg
 		msg := make(map[string]interface{})
@@ -2158,7 +2158,7 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 		if e.flag == false {
 
 			// logging the bad nodes
-			logging.error("member with invalid POW %s with commMembers : %s", e.identity, e.committeeMembers)
+			log.Error("member with invalid POW %s with commMembers : %s", e.identity, e.committeeMembers)
 		}
 		// Now The node should go for Intra committee consensus
 		// initial state for the PBFT
@@ -2173,7 +2173,7 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 	} else if e.state == ElasticoStates["PBFT_COMMITTED"] {
 
 		// send pbft consensus blocks to final committee members
-		log.Info("pbft finished by members %s", str(e.port))
+		log.Info("pbft finished by members %s", e.port)
 		e.SendtoFinal()
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["Intra Consensus Result Sent to Final"] {
@@ -2195,7 +2195,7 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 
 		// send the commitment to other final committee members
 		e.sendCommitment()
-		log.Warn("pbft finished by final committee %s", str(e.port))
+		log.Warn("pbft finished by final committee", e.port)
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["CommitmentSentToFinal"] {
 
@@ -2221,7 +2221,7 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 	} else if e.state == ElasticoStates["LedgerUpdated"] {
 
 		// Now, the node can be reset
-		return "reset"
+		// return "reset"
 	}
 }
 
@@ -2280,7 +2280,7 @@ func (e *Elastico) processPrePrepareMsg(msg map[string]interface{}) {
 		Process Pre-Prepare msg
 	*/
 	// verify the pre-prepare message
-	verified := e.verify_pre_prepare(msg)
+	verified := e.verifyPrePrepare(msg)
 	if verified {
 		// Log the pre-prepare msgs!
 		e.logPrePrepareMsg(msg)
@@ -2311,7 +2311,7 @@ func (e *Elastico) isPrePrepared() bool {
 	/*
 		if the node received the pre-prepare msg from the primary
 	*/
-	return len(e.pre_prepareMsgLog) > 0
+	return len(e.prePrepareMsgLog) > 0
 }
 
 func (e *Elastico) isFinalprePrepared() bool {
@@ -2346,7 +2346,7 @@ func makeFaulty() {
 	}
 }
 
-func (e *Elastico) verifyCommit(msg map[string]interface{}) {
+func (e *Elastico) verifyCommit(msg map[string]interface{}) bool {
 	/*
 		verify commit msgs
 	*/
@@ -2355,7 +2355,7 @@ func (e *Elastico) verifyCommit(msg map[string]interface{}) {
 		return false
 	}
 	// verify signatures of the received msg
-	if !e.verify_sign(msg["sign"], msg["commitData"], msg["identity"].PK) {
+	if !e.verifySign(msg["sign"], msg["commitData"], msg["identity"].PK) {
 		return false
 	}
 
