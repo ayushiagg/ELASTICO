@@ -1201,6 +1201,35 @@ func (e *Elastico) executePoW() {
 	}
 }
 
+// SendtoFinal :- Each committee member sends the signed value(txn block after intra committee consensus along with signatures to final committee
+func (e *Elastico) SendtoFinal() {
+	/*
+	 */
+	// PK = e.key.publickey().exportKey().decode()
+	// for viewId := range e.committedData{
+
+	// 	for seqnum := range e.committedData[viewId]{
+
+	// 		msgList = e.committedData[viewId][seqnum]
+	// 		for msg := range msgList{
+
+	// 			e.txn_block= e.unionTxns(e.txn_block, msg)
+	// 		}
+	// 	}
+	// }
+	// log.Warn("size of committee members" , len(e.finalCommitteeMembers))
+	// log.Warn("send to final---txns", e.committee_id , e.port , e.txn_block)
+	// for finalId := range e.finalCommitteeMembers {
+
+	// 	//  here txn_block is a set, since sets are unordered hence can't sign them. So convert set to list for signing
+	// 	txnBlock = e.txn_block
+	// 	data = {"txnBlock" : txnBlock , "sign" : e.signTxnList(txnBlock), "identity" : e.identity}
+	// 	msg = {"data" : data, "type" : "intraCommitteeBlock" }
+	// 	finalId.send(msg)
+	// }
+	// e.state = ElasticoStates["Intra Consensus Result Sent to Final"]
+}
+
 func (e *Elastico) isFinalMember() bool {
 	/*
 		tell whether this node is a final committee member or not
