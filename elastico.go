@@ -2558,6 +2558,30 @@ func createProcesses(epochTxns map[int][]Transaction, sharedObj map[int64]bool) 
 	// return processes
 }
 
+// Run :- run all the epochs
+func Run(epochTxns map[int][]Transaction) {
+	// # Manager for managing the shared variable among the processes
+	// manager = Manager()
+	sharedObj = make(map[int64]bool)
+
+	// create the elastico nodes
+	createNodes()
+
+	// make some nodes malicious and faulty
+	makeMalicious()
+	makeFaulty()
+
+	// create the processes
+	// processes =
+	createProcesses(epochTxns, sharedObj)
+	// start and join the processes
+	// startAndJoinProcesses(processes)
+
+	// log.Warn("LEDGER- , length - ", ledger, len(ledger))
+	// for block in ledger:
+	// 	logging.warning("txns : %s", block.data.transactions)
+}
+
 func main() {
 	// delete the file
 	os.Remove("logfile.log")
