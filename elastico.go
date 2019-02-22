@@ -598,7 +598,7 @@ func (e *Elastico) checkCommitteeFull() {
 	// iterating over all committee ids
 	for iden := int64(0); iden < numOfCommittees; iden++ {
 
-		val, ok := commList[iden]
+		_, ok := commList[iden]
 		if ok == false || len(commList[iden]) < c {
 
 			log.Warn("committees not full  - bad miss id :", iden)
@@ -1851,7 +1851,7 @@ func (e *Elastico) verifyPoW(identityobj Identity) bool {
 	digest.Write([]byte(IP))
 	digest.Write(rsaPublickey.N.Bytes())
 	digest.Write([]byte(strconv.Itoa(rsaPublickey.E)))
-	digest.Write([]byte(e.epochRandomness))
+	digest.Write([]byte(epochRandomness))
 	digest.Write([]byte(strconv.Itoa(nonce)))
 
 	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
@@ -2262,24 +2262,26 @@ func (e *Elastico) SendToDirectory() {
 
 	// Add the new processor in particular committee list of directory committee nodes
 	for _, nodeID := range e.curDirectory {
-		msg := make(map[string]interafce{})
+		msg := make(map[string]interface{})
 		msg["data"] = e.identity
 		msg["type"] = "newNode"
 		nodeID.send(msg)
 	}
 }
 
-func (e *Elastico) receiveTxns(epochTxn map[int][]Transaction) {
+func (e *Elastico) receiveTxns(epochTxn []Transaction) {
 	/*
 		directory node will receive transactions from client
 	*/
 
 	// Receive txns from client for an epoch
-	k := 0
-	numOfCommittees := int(math.Pow(2, float64(s)))
-	num = len(epochTxn) / numOfCommittees // Transactions per committee
+	var k int64 = 0
+	numOfCommittees := int64(math.Pow(2, float64(s)))
+	var num int64
+	num = int64(len(epochTxn)) / numOfCommittees // Transactions per committee
 	// loop in sorted order of committee ids
-	for iden := 0; iden < numOfCommittees; iden++ {
+	var iden int64
+	for iden = 0; iden < numOfCommittees; iden++ {
 		if iden == numOfCommittees-1 {
 			// give all the remaining txns to the last committee
 			e.txn[iden] = epochTxn[k:]
@@ -2328,11 +2330,11 @@ func (e *Elastico) processFinalprePrepareMsg(msg map[string]interface{}) {
 	*/
 
 	// verify the Final pre-prepare message
-	verified := e.verifyFinalprePrepare(msg)
+	verified := e.verifyFinalPrePrepare(msg)
 	if verified {
 
 		// Log the final pre-prepare msgs!
-		e.logFinalPre_prepareMsg(msg)
+		e.logFinalPrePrepareMsg(msg)
 
 	} else {
 		log.Error("error in verification of Final processPrePrepareMsg")
@@ -2348,7 +2350,7 @@ func (e *Elastico) isPrePrepared() bool {
 
 func (e *Elastico) isFinalprePrepared() bool {
 
-	return len(e.Finalpre_prepareMsgLog) > 0
+	return len(e.FinalPrePrepareMsgLog) > 0
 }
 
 func makeMalicious() {
@@ -2438,7 +2440,7 @@ func txnHexdigest(txnList []Transaction) string {
 		return hexdigest for a list of transactions
 	*/
 	// ToDo : Sort the Txns based on hash value
-	digest = SHA256.new()
+	digest := sha256.New()
 	for i := 0; i < len(txnList); i++ {
 		txnDigest := txnList[i].hexdigest()
 		digest.Write([]byte(txnDigest))
@@ -2447,16 +2449,16 @@ func txnHexdigest(txnList []Transaction) string {
 	return hashVal
 }
 
-func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int]bool) {
+func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
 	/*
 		A process will execute based on its state and then it will consume
 	*/
 	node := networkNodes[nodeIndex]
-	for epoch, epochTxn := range epochTxns {
+	for _, epochTxn := range epochTxns {
 		// epochTxn holds the txn for the current epoch
 
 		// delete the entry of the node in sharedobj for the next epoch
-		if _, ok := sharedobj[nodeIndex]; ok {
+		if _, ok := sharedObj[nodeIndex]; ok {
 			delete(sharedObj, nodeIndex)
 		}
 
