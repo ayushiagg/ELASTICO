@@ -2540,6 +2540,24 @@ func createNodes() {
 	}
 }
 
+func createProcesses(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+	/*
+		create the processes for each elastico node
+	*/
+
+	// list of processes
+	// processes = []
+	for nodeIndex := int64(0); nodeIndex < n; nodeIndex++ {
+		// create a process
+		fmt.Println("Go thread", nodeIndex)
+		go executeSteps(nodeIndex, epochTxns, sharedObj)
+		// process = Process(target= executeSteps, args=(nodeIndex, epochTxns, sharedObj))
+		// # add to the list of processes
+		// processes.append(process)
+	}
+	// return processes
+}
+
 func main() {
 	// delete the file
 	os.Remove("logfile.log")
