@@ -61,12 +61,13 @@ var sharedObj map[int64]bool
 // commitmentSet - set of commitments S
 var commitmentSet map[string]bool
 
-func failOnError(err error, msg string) {
+func failOnError(err error, msg string, exit bool) {
 	// logging the error
 	if err != nil {
-		log.Error("see the error!")
 		log.Error("%s: %s", msg, err)
-		os.Exit(1)
+		if exit {
+			os.Exit(1)
+		}
 	}
 }
 
@@ -74,8 +75,8 @@ func getChannel(connection *amqp.Connection) *amqp.Channel {
 	/*
 		get channel
 	*/
-	channel, err := connection.Channel()         // create a channel
-	failOnError(err, "Failed to open a channel") // report the error
+	channel, err := connection.Channel()               // create a channel
+	failOnError(err, "Failed to open a channel", true) // report the error
 	return channel
 }
 
@@ -84,7 +85,7 @@ func getConnection() *amqp.Connection {
 		establish a connection with RabbitMQ server
 	*/
 	connection, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ") // report the error
+	failOnError(err, "Failed to connect to RabbitMQ", true) // report the error
 	return connection
 }
 
@@ -99,10 +100,10 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 		false,     // no-wait
 		nil,       // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	failOnError(err, "Failed to declare a queue", true)
 
 	body, err := json.Marshal(msg)
-	failOnError(err, "Failed to marshal")
+	failOnError(err, "Failed to marshal", true)
 	err = channel.Publish(
 		"",         // exchange
 		queue.Name, // routing key
@@ -205,7 +206,7 @@ func randomGen(r int64) *big.Int {
 	// here Reader is a global, shared instance of a cryptographically secure random number generator.
 	randomNum, err := rand.Int(rand.Reader, num)
 
-	failOnError(err, "random number generation")
+	failOnError(err, "random number generation", true)
 	return randomNum
 }
 
@@ -473,7 +474,7 @@ func (e *Elastico) getKey() {
 	var err error
 	// generate the public-pvt key pair
 	e.key, err = rsa.GenerateKey(rand.Reader, 2048)
-	failOnError(err, "key generation")
+	failOnError(err, "key generation", true)
 }
 
 func (e *Elastico) getIP() {
@@ -485,7 +486,7 @@ func (e *Elastico) getIP() {
 	byteArray := make([]byte, count)
 	// Assigning random values to the byte array
 	_, err := rand.Read(byteArray)
-	failOnError(err, "reading random values error")
+	failOnError(err, "reading random values error", true)
 	// setting the IP addr from the byte array
 	e.IP = fmt.Sprintf("%v.%v.%v.%v", byteArray[0], byteArray[1], byteArray[2], byteArray[3])
 }
@@ -866,7 +867,7 @@ func (e *Elastico) verifySign(signature string, digest []byte, PublicKey *rsa.Pu
 		verify whether signature is valid or not
 	*/
 	signed, err := base64.StdEncoding.DecodeString(signature) // Decode the base64 encoded signature
-	failOnError(err, "Decode error of signature")
+	failOnError(err, "Decode error of signature", true)
 	err = rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, digest, signed) // verify the sign of digest
 	if err != nil {
 		return false
@@ -882,14 +883,14 @@ func (e *Elastico) signTxnList(TxnBlock []Transaction) string {
 		digest.Write([]byte(txnDigest))
 	}
 	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest.Sum(nil)) // sign the digest of Txn List
-	failOnError(err, "Error in Signing Txn List")
+	failOnError(err, "Error in Signing Txn List", true)
 	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
 	return signature
 }
 
 func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transaction, PublicKey *rsa.PublicKey) bool {
 	signed, err := base64.StdEncoding.DecodeString(TxnBlockSignature) // Decode the base64 encoded signature
-	failOnError(err, "Decode error of signature")
+	failOnError(err, "Decode error of signature", true)
 	// Sign the array of Transactions
 	digest := sha256.New()
 	for i := 0; i < len(TxnBlock); i++ {
@@ -991,7 +992,7 @@ func (e *Elastico) ElasticoInit() {
 	// create rabbit mq connection
 	e.connection, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
 	// log if connection fails
-	failOnError(err, "Failed to connect to RabbitMQ")
+	failOnError(err, "Failed to connect to RabbitMQ", true)
 	// set IP
 	e.getIP()
 	e.getPort()
@@ -1141,13 +1142,13 @@ func (e *Elastico) getCommitteeid(PoW string) int64 {
 
 	for i := 0; i < len(PoW); i++ {
 		intVal, err := strconv.ParseInt(string(PoW[i]), 16, 0) // converts hex string to integer
-		failOnError(err, "string to int conversion error")
+		failOnError(err, "string to int conversion error", true)
 		bindigest += fmt.Sprintf("%04b", intVal) // converts intVal to 4 bit binary value
 	}
 	// take last s bits of the binary digest
 	identity := bindigest[len(bindigest)-s:]
 	iden, err := strconv.ParseInt(identity, 2, 0) // converts binary string to integer
-	failOnError(err, "binary to int conversion error")
+	failOnError(err, "binary to int conversion error", true)
 	return iden
 }
 
@@ -1600,7 +1601,7 @@ func (e *Elastico) checkCountForFinalData(){
 //Sign :- sign the byte array
 func (e *Elastico) Sign(digest []byte) string {
 	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest) // sign the digest
-	failOnError(err, "Error in Signing byte array")
+	failOnError(err, "Error in Signing byte array", true)
 	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
 	return signature
 }
@@ -2417,27 +2418,27 @@ func (e *Elastico) consumeMsg() {
 
 	// create a channel
 	channel, err := e.connection.Channel()
-	failOnError(err, "Failed to open a channel")
+	failOnError(err, "Failed to open a channel", true)
 	// close the channel
 	defer channel.Close()
 
 	nodeport := strconv.Itoa(e.port)
 	queueName := "hello" + nodeport
 	// count the number of messages that are in the queue
-	Queue, err := channel.QueueInspect(queueName)
+	Queue, _ := channel.QueueInspect(queueName)
+	failOnError(err, "error in inspect", false)
 
 	data := make(map[string]interface{})
 
-	failOnError(err, "error in inspect")
 	// consume all the messages one by one
 	for ; Queue.Messages > 0; Queue.Messages-- {
 
 		// get the message from the queue
 		msg, ok, err := channel.Get(queueName, true)
-		failOnError(err, "error in get of queue")
+		failOnError(err, "error in get of queue", true)
 		if ok {
 			err := json.Unmarshal(msg.Body, &data)
-			failOnError(err, "error in unmarshall")
+			failOnError(err, "error in unmarshall", true)
 			// consume the msg by taking the action in receive
 			e.receive(data)
 		}
@@ -2593,8 +2594,8 @@ func main() {
 	os.Remove("logfile.log")
 	// open the logging file
 	file, err := os.OpenFile("logfile.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	failOnError(err, "opening file error") // report the open file error
-	numOfEpochs := 2                       // num of epochs
+	failOnError(err, "opening file error", true) // report the open file error
+	numOfEpochs := 2                             // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
