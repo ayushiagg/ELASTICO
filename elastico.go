@@ -54,7 +54,7 @@ var finNum int64
 // networkNodes - list of elastico objects
 var networkNodes []Elastico
 
-var sharedObj map[int]bool
+var sharedObj map[int64]bool
 
 // commitmentSet - set of commitments S
 var commitmentSet map[string]bool
@@ -2182,15 +2182,14 @@ func (e *Elastico) execute(epochTxn map[int64][]Transaction) {
 
 		// form committee, when formed identity
 		e.formCommittee()
-
 	} else if e.isDirectory && e.state == ElasticoStates["RunAsDirectory"] {
 
 		log.Info("The directory member :- ", e.port)
 		e.receiveTxns(epochTxn)
 		// directory member has received the txns for all committees
 		e.state = ElasticoStates["RunAsDirectory after-TxnReceived"]
-
 	} else if e.state == ElasticoStates["Receiving Committee Members"] {
+
 		// when a node is part of some committee
 		if e.flag == false {
 
@@ -2469,7 +2468,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 		for {
 
 			// execute one step of elastico node, execution of a node is done only when it has not done reset
-			if _, ok := sharedobj[nodeIndex]; ok == false {
+			if _, ok := sharedObj[nodeIndex]; ok == false {
 
 				response := node.execute(epochTxn)
 				if response == "reset" {
@@ -2485,7 +2484,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 				break
 			}
 			// All the elastico objects has done their reset
-			if len(sharedObj) == n {
+			if int64(len(sharedObj)) == n {
 				break
 			}
 			// process consume the msgs from the queue
