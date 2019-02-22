@@ -45,7 +45,7 @@ var s = 2
 var c = 4
 
 // D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-var D = 6
+var D = 3
 
 // r - number of bits in random string
 var r int64 = 4
