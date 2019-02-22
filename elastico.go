@@ -8,8 +8,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
+	random "math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	// "reflect"
 	"encoding/base64"
@@ -506,6 +508,41 @@ func (e *Elastico) getPort() {
 	e.port = port
 	// release the lock
 	defer lock.Unlock()
+}
+
+func sample(A []string, x int) []string {
+	// randomly sample x values from list of strings A
+	random.Seed(time.Now().UnixNano())
+	randomize := random.Perm(len(A)) // get the random permutation of indices of A
+
+	sampleslice := make([]string, 0)
+
+	for _, v := range randomize[:x] {
+		sampleslice = append(sampleslice, A[v])
+	}
+	return sampleslice
+}
+
+func xorbinary(A []string) int64 {
+	// returns xor of the binary strings of A
+	var xorVal int64
+	for i := range A {
+		intval, _ := strconv.ParseInt(A[i], 2, 0)
+		xorVal = xorVal ^ intval
+	}
+	return xorVal
+}
+
+func (e *Elastico) xorR() (string, []string) {
+	// find xor of any random c/2 + 1 r-bit strings to set the epoch randomness
+	listOfRs := make([]string, 0)
+	for R := range e.setOfRs {
+		listOfRs = append(listOfRs, R)
+	}
+	randomset := sample(listOfRs, c/2+1) //get random c/2 + 1 strings from list of Rs
+	xorVal := xorbinary(randomset)
+	xorString := fmt.Sprintf("%0"+strconv.FormatInt(r, 10)+"b\n", xorVal) //converting xor value to r-bit string
+	return xorString, randomset
 }
 
 func (e *Elastico) computePoW() {
