@@ -1833,11 +1833,11 @@ func (e *Elastico) verifyPoW(identityobj Identity) bool {
 
 	// reconstruct epoch randomness
 	epochRandomness := identityobj.epochRandomness
-	// if len(PoW["setOfRs"]) > 0:
-	// 	xor_val = 0
-	// 	for R in PoW["setOfRs"]:
-	// 		xor_val = xor_val ^ int(R, 2)
-	// 	epochRandomness = ("{:0" + str(r) +  "b}").format(xor_val)
+	setOfRs := PoW["setOfRs"].([]string)
+	if len(setOfRs) > 0 {
+		xorVal := xorbinary(setOfRs)
+		epochRandomness = fmt.Sprintf("%0"+strconv.FormatInt(r, 10)+"b\n", xorVal)
+	}
 
 	// recompute PoW
 
