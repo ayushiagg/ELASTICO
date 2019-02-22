@@ -1635,6 +1635,35 @@ func (e *Elastico) sendPrepare(prepareMsgList []map[string]interface{}) {
 	}
 }
 
+func (e *Elastico) checkCountForFinalData() {
+	/*
+		check the sufficient counts for final data
+	*/
+	//  collect final blocks sent by final committee and add the blocks to the response
+	/*
+		 for txnBlockDigest := range e.finalBlockbyFinalCommittee{
+
+			 if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2 + 1{
+
+				 TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
+				//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
+				 finalCommittedBlock := FinalCommittedBlock(TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest])
+				//  add the block to the response
+				 e.response = append(e.response , finalCommittedBlock)
+
+			 } else {
+
+				 log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
+			 }
+		 }
+	*/
+	if len(e.response) > 0 {
+
+		log.Warn("final block sent the block to client by", e.port)
+		e.state = ElasticoStates["FinalBlockSentToClient"]
+	}
+}
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
