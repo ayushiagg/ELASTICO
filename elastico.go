@@ -1410,12 +1410,12 @@ func (e *Elastico) constructPrepare() []map[string]interface{} {
 		seqnum := prePreparedData["seq"].(int)
 		digest:= prePreparedData["digest"].(string)
 		//  make prepare_contents Ordered Dict for signatures purpose
-		 prepareContents :=  map[string]interface{}{ "type" : "prepare" , "viewId" : e.viewId,  "seq" : seqnum , "digest" : digest}
-		 PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
-		 preparemsg := map[string]interface{}{"type" : "prepare",  "prepareData" : prepareContents, "sign" : e.sign(PrepareContentsDigest) , "identity" : e.identity}
-		 prepareMsgList = append(prepareMsgList , preparemsg)
-	 }
-	 return prepareMsgList
+		prepareContents := map[string]interface{}{"type": "prepare", "viewId": e.viewID, "seq": seqnum, "digest": digest}
+		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
+		preparemsg := map[string]interface{}{"type": "prepare", "prepareData": prepareContents, "sign": e.Sign(PrepareContentsDigest), "identity": e.identity}
+		prepareMsgList = append(prepareMsgList, preparemsg)
+	}
+	return prepareMsgList
 
 }
 
