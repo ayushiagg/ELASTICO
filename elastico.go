@@ -64,7 +64,7 @@ var commitmentSet map[string]bool
 func failOnError(err error, msg string, exit bool) {
 	// logging the error
 	if err != nil {
-		log.Error("%s: %s", msg, err)
+		log.Error(msg, " : ", err)
 		if exit {
 			os.Exit(1)
 		}
@@ -114,7 +114,7 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 			Body:        body,
 		})
 
-	failOnError(err, "Failed to publish a message")
+	failOnError(err, "Failed to publish a message", true)
 }
 
 func consistencyProtocol() (bool, map[string]bool) {
