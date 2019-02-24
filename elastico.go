@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	random "math/rand"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -2094,6 +2095,7 @@ func (e *Elastico) BroadcastR() {
 		msg["type"] = "RandomStringBroadcast"
 
 		e.state = ElasticoStates["BroadcastedR"]
+
 		BroadcastToNetwork(data, "RandomStringBroadcast")
 
 	} else {
@@ -2168,6 +2170,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 	if e.state == ElasticoStates["NONE"] {
 		e.executePoW()
 	} else if e.state == ElasticoStates["PoW Computed"] {
+
 		log.Info("PoW state")
 		// form identity, when PoW computed
 		e.formIdentity()
