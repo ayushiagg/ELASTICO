@@ -1828,6 +1828,54 @@ func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 	return nodeData
 }
 
+func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
+	/*
+	 Verify prepare msgs
+	*/
+	// verify Pow
+	identityobj := msg["identity"].(Identity)
+	if e.verifyPoW(identityobj) == false {
+
+		log.Warn("wrong pow in verify prepares")
+		return false
+	}
+
+	// verify signatures of the received msg
+	sign := msg["sign"].(string)
+	prepareData := msg["prepareData"].(map[string]interface{})
+	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
+	if e.verifySign(sign, PrepareContentsDigest, identityobj.PK) == false {
+
+		log.Warn("wrong sign in verify prepares")
+		return false
+	}
+
+	// check the view is same or not
+	viewID := prepareData["viewId"].(int)
+	seq := prepareData["seq"].(int)
+	digest := prepareData["digest"].(string)
+	if viewID != e.viewID {
+
+		log.Warn("wrong view in verify prepares")
+		return false
+	}
+	// verifying the digest of request msg
+	for socketID := range e.prePrepareMsgLog {
+
+		prePrepareMsg := e.prePrepareMsgLog[socketID].(map[string]interface{})
+		prePrepareData := prePrepareMsg["pre-prepareData"].(map[string]interface{})
+		prePrepareView := prePrepareData["viewId"].(int)
+		prePrepareSeq := prePrepareData["seq"].(int)
+		prePrepareDigest := prePrepareData["digest"].(string)
+		if prePrepareView == viewID && prePrepareSeq == seq && prePrepareDigest == digest {
+
+			return true
+		}
+	}
+	return false
+}
+
+
 func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transaction {
 	/*
 		union the transactions
