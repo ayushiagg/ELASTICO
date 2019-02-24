@@ -1724,6 +1724,13 @@ func (e *Elastico) logCommitMsg(msg map[string]interface{}) {
 	// self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)
 }
 
+//Sign :- sign the byte array
+func (e *Elastico) Sign(digest []byte) string {
+	signed, err := rsa.SignPKCS1v15(rand.Reader, e.key, crypto.SHA256, digest) // sign the digest
+	failOnError(err, "Error in Signing byte array", true)
+	signature := base64.StdEncoding.EncodeToString(signed) // encode to base64
+	return signature
+}
 
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
