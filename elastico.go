@@ -1732,6 +1732,24 @@ func (e *Elastico) Sign(digest []byte) string {
 	return signature
 }
 
+func (e *Elastico) sendCommitment() {
+	/*
+		send the H(Ri) to the final committe members.This is done by a final committee member
+	*/
+	if e.isFinalMember() == true {
+
+		HashRi := e.getCommitment()
+		for _, nodeID := range e.committeeMembers {
+
+			log.Warn("sent the commitment by", e.port)
+			data := map[string]interface{}{"identity": e.identity, "HashRi": HashRi}
+			msg := map[string]interface{}{"data": data, "type": "hash"}
+			nodeID.send(msg)
+		}
+		e.state = ElasticoStates["CommitmentSentToFinal"]
+	}
+}
+
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
 		log the final commit msg
