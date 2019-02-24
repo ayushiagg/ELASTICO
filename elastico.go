@@ -1857,7 +1857,59 @@ func (e *Elastico) isFinalPrepared() bool {
 	return true
 }
 
-
+func (e *Elastico) isCommitted() bool {
+	/*
+		Check if the state is committed or not
+	*/
+	// # collect committed data
+	// committedData = dict()
+	// f = (c - 1)//3
+	// # check for received request messages
+	// for socket in self.prePrepareMsgLog:
+	// 	# In current View Id
+	// 	if self.prePrepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
+	// 		# request msg of pre-prepare request
+	// 		requestMsg = self.prePrepareMsgLog[socket]["message"]
+	// 		# digest of the message
+	// 		digest = self.prePrepareMsgLog[socket]["pre-prepareData"]["digest"]
+	// 		# get sequence number of this msg
+	// 		seqnum = self.prePrepareMsgLog[socket]["pre-prepareData"]["seq"]
+	// 		if self.viewId in self.preparedData and seqnum in self.preparedData[self.viewId]:
+	// 			for prepareMsg in self.preparedData[self.viewId][seqnum]:
+	// 				if txnHexdigest(prepareMsg) == digest:
+	// 					# pre-prepared matched and prepared is also true, check for commits
+	// 					if self.viewId in self.commitMsgLog:
+	// 						if seqnum in self.commitMsgLog[self.viewId]:
+	// 							count = 0
+	// 							logging.warning("CHECK FOR COUNT IN COMMITTED BY PORT %s" , str(self.port))
+	// 							for replicaId in self.commitMsgLog[self.viewId][seqnum]:
+	// 								for msg in self.commitMsgLog[self.viewId][seqnum][replicaId]:
+	// 									if msg["digest"] == digest:
+	// 										count += 1
+	// 										break
+	// 							# ToDo: condition check
+	// 							if count >= 2*f + 1:
+	// 								if self.viewId not in committedData:
+	// 									committedData[self.viewId] = dict()
+	// 								if seqnum not in committedData[self.viewId]:
+	// 									committedData[self.viewId][seqnum] = list()
+	// 								committedData[self.viewId][seqnum].append(requestMsg)
+	// 						else:
+	// 							logging.error("no seqnum found in commit msg log")
+	// 					else:
+	// 						logging.error("no view id found in commit msg log")
+	// 				else:
+	// 					logging.error("wrong digest in is committed")
+	// 		else:
+	// 			logging.error("view and seqnum not found in isCommitted")
+	// 	else:
+	// 		logging.error("wrong view in is committed")
+	// if len(committedData) > 0:
+	// 	e.committedData = committedData
+	// 	return True
+	// return False
+	return true
+}
 
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
