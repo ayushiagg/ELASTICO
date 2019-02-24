@@ -1809,8 +1809,11 @@ func (e *Elastico) formCommittee() {
 
 		e.isDirectory = true
 		// broadcast the identity to whole ntw
-		data := map[string]interface{}{"identity": e.identity}
-		BroadcastToNetwork(data, "directoryMember")
+		var data directoryMemberMsg
+		data.identity = e.identity
+		// data := map[string]interface{}{"identity": e.identity}
+		msg := map[string]interface{}{"data": data, "type": "directoryMember"}
+		BroadcastToNetwork(msg)
 		// change the state as it is the directory member
 		e.state = ElasticoStates["RunAsDirectory"]
 	} else {
