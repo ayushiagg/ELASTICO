@@ -2165,19 +2165,19 @@ func (e *Elastico) executeReset() {
 	/*
 		call for reset
 	*/
-	// log.Warn("call for reset for ", e.port)
-	// if isinstance(e.identity, Identity) {
+	log.Warn("call for reset for ", e.port)
+	if reflect.TypeOf(e.identity) == reflect.TypeOf(Identity{}) {
 
-	// 	// if node has formed its identity
-	// 	msg := make(map[string]interface{})
-	// 	msg["type"] = "reset-all"
-	// 	msg["data"] = e.identity
-	// 	e.identity.send(msg)
-	// } else {
+		// if node has formed its identity
+		msg := make(map[string]interface{})
+		msg["type"] = "reset-all"
+		msg["data"] = e.identity
+		e.identity.send(msg)
+	} else {
 
-	// 	// this node has not computed its identity,calling reset explicitly for node
-	// 	e.reset()
-	// }
+		// this node has not computed its identity,calling reset explicitly for node
+		e.reset()
+	}
 }
 
 func (e *Elastico) execute(epochTxn []Transaction) string {
