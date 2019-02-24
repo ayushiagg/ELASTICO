@@ -1804,6 +1804,47 @@ func (e *Elastico) formIdentity() {
 	}
 }
 
+func (e *Elastico) logPrepareMsg(msg map[string]interface{}) {
+	/*
+		log the prepare msg
+	*/
+	identityobj := msg["identity"].(Identity)
+	prepareData := msg["prepareData"].(map[string]interface{})
+	viewID := prepareData["viewId"].(int)
+	seqnum := prepareData["seq"].(int)
+	socketID := identityobj.IP + ":" + strconv.Itoa(identityobj.port)
+	// add msgs for this view
+	if _, ok := e.prepareMsgLog[viewID]; ok == false {
+
+		e.prepareMsgLog[viewID] = make(map[int]interface{})
+	}
+	prepareMsgLogViewID := e.prepareMsgLog[viewID].(map[int]interface{})
+	// add msgs for this sequence num
+	if _, ok := prepareMsgLogViewID[seqnum]; ok == false {
+
+		prepareMsgLogViewID[seqnum] = make(map[string]interface{})
+	}
+
+	// add all msgs from this sender
+	prepareMsgLogSeq := prepareMsgLogViewID[seqnum].(map[string]interface{})
+	if _, ok := prepareMsgLogSeq[socketID]; ok == false {
+
+		prepareMsgLogSeq[socketID] = make([]map[string]interface{}, 0)
+	}
+
+	// ToDo: check that the msg appended is dupicate or not
+	// log only required details from the prepare msg
+	prepareDataDigest := prepareData["digest"].(string)
+	msgDetails := map[string]interface{}{"digest": prepareDataDigest, "identity": identityobj}
+	// append msg to prepare msg log
+	prepareMsgLogSocket := prepareMsgLogSeq[socketID].([]map[string]interface{})
+	prepareMsgLogSocket = append(prepareMsgLogSocket, msgDetails)
+	// ToDo : fix this
+	// e.prepareMsgLog[viewID] = [seqnum][socketID] = prepareMsgLogSocket
+
+}
+
+
 func (e *Elastico) logFinalPrepareMsg(msg map[string]interface{}) {
 	/*
 		log the prepare msg
