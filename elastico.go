@@ -1804,6 +1804,53 @@ func (e *Elastico) formIdentity() {
 	}
 }
 
+func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
+	/*
+		Verify final prepare msgs
+	*/
+	// verify Pow
+	identityobj := msg["identity"].(Identity)
+	if e.verifyPoW(identityobj) == false {
+
+		log.Warn("wrong pow in verify final prepares")
+		return false
+	}
+	// verify signatures of the received msg
+	sign := msg["sign"].(string)
+	prepareData := msg["prepareData"].(map[string]interface{})
+	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
+	if e.verifySign(sign, PrepareContentsDigest, identityobj.PK) == false {
+
+		log.Warn("wrong sign in verify final prepares")
+		return false
+	}
+	viewID := prepareData["viewId"].(int)
+	seq := prepareData["seq"].(int)
+	digest := prepareData["digest"].(string)
+	// check the view is same or not
+	if viewID != e.viewID {
+
+		log.Warn("wrong view in verify final prepares")
+		return false
+	}
+
+	// verifying the digest of request msg
+	for socketID := range e.FinalPrePrepareMsgLog {
+		prePrepareMsg := e.FinalPrePrepareMsgLog[socketID].(map[string]interface{})
+		prePrepareData := prePrepareMsg["pre-prepareData"].(map[string]interface{})
+		prePrepareView := prePrepareData["viewId"].(int)
+		prePrepareSeq := prePrepareData["seq"].(int)
+		prePrepareDigest := prePrepareData["digest"].(string)
+
+		if prePrepareView == viewID && prePrepareSeq == seq && prePrepareDigest == digest {
+
+			return true
+		}
+	}
+	return false
+}
+
+
 func (e *Elastico) logPrepareMsg(msg map[string]interface{}) {
 	/*
 		log the prepare msg
