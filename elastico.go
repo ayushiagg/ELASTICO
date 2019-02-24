@@ -2449,20 +2449,20 @@ func (e *Elastico) consumeMsg() {
 	Queue, err := channel.QueueInspect(queueName)
 	failOnError(err, "error in inspect", false)
 
-	data := make(map[string]interface{})
-
-	if err != nil {
+	var decoded msgType
+	if err == nil {
 		// consume all the messages one by one
 		for ; Queue.Messages > 0; Queue.Messages-- {
 
 			// get the message from the queue
-			msg, ok, err := channel.Get(queueName, true)
+			msg, ok, err := channel.Get(Queue.Name, true)
 			failOnError(err, "error in get of queue", true)
 			if ok {
-				err := json.Unmarshal(msg.Body, &data)
+				err := json.Unmarshal(msg.Body, &decoded)
 				failOnError(err, "error in unmarshall", true)
+				fmt.Println(decoded)
 				// consume the msg by taking the action in receive
-				e.receive(data)
+				e.receive(decoded)
 			}
 		}
 	}
