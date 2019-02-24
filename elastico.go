@@ -384,6 +384,11 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 	return t.sender == transaction.sender && t.receiver == transaction.receiver && t.amount == transaction.amount //&& t.timestamp == transaction.timestamp
 }
 
+type msgType struct {
+	Type string
+	Data json.RawMessage
+}
+
 // Elastico :- structure of elastico node
 type Elastico struct {
 	/*
