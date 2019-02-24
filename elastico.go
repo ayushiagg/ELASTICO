@@ -190,11 +190,11 @@ func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txn
 }
 
 // BroadcastToNetwork - Broadcast data to the whole ntw
-func BroadcastToNetwork(data map[string]interface{}, _type string) {
+func BroadcastToNetwork(msg map[string]interface{}) {
 	// construct msg
-	msg := make(map[string]interface{})
-	msg["data"] = data
-	msg["type"] = _type
+	// msg := make(map[string]interface{})
+	// msg["data"] = data
+	// msg["type"] = _type
 
 	connection := getConnection()
 	defer connection.Close() // close the connection
