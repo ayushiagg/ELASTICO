@@ -2005,6 +2005,7 @@ func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	// e.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)
 }
 
+
 func (e *Elastico) formIdentity() {
 	/*
 		identity formation for a node
@@ -2022,6 +2023,45 @@ func (e *Elastico) formIdentity() {
 		e.state = ElasticoStates["Formed Identity"]
 	}
 }
+
+
+func (e *Elastico) appendToLedger() {
+	/*
+		append the response to the ledger
+	*/
+	// lock.acquire()
+	// if len(self.response) >= 1:
+	// 	finalCommittedBlock = self.response[0]
+	// 	# extracting transactions from the final committed block
+	// 	transactions = finalCommittedBlock.txnList
+
+	// 	# create a merkle tree of the transactions
+	// 	merkleTree = self.createMerkleTree(transactions)
+	// 	# get the transactions count
+	// 	txnCount = len(transactions)
+
+	// 	# For the genesis block
+	// 	prevBlockHash = ""
+	// 	signUpdated = False
+	// 	if len(ledger) > 0:
+	// 		LastBlock = ledger[-1]
+	// 		if LastBlock.getRootHash() == merkleTree.Get_Root_leaf():
+	// 			# ToDo: Add signs here
+	// 			LastBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
+	// 			signUpdated = True
+	// 		else:
+	// 			prevBlockHash = LastBlock.hexdigest()
+	// 	if signUpdated == False:
+	// 		newBlock = Block(transactions, prevBlockHash, time.time(), len(ledger), txnCount, merkleTree)
+	// 		newBlock.addSignAndIdentities(finalCommittedBlock.listSignaturesAndIdentityobjs)
+	// 		ledger.append(newBlock)
+	// lock.release()
+
+	// if len(self.response) > 1:
+	// 	logging.error("Multiple Blocks coming!")
+
+}
+
 
 func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
 	/*
