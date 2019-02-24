@@ -2276,13 +2276,19 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 	return ""
 }
 
+type newNodeMsg struct {
+	data Identity
+}
+
 // SendToDirectory :- Send about new nodes to directory committee members
 func (e *Elastico) SendToDirectory() {
 
 	// Add the new processor in particular committee list of directory committee nodes
 	for _, nodeID := range e.curDirectory {
 		msg := make(map[string]interface{})
-		msg["data"] = e.identity
+		var newNode newNodeMsg
+		newNode.data = e.identity
+		msg["data"] = newNode
 		msg["type"] = "newNode"
 		nodeID.send(msg)
 	}
