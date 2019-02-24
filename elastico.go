@@ -1804,6 +1804,42 @@ func (e *Elastico) formIdentity() {
 	}
 }
 
+func (e *Elastico) checkCountForConsensusData() {
+	/*
+		check the sufficient count for consensus data
+	*/
+
+	flag := false
+	var commID int64
+	for commID = 0; commID < int64(math.Pow(2, float64(s))); commID++ {
+
+		if _, ok := e.CommitteeConsensusData[commID]; ok == false {
+
+			flag = true
+			break
+
+		} else {
+
+			for txnBlockDigest := range e.CommitteeConsensusData[commID] {
+
+				if len(e.CommitteeConsensusData[commID][txnBlockDigest]) <= c/2 {
+					flag = true
+					log.Warn("bad committee id for intra committee block", commID)
+					break
+				}
+			}
+		}
+	}
+	if flag == false {
+
+		// when sufficient number of blocks from each committee are received
+		log.Warn("good going for verify and merge")
+		e.verifyAndMergeConsensusData()
+	}
+
+}
+
+
 func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 	/*
 		nodeData and incomingData are the set of identities
