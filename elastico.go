@@ -1750,6 +1750,72 @@ func (e *Elastico) sendCommitment() {
 	}
 }
 
+func (e *Elastico) computeFakePoW() {
+	/*
+		bad node generates the fake PoW
+	*/
+	// random fakeness
+	/*
+		x := randomGen(32)
+		_, indexi := x.DivMod(x, big.NewInt(3), big.NewInt(0))
+		index := indexi.Int64()
+		if index == 0 {
+
+			// Random hash with initial D hex digits 0s
+			digest := sha256.New()
+			ranHash := fmt.Sprintf("%x", digest.Sum(nil))
+			hashVal := ""
+			for i := 0; i < D; i++ {
+				hashVal += "0"
+			}
+			e.PoW["hash"] = hashVal + ranHash[D:]
+
+		} else if index == 1 {
+
+			// computing an invalid PoW using less number of values in digest
+			randomsetR := set()
+			zeroString = ""
+			for i := 0; i < D; i++ {
+				zeroString += "0"
+			}
+			// if len(e.setOfRs) > 0:
+			// 	e.epochRandomness, randomsetR = e.xor_R()
+			for {
+
+				digest := sha256.New()
+				nonce := e.PoW["nonce"]
+				digest.Write([]byte(strconv.Itoa(nonce)))
+				hashVal := fmt.Sprintf("%x", digest.Sum(nil))
+				if strings.HasPrefix(hashVal, zeroString) {
+					e.PoW["hash"] = hashVal
+					e.PoW["setOfRs"] = randomsetR
+					e.PoW["nonce"] = nonce
+				} else {
+					// try for other nonce
+					nonce++
+					e.PoW["nonce"] = nonce
+				}
+			}
+		} else if index == 2 {
+
+			// computing a random PoW
+			randomsetR := set()
+			// if len(e.setOfRs) > 0:
+			// 	e.epochRandomness, randomsetR := e.xor_R()
+			digest := sha256.New()
+			ranHash := fmt.Sprintf("%x", digest.Sum(nil))
+			nonce := randomGen()
+			e.PoW["hash"] = ranHash
+			e.PoW["setOfRs"] = randomsetR
+			// ToDo: nonce has to be in int instead of big.Int
+			e.PoW["nonce"] = nonce
+		}
+
+		log.Warn("computed fake POW ", index)
+		e.state = ElasticoStates["PoW Computed"]
+	*/
+}
+
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
 		log the final commit msg
