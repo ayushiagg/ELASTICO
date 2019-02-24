@@ -1698,6 +1698,33 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 	// 	logging.warning("%s - port , %s - mergedBlock" ,str(self.port) ,  str(self.mergedBlock))
 }
 
+func (e *Elastico) logCommitMsg(msg map[string]interface{}) {
+	/*
+	 log the commit msg
+	*/
+	// viewId = msg["commitData"]["viewId"]
+	// seqnum = msg["commitData"]["seq"]
+	// socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
+	// # add msgs for this view
+	// if viewId not in self.commitMsgLog:
+	// 	self.commitMsgLog[viewId] = dict()
+
+	// # add msgs for this sequence num
+	// if seqnum not in self.commitMsgLog[viewId]:
+	// 	self.commitMsgLog[viewId][seqnum] = dict()
+
+	// # add all msgs from this sender
+	// if socketId not in self.commitMsgLog[viewId][seqnum]:
+	// 	self.commitMsgLog[viewId][seqnum][socketId] = list()
+
+	// # log only required details from the commit msg
+	// msgDetails = {"digest" : msg["commitData"]["digest"], "identity" : msg["identity"]}
+	// # append msg
+	// logging.warning("Log committed msg for view %s, seqnum %s", str(viewId), str(seqnum))
+	// self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)
+}
+
+
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
 		log the final commit msg
