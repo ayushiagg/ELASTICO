@@ -666,14 +666,19 @@ func (e *Elastico) receiveDirectoryMember(msg msgType) {
 				e.curDirectory = append(e.curDirectory, identityobj)
 			}
 		}
+		log.Info("successfull")
 	} else {
 		log.Error("PoW not valid of an incoming directory member", identityobj)
 	}
+
 }
 
-func (e *Elastico) receiveNewNode(msg map[string]interface{}) {
+func (e *Elastico) receiveNewNode(msg msgType) {
+	var decodeMsg newNodeMsg
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "decode error in new node msg", true)
 	// new node is added to the corresponding committee list if committee list has less than c members
-	identityobj, _ := msg["data"].(Identity)
+	identityobj := decodeMsg.data
 	// verify the PoW
 	if e.verifyPoW(identityobj) {
 		_, ok := e.committeeList[identityobj.committeeID]
