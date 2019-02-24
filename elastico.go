@@ -1257,8 +1257,7 @@ func (e *Elastico) runPBFT() {
 	*/
 	if e.state == ElasticoStates["PBFT_NONE"] {
 		if e.primary {
-			// construct pre-prepare msg
-			prePrepareMsg := e.constructPrePrepare()
+			prePrepareMsg := e.constructPrePrepare() //construct pre-prepare msg
 			// multicasts the pre-prepare msg to replicas
 			// ToDo: what if primary does not send the pre-prepare to one of the nodes
 			e.sendPrePrepare(prePrepareMsg)
@@ -1611,10 +1610,9 @@ func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
 	/*
 		Send pre-prepare msgs to all committee members
 	*/
-	// send pre-prepare msg to committee members
 	for _, nodeID := range e.committeeMembers {
 
-		// dont send pre-prepare msg to e
+		// dont send pre-prepare msg to self
 		if e.identity.isEqual(&nodeID) == false {
 
 			nodeID.send(prePrepareMsg)
@@ -2289,7 +2287,7 @@ func (e *Elastico) receiveTxns(epochTxn []Transaction) {
 	*/
 
 	// Receive txns from client for an epoch
-	var k int64 = 0
+	var k int64
 	numOfCommittees := int64(math.Pow(2, float64(s)))
 	var num int64
 	num = int64(len(epochTxn)) / numOfCommittees // Transactions per committee
@@ -2572,8 +2570,7 @@ func Run(epochTxns map[int][]Transaction) {
 	// manager = Manager()
 	sharedObj = make(map[int64]bool)
 
-	// create the elastico nodes
-	createNodes()
+	createNodes() // create the elastico nodes
 
 	// make some nodes malicious and faulty
 	makeMalicious()
