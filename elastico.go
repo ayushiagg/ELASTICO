@@ -954,18 +954,18 @@ func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transa
 	return true
 }
 
-func (e *Elastico) receive(msg map[string]interface{}) {
+func (e *Elastico) receive(msg msgType) {
 	/*
 		method to recieve messages for a node as per the type of a msg
 	*/
 	// new node is added in directory committee if not yet formed
-	if msg["type"] == "directoryMember" {
+	if msg.Type == "directoryMember" {
 		e.receiveDirectoryMember(msg)
 
-	} else if msg["type"] == "newNode" && e.isDirectory {
+	} else if msg.Type == "newNode" && e.isDirectory {
 		e.receiveNewNode(msg)
 
-	} else if msg["type"] == "committee members views" && e.isDirectory == false {
+	} else if msg.Type == "committee members views" && e.isDirectory == false {
 		data := msg["data"].(map[string]interface{})
 		identityobj := data["identity"].(Identity)
 		if e.verifyPoW(identityobj) {
@@ -975,63 +975,63 @@ func (e *Elastico) receive(msg map[string]interface{}) {
 			}
 		}
 
-	} else if msg["type"] == "hash" && e.isFinalMember() {
+	} else if msg.Type == "hash" && e.isFinalMember() {
 		e.receiveHash(msg)
 
-	} else if msg["type"] == "RandomStringBroadcast" {
+	} else if msg.Type == "RandomStringBroadcast" {
 		e.receiveRandomStringBroadcast(msg)
 
-	} else if msg["type"] == "finalTxnBlock" {
+	} else if msg.Type == "finalTxnBlock" {
 		e.receiveFinalTxnBlock(msg)
 
-	} else if msg["type"] == "intraCommitteeBlock" && e.isFinalMember() {
+	} else if msg.Type == "intraCommitteeBlock" && e.isFinalMember() {
 		e.receiveIntraCommitteeBlock(msg)
 
-	} else if msg["type"] == "command to run pbft" {
+	} else if msg.Type == "command to run pbft" {
 		if e.isDirectory == false {
 			e.runPBFT()
 		}
-	} else if msg["type"] == "command to run pbft by final committee" {
+	} else if msg.Type == "command to run pbft by final committee" {
 		if e.isFinalMember() {
 			e.runPBFT()
 		}
-	} else if msg["type"] == "send txn set and sign to final committee" {
+	} else if msg.Type == "send txn set and sign to final committee" {
 		if e.isDirectory == false {
 			e.SendtoFinal()
 		}
-	} else if msg["type"] == "verify and merge intra consensus data" {
+	} else if msg.Type == "verify and merge intra consensus data" {
 		if e.isFinalMember() {
 			e.verifyAndMergeConsensusData()
 		}
-	} else if msg["type"] == "send commitments of Ris" {
+	} else if msg.Type == "send commitments of Ris" {
 		if e.isFinalMember() {
 			e.sendCommitment()
 		}
-	} else if msg["type"] == "broadcast final set of txns to the ntw" {
+	} else if msg.Type == "broadcast final set of txns to the ntw" {
 
 		if e.isFinalMember() {
 			e.BroadcastFinalTxn()
 		}
-	} else if msg["type"] == "notify final member" {
+	} else if msg.Type == "notify final member" {
 		log.Warn("notifying final member ", e.port)
 		data := msg["data"].(map[string]interface{})
 		identityobj := data["identity"].(Identity)
 		if e.verifyPoW(identityobj) && e.committeeID == finNum {
 			e.isFinal = true
 		}
-	} else if msg["type"] == "Broadcast Ri" {
+	} else if msg.Type == "Broadcast Ri" {
 		if e.isFinalMember() {
 			e.BroadcastR()
 		}
-	} else if msg["type"] == "reset-all" {
+	} else if msg.Type == "reset-all" {
 		// ToDo: Add verification of pow here.
 		// reset the elastico node
 		e.reset()
 
-	} else if msg["type"] == "pre-prepare" || msg["type"] == "prepare" || msg["type"] == "commit" {
+	} else if msg.Type == "pre-prepare" || msg.Type == "prepare" || msg.Type == "commit" {
 
 		e.pbftProcessMessage(msg)
-	} else if msg["type"] == "Finalpre-prepare" || msg["type"] == "Finalprepare" || msg["type"] == "Finalcommit" {
+	} else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
 		e.FinalpbftProcessMessage(msg)
 	}
 }
