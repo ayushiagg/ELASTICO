@@ -1797,6 +1797,10 @@ func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transacti
 	return actualTxns
 }
 
+type directoryMemberMsg struct {
+	identity Identity
+}
+
 func (e *Elastico) formCommittee() {
 	/*
 		creates directory committee if not yet created otherwise informs all the directory members
