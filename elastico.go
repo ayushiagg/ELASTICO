@@ -105,7 +105,9 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	)
 	failOnError(err, "Failed to declare a queue", true)
 
+	fmt.Println("publish msg", msg)
 	body, err := json.Marshal(msg)
+	fmt.Println(body)
 	failOnError(err, "Failed to marshal", true)
 	err = channel.Publish(
 		"",         // exchange
@@ -1036,6 +1038,7 @@ func (e *Elastico) receive(msg msgType) {
 	} else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
 		e.FinalpbftProcessMessage(msg)
 	}
+	*/
 }
 
 // ElasticoInit :- initialise of data members
@@ -1913,7 +1916,6 @@ func (e *Elastico) isCommitted() bool {
 	return true
 }
 
-
 func (e *Elastico) isFinalCommitted() bool {
 	/*
 		Check if the state is committed or not
@@ -2064,7 +2066,6 @@ func (e *Elastico) appendToLedger() {
 
 }
 
-
 func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
 	/*
 		Verify final prepare msgs
@@ -2111,7 +2112,6 @@ func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
 	return false
 }
 
-
 func (e *Elastico) logPrepareMsg(msg map[string]interface{}) {
 	/*
 		log the prepare msg
@@ -2151,7 +2151,6 @@ func (e *Elastico) logPrepareMsg(msg map[string]interface{}) {
 	// e.prepareMsgLog[viewID] = [seqnum][socketID] = prepareMsgLogSocket
 
 }
-
 
 func (e *Elastico) logFinalPrepareMsg(msg map[string]interface{}) {
 	/*
@@ -2193,7 +2192,6 @@ func (e *Elastico) logFinalPrepareMsg(msg map[string]interface{}) {
 
 }
 
-
 func (e *Elastico) checkCountForConsensusData() {
 	/*
 		check the sufficient count for consensus data
@@ -2228,7 +2226,6 @@ func (e *Elastico) checkCountForConsensusData() {
 	}
 
 }
-
 
 func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 	/*
@@ -2307,7 +2304,6 @@ func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	}
 	return false
 }
-
 
 func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transaction {
 	/*
