@@ -2640,20 +2640,29 @@ func (e *Elastico) logFinalPrePrepareMsg(msg map[string]interface{}) {
 
 }
 
+// BroadcastRmsg :- structure for Broadcast R msg
+type BroadcastRmsg struct {
+	R        string
+	identity Identity
+}
+
 // BroadcastR :- broadcast Ri to all the network, final member will do this
 func (e *Elastico) BroadcastR() {
 
 	if e.isFinalMember() {
-		data := make(map[string]interface{})
-		data["Ri"] = e.Ri
-		data["identity"] = e.identity
+		var data BroadcastRmsg
+		data.R = e.Ri
+		data.identity = e.identity
+		// data := make(map[string]interface{})
+		// data["Ri"] = e.Ri
+		// data["identity"] = e.identity
 		msg := make(map[string]interface{})
 		msg["data"] = data
 		msg["type"] = "RandomStringBroadcast"
 
 		e.state = ElasticoStates["BroadcastedR"]
 
-		BroadcastToNetwork(data, "RandomStringBroadcast")
+		BroadcastToNetwork(msg)
 
 	} else {
 		log.Error("non final member broadcasting R")
