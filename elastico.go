@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -16,6 +17,7 @@ import (
 
 	// "reflect"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/json"
 	"math"
 	"os"
