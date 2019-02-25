@@ -972,7 +972,7 @@ func (e *Elastico) receive(msg msgType) {
 	} else if msg.Type == "newNode" && e.isDirectory {
 		e.receiveNewNode(msg)
 
-	} else if msg.Type == "committee members views" && e.isDirectory == false {
+	} /* else if msg.Type == "committee members views" && e.isDirectory == false {
 		data := msg["data"].(map[string]interface{})
 		identityobj := data["identity"].(Identity)
 		if e.verifyPoW(identityobj) {
@@ -1973,45 +1973,45 @@ func (e *Elastico) isFinalCommitted() bool {
 	return true
 }
 
-
-
-
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
 	/*
 		log the final commit msg
 	*/
-	// viewId = msg["commitData"]["viewId"]
-	// seqnum = msg["commitData"]["seq"]
-	// socketId = msg["identity"].IP +  ":" + str(msg["identity"].port)
-	// // add msgs for this view
-	//  _ , ok := e.FinalcommitMsgLog[viewId]
-	// if ok == false{
+	/*
+		commitData := msg["commitData"].(map[string]interface{})
+		viewID := commitData["viewId"].(int)
+		seqnum := commitData["seq"].(int)
+		identityobj := msg["identity"].(Identity)
+		socketId = msg["identity"].IP + ":" + strconv.Itoa(msg["identity"].port)
+		// add msgs for this view
+		_, ok := e.FinalcommitMsgLog[viewId]
+		if ok == false {
 
-	// 	e.FinalcommitMsgLog[viewId] = dict()
-	// }
+			e.FinalcommitMsgLog[viewId] = dict()
+		}
 
-	// // add msgs for this sequence num
-	// _ , okk := e.FinalcommitMsgLog[viewId][seqnum]
-	// if okk == false{
+		// add msgs for this sequence num
+		_, okk := e.FinalcommitMsgLog[viewId][seqnum]
+		if okk == false {
 
-	// 	e.FinalcommitMsgLog[viewId][seqnum] = dict()
-	// }
+			e.FinalcommitMsgLog[viewId][seqnum] = dict()
+		}
 
-	// // add all msgs from this sender
-	//  _ , okkk := e.FinalcommitMsgLog[viewId][seqnum][socketId]
-	// if okkk == false{
+		// add all msgs from this sender
+		_, okkk := e.FinalcommitMsgLog[viewId][seqnum][socketId]
+		if okkk == false {
 
-	// 	e.FinalcommitMsgLog[viewId][seqnum][socketId] = list()
-	// }
+			e.FinalcommitMsgLog[viewId][seqnum][socketId] = list()
+		}
 
-	// // log only required details from the commit msg
-	// identityobj := msg["identity"].(Identity)
-	// msgDetails := map[string]interface{}{"digest" : msg["commitData"]["digest"], "identity" : identityobj}
-	// // append msg
-	// log.Warn("Log committed msg for view , seqnum ", viewId , seqnum)
-	// e.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)
+		// log only required details from the commit msg
+		identityobj := msg["identity"].(Identity)
+		msgDetails := map[string]interface{}{"digest": commitData["digest"], "identity": identityobj}
+		// append msg
+		log.Warn("Log committed msg for view , seqnum ", viewId, seqnum)
+		e.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)
+	*/
 }
-
 
 func (e *Elastico) formIdentity() {
 	/*
