@@ -315,7 +315,7 @@ func (bd *BlockData) hexdigest() []byte {
 // Identity :- structure for identity of nodes
 type Identity struct {
 	IP              string
-	PK              *rsa.PublicKey
+	PK              bytes.Buffer
 	committeeID     int64
 	PoW             map[string]interface{}
 	epochRandomness string
@@ -332,7 +332,9 @@ func (i *Identity) isEqual(identityobj *Identity) bool {
 		checking two objects of Identity class are equal or not
 
 	*/
-	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.committeeID == identityobj.committeeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["setOfRs"] == identityobj.PoW["setOfRs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epochRandomness == identityobj.epochRandomness && i.port == identityobj.port
+	iPK := i.getPK()
+	identityobjPK := identityobj.getPK()
+	return i.IP == identityobj.IP && iPK == identityobjPK && i.committeeID == identityobj.committeeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["setOfRs"] == identityobj.PoW["setOfRs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epochRandomness == identityobj.epochRandomness && i.port == identityobj.port
 }
 
 func (i *Identity) send(msg map[string]interface{}) {
@@ -798,12 +800,12 @@ func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
 
 		sign := data["signature"].(string)
 		receivedCommitments := data["commitmentSet"].(map[string]bool)
-		PK := identityobj.PK
 		finalTxnBlock := data["finalTxnBlock"].([]Transaction)
 		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
 		// verify the signatures
 		receivedCommitmentDigest := e.digestCommitments(receivedCommitments)
-		if e.verifySign(sign, receivedCommitmentDigest, PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, PK) {
+		PK := identityobj.getPK()
+		if e.verifySign(sign, receivedCommitmentDigest, &PK) && e.verifySignTxnList(finalTxnBlockSignature, finalTxnBlock, &PK) {
 
 			// list init for final txn block
 			finaltxnBlockDigest := txnHexdigest(finalTxnBlock)
@@ -889,7 +891,8 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
 		signature := data["sign"].(string)
 		TxnBlock := data["txnBlock"].([]Transaction)
 		// verify the signatures
-		if e.verifySignTxnList(signature, TxnBlock, identityobj.PK) {
+		PK := identityobj.getPK()
+		if e.verifySignTxnList(signature, TxnBlock, &PK) {
 			if _, ok := e.CommitteeConsensusData[identityobj.committeeID]; ok == false {
 
 				e.CommitteeConsensusData[identityobj.committeeID] = make(map[string][]string)
@@ -2017,17 +2020,18 @@ func (e *Elastico) formIdentity() {
 	*/
 	if e.state == ElasticoStates["PoW Computed"] {
 		// export public key
-		PK := e.key.Public().(*rsa.PublicKey)
+		PK := e.key.PublicKey
 
 		// set the committee id acc to PoW solution
 		e.committeeID = e.getCommitteeid(e.PoW["hash"].(string))
-
-		e.identity = Identity{e.IP, PK, e.committeeID, e.PoW, e.epochRandomness, e.port}
+		var network bytes.Buffer        // Stand-in for a network connection
+		enc := gob.NewEncoder(&network) // Will write to network.
+		enc.Encode(&PK)
+		e.identity = Identity{e.IP, network, e.committeeID, e.PoW, e.epochRandomness, e.port}
 		// changed the state after identity formation
 		e.state = ElasticoStates["Formed Identity"]
 	}
 }
-
 
 func (e *Elastico) appendToLedger() {
 	/*
@@ -2081,7 +2085,10 @@ func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
 	sign := msg["sign"].(string)
 	prepareData := msg["prepareData"].(map[string]interface{})
 	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
-	if e.verifySign(sign, PrepareContentsDigest, identityobj.PK) == false {
+
+	PK := identityobj.getPK()
+
+	if e.verifySign(sign, PrepareContentsDigest, &PK) == false {
 
 		log.Warn("wrong sign in verify final prepares")
 		return false
@@ -2274,7 +2281,8 @@ func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	sign := msg["sign"].(string)
 	prepareData := msg["prepareData"].(map[string]interface{})
 	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
-	if e.verifySign(sign, PrepareContentsDigest, identityobj.PK) == false {
+	PK := identityobj.getPK()
+	if e.verifySign(sign, PrepareContentsDigest, &PK) == false {
 
 		log.Warn("wrong sign in verify prepares")
 		return false
@@ -2394,7 +2402,7 @@ func (e *Elastico) verifyPoW(identityobj Identity) bool {
 	// recompute PoW
 
 	// public key
-	rsaPublickey := identityobj.PK
+	rsaPublickey := identityobj.getPK()
 	IP := identityobj.IP
 	nonce := PoW["nonce"].(int)
 
@@ -2501,7 +2509,8 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
 	// verify signatures of the received msg
 	sign := msg["sign"].(string)
 	prePreparedDataDigest := e.digestPrePrepareMsg(prePreparedData)
-	if e.verifySign(sign, prePreparedDataDigest, identityobj.PK) == false {
+	PK := identityobj.getPK()
+	if e.verifySign(sign, prePreparedDataDigest, &PK) == false {
 
 		log.Warn("wrong sign in  verify pre-prepare")
 		return false
@@ -2563,7 +2572,8 @@ func (e *Elastico) verifyFinalPrePrepare(msg map[string]interface{}) bool {
 	// verify signatures of the received msg
 	sign := msg["sign"].(string)
 	prePreparedDataDigest := e.digestPrePrepareMsg(prePreparedData)
-	if e.verifySign(sign, prePreparedDataDigest, identityobj.PK) == false {
+	PK := identityobj.getPK()
+	if e.verifySign(sign, prePreparedDataDigest, &PK) == false {
 
 		log.Warn("wrong sign in  verify final pre-prepare")
 		return false
@@ -2948,8 +2958,8 @@ func (e *Elastico) verifyCommit(msg map[string]interface{}) bool {
 	sign := msg["sign"].(string)
 	commitData := msg["commitData"].(map[string]interface{})
 	digestCommitData := e.digestCommitMsg(commitData)
-	PK := identityobj.PK
-	if !e.verifySign(sign, digestCommitData, PK) {
+	PK := identityobj.getPK()
+	if !e.verifySign(sign, digestCommitData, &PK) {
 		return false
 	}
 
