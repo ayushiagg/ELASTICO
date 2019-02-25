@@ -2254,6 +2254,13 @@ func (e *Elastico) unionViews(nodeData, incomingData []Identity) []Identity {
 	return nodeData
 }
 
+func (i *Identity) getPK() rsa.PublicKey {
+	dec := gob.NewDecoder(&i.PK) // Will read from network.
+	var PK = rsa.PublicKey{}
+	dec.Decode(&PK)
+	return PK
+}
+
 func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	/*
 	 Verify prepare msgs
