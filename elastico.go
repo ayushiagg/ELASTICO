@@ -1749,6 +1749,11 @@ func (e *Elastico) Sign(digest []byte) string {
 	return signature
 }
 
+type HashMsg struct {
+	Identity IDENTITY
+	HashRi   string
+}
+
 func (e *Elastico) sendCommitment() {
 	/*
 		send the H(Ri) to the final committe members.This is done by a final committee member
