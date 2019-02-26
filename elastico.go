@@ -186,18 +186,17 @@ func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txn
 
 			// send the committee members , final committee members
 			data := make(map[string]interface{})
-			data["committee members"] = commMembers
-			data["final Committee members"] = finalCommitteeMembers
+			data["CommitteeMembers"] = commMembers
+			data["FinalCommitteeMembers"] = finalCommitteeMembers
 			data["Identity"] = identityobj
-
 			// give txns only to the primary node
 			if memberID.isEqual(&primaryID) {
-				data["txns"] = txns[CommitteeID]
+				data["Txns"] = txns[CommitteeID]
+			} else {
+				data["Txns"] = make([]Transaction, 0)
 			}
 			// construct the msg
-			msg := make(map[string]interface{})
-			msg["data"] = data
-			msg["type"] = "committee members views"
+			msg := map[string]interface{}{"data": data, "type": "committee members views"}
 			// send the committee member views to nodes
 			memberID.send(msg)
 		}
