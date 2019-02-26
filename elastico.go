@@ -2682,15 +2682,10 @@ type BroadcastRmsg struct {
 func (e *Elastico) BroadcastR() {
 
 	if e.isFinalMember() {
-		var data BroadcastRmsg
-		data.R = e.Ri
-		data.Identity = e.Identity
-		// data := make(map[string]interface{})
-		// data["Ri"] = e.Ri
-		// data["Identity"] = e.Identity
-		msg := make(map[string]interface{})
-		msg["data"] = data
-		msg["type"] = "RandomStringBroadcast"
+
+		data := map[string]interface{}{"Ri": e.Ri, "Identity": e.Identity}
+
+		msg := map[string]interface{}{"data": data, "type": "RandomStringBroadcast"}
 
 		e.state = ElasticoStates["BroadcastedR"]
 
