@@ -1480,6 +1480,19 @@ func (e *Elastico) runFinalPBFT() {
 	}
 }
 
+type PrePrepareContents struct {
+	Type   string
+	ViewID int
+	Seq    int
+	Digest string
+}
+type PrePrepareMsg struct {
+	Message        []Transaction
+	PrePrepareData PrePrepareContents
+	Sign           string
+	Identity       IDENTITY
+}
+
 func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	/*
 		construct pre-prepare msg , done by primary
