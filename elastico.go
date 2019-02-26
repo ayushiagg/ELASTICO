@@ -1518,6 +1518,19 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	return prePrepareMsg
 }
 
+type PrepareContents struct {
+	Type   string
+	ViewID int
+	Seq    int
+	Digest string
+}
+
+type PrepareMsg struct {
+	PrepareData PrepareContents
+	Sign        string
+	Identity    IDENTITY
+}
+
 func (e *Elastico) constructPrepare() []map[string]interface{} {
 	/*
 		construct prepare msg in the prepare phase
