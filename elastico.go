@@ -656,6 +656,49 @@ func (e *Elastico) checkCommitteeFull() {
 	}
 }
 
+func (e *Elastico) receiveViews(msg msgType) {
+	var decodeMsg ViewsMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	// fmt.Println("views msg---", decodeMsg)
+	failOnError(err, "fail to decode views msg", true)
+
+	identityobj := decodeMsg.Identity
+
+	if e.verifyPoW(identityobj) {
+
+		if _, ok := e.views[identityobj.Port]; ok == false {
+
+			// union of committe members views
+			e.views[identityobj.Port] = true
+
+			commMembers := decodeMsg.CommitteeMembers
+			finalMembers := decodeMsg.FinalCommitteeMembers
+			Txns := decodeMsg.Txns
+
+			// update the txn block
+			// ToDo: txnblock should be ordered, not set
+			if len(Txns) > 0 {
+
+				e.txnBlock = e.unionTxns(e.txnBlock, Txns)
+				log.Warn("I am primary", e.Port)
+				e.primary = true
+			}
+
+			// ToDo: verify this union thing
+			// union of committee members wrt directory member
+			e.committeeMembers = e.unionViews(e.committeeMembers, commMembers)
+			// union of final committee members wrt directory member
+			e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers, finalMembers)
+			// received the members
+			if e.state == ElasticoStates["Formed Committee"] && len(e.views) >= c/2+1 {
+
+				e.state = ElasticoStates["Receiving Committee Members"]
+			}
+		}
+	}
+}
+
 func (e *Elastico) receiveDirectoryMember(msg msgType) {
 	var decodeMsg Dmsg
 
