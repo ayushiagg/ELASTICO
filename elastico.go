@@ -165,6 +165,13 @@ func consistencyProtocol() (bool, map[string]bool) {
 	return true, commitmentSet
 }
 
+type ViewsMsg struct {
+	CommitteeMembers      []IDENTITY
+	FinalCommitteeMembers []IDENTITY
+	Identity              IDENTITY
+	Txns                  []Transaction
+}
+
 // MulticastCommittee :- each node getting views of its committee members from directory members
 func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txns map[int64][]Transaction) {
 
