@@ -364,17 +364,17 @@ func (i *IDENTITY) send(msg map[string]interface{}) {
 
 // Transaction :- structure for transaction
 type Transaction struct {
-	sender   string
-	receiver string
-	amount   *big.Int // randomGen returns *big.Int
+	Sender   string
+	Receiver string
+	Amount   *big.Int // randomGen returns *big.Int
 	// ToDo: include timestamp or not
 }
 
 // TransactionInit :- initialise of data members
 func (t *Transaction) TransactionInit(sender string, receiver string, amount *big.Int) {
-	t.sender = sender
-	t.receiver = receiver
-	t.amount = amount
+	t.Sender = sender
+	t.Receiver = receiver
+	t.Amount = amount
 }
 
 func (t *Transaction) hexdigest() string {
@@ -382,9 +382,9 @@ func (t *Transaction) hexdigest() string {
 		Digest of a transaction
 	*/
 	digest := sha256.New()
-	digest.Write([]byte(t.sender))
-	digest.Write([]byte(t.receiver))
-	digest.Write([]byte(t.amount.String())) // convert amount(big.Int) to string
+	digest.Write([]byte(t.Sender))
+	digest.Write([]byte(t.Receiver))
+	digest.Write([]byte(t.Amount.String())) // convert amount(big.Int) to string
 
 	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
 	return hashVal
@@ -394,7 +394,7 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 	/*
 		compare two objs are equal or not
 	*/
-	return t.sender == transaction.sender && t.receiver == transaction.receiver && t.amount == transaction.amount //&& t.timestamp == transaction.timestamp
+	return t.Sender == transaction.Sender && t.Receiver == transaction.Receiver && t.Amount == transaction.Amount //&& t.timestamp == transaction.timestamp
 }
 
 type msgType struct {
@@ -3108,8 +3108,8 @@ func createTxns() []Transaction {
 	// txns is the list of the transactions in one epoch to which the committees will agree on
 	txns := make([]Transaction, numOfTxns)
 	for i := 0; i < numOfTxns; i++ {
-		randomNum := randomGen(32)                      // random amount
-		transaction := Transaction{"a", "b", randomNum} // create the dummy transaction
+		randomNum := randomGen(32)                                                // random amount
+		transaction := Transaction{Sender: "a", Receiver: "b", Amount: randomNum} // create the dummy transaction
 		txns[i] = transaction
 	}
 	return txns
