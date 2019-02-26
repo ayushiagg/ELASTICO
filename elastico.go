@@ -93,7 +93,7 @@ func getConnection() *amqp.Connection {
 func marshalData(msg map[string]interface{}) []byte {
 
 	body, err := json.Marshal(msg)
-	fmt.Println("marshall data", body)
+	// fmt.Println("marshall data", body)
 	failOnError(err, "error in marshal", true)
 	return body
 }
@@ -680,7 +680,6 @@ func (e *Elastico) receiveDirectoryMember(msg msgType) {
 				e.curDirectory = append(e.curDirectory, identityobj)
 			}
 		}
-		log.Info("successfull")
 	} else {
 		log.Error("PoW not valid of an incoming directory member", identityobj)
 	}
@@ -693,7 +692,7 @@ func (e *Elastico) receiveNewNode(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "decode error in new node msg", true)
 	// new node is added to the corresponding committee list if committee list has less than c members
-	identityobj := decodeMsg.Data
+	identityobj := decodeMsg.Identity
 	// verify the PoW
 	if e.verifyPoW(identityobj) {
 		_, ok := e.committeeList[identityobj.CommitteeID]
@@ -2349,7 +2348,6 @@ func (e *Elastico) formCommittee() {
 		e.isDirectory = true
 
 		data1 := map[string]interface{}{"Identity": e.Identity}
-		fmt.Println(data1)
 		msg := map[string]interface{}{"data": data1, "type": "directoryMember"}
 
 		BroadcastToNetwork(msg)
@@ -2374,8 +2372,11 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 
 		zeroString += "0"
 	}
-
 	PoW := identityobj.PoW
+	// fmt.Println(PoW)
+	if len(PoW) == 0 {
+		return false
+	}
 	hash := PoW["hash"].(string)
 	// length of hash in hex
 
@@ -2749,7 +2750,6 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 		e.executePoW()
 	} else if e.state == ElasticoStates["PoW Computed"] {
 
-		log.Info("PoW state")
 		// form Identity, when PoW computed
 		e.formIdentity()
 	} else if e.state == ElasticoStates["Formed Identity"] {
@@ -2837,7 +2837,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 }
 
 type NewNodeMsg struct {
-	Data IDENTITY
+	Identity IDENTITY
 }
 
 // SendToDirectory :- Send about new nodes to directory committee members
