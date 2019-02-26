@@ -92,6 +92,14 @@ func getConnection() *amqp.Connection {
 	return connection
 }
 
+func marshalData(msg map[string]interface{}) []byte {
+
+	body, err := json.Marshal(msg)
+	fmt.Println("marshall data", body)
+	failOnError(err, "error in marshal", true)
+	return body
+}
+
 func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interface{}) {
 
 	//create a hello queue to which the message will be delivered
@@ -105,10 +113,8 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	)
 	failOnError(err, "Failed to declare a queue", true)
 
-	fmt.Println("publish msg", msg)
-	body, err := json.Marshal(msg)
-	fmt.Println(body)
-	failOnError(err, "Failed to marshal", true)
+	body := marshalData(msg)
+
 	err = channel.Publish(
 		"",         // exchange
 		queue.Name, // routing key
