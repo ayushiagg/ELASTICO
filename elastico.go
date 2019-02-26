@@ -767,43 +767,18 @@ func (e *Elastico) receiveNewNode(msg msgType) {
 	}
 }
 
-func (e *Elastico) receiveViews(msg map[string]interface{}) {
-	data := msg["data"].(map[string]interface{})
-	identityobj := data["Identity"].(IDENTITY)
-	// union of committe members views
-	e.views[identityobj.Port] = true
-
-	commMembers := data["committee members"].([]IDENTITY)
-	finalMembers := data["final Committee members"].([]IDENTITY)
-
-	if _, ok := data["txns"]; ok {
-
-		// update the txn block
-		// ToDo: txnblock should be ordered, not set
-		txns := data["txns"].([]Transaction)
-		e.txnBlock = e.unionTxns(e.txnBlock, txns)
-		log.Warn("I am primary", e.Port)
-		e.primary = true
-	}
-	// ToDo: verify this union thing
-	// union of committee members wrt directory member
-	e.committeeMembers = e.unionViews(e.committeeMembers, commMembers)
-	// union of final committee members wrt directory member
-	e.finalCommitteeMembers = e.unionViews(e.finalCommitteeMembers, finalMembers)
-	// received the members
-	if e.state == ElasticoStates["Formed Committee"] && len(e.views) >= c/2+1 {
-
-		e.state = ElasticoStates["Receiving Committee Members"]
-	}
-}
-
-func (e *Elastico) receiveHash(msg map[string]interface{}) {
+func (e *Elastico) receiveHash(msg msgType) {
 
 	// receiving H(Ri) by final committe members
-	data := msg["data"].(map[string]interface{})
-	identityobj := data["Identity"].(IDENTITY)
+	var decodeMsg HashMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+
+	failOnError(err, "fail to decode hash msg", true)
+
+	identityobj := decodeMsg.Identity
+	HashRi := decodeMsg.HashRi
 	if e.verifyPoW(identityobj) {
-		HashRi := data["Hash_Ri"].(string)
 		e.commitments[HashRi] = true
 	}
 }
