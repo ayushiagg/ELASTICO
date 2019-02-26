@@ -487,7 +487,7 @@ type Elastico struct {
 	primary               bool
 	viewID                int
 	faulty                bool
-	prePrepareMsgLog      map[string]interface{}
+	prePrepareMsgLog      map[string]PrePrepareMsg
 	prepareMsgLog         map[int]interface{}
 	commitMsgLog          map[int]interface{}
 	preparedData          map[int]interface{}
@@ -1130,7 +1130,7 @@ func (e *Elastico) ElasticoInit() {
 	e.viewID = 0
 	e.faulty = false
 
-	e.prePrepareMsgLog = make(map[string]interface{})
+	e.prePrepareMsgLog = make(map[string]PrePrepareMsg)
 	e.prepareMsgLog = make(map[int]interface{})
 	e.commitMsgLog = make(map[int]interface{})
 	e.preparedData = make(map[int]interface{})
@@ -1203,7 +1203,7 @@ func (e *Elastico) reset() {
 	e.viewID = 0
 	e.faulty = false
 
-	e.prePrepareMsgLog = make(map[string]interface{})
+	e.prePrepareMsgLog = make(map[string]PrePrepareMsg)
 	e.prepareMsgLog = make(map[int]interface{})
 	e.commitMsgLog = make(map[int]interface{})
 	e.preparedData = make(map[int]interface{})
