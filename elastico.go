@@ -997,22 +997,14 @@ func (e *Elastico) receive(msg msgType) {
 
 	} else if msg.Type == "newNode" && e.isDirectory {
 		e.receiveNewNode(msg)
-		log.Warn("success")
 
-	} /* else if msg.Type == "committee members views" && e.isDirectory == false {
-		data := msg["data"].(map[string]interface{})
-		identityobj := data["Identity"].(IDENTITY)
-		if e.verifyPoW(identityobj) {
-
-			if _, ok := e.views[identityobj.Port]; ok == false {
-				e.receiveViews(msg)
-			}
-		}
+	} else if msg.Type == "committee members views" && e.isDirectory == false {
+		e.receiveViews(msg)
 
 	} else if msg.Type == "hash" && e.isFinalMember() {
 		e.receiveHash(msg)
 
-	} else if msg.Type == "RandomStringBroadcast" {
+	} /*else if msg.Type == "RandomStringBroadcast" {
 		e.receiveRandomStringBroadcast(msg)
 
 	} else if msg.Type == "finalTxnBlock" {
