@@ -782,13 +782,18 @@ func (e *Elastico) receiveHash(msg msgType) {
 	}
 }
 
-func (e *Elastico) receiveRandomStringBroadcast(msg map[string]interface{}) {
+func (e *Elastico) receiveRandomStringBroadcast(msg msgType) {
 
-	data := msg["data"].(map[string]interface{})
-	identityobj := data["Identity"].(IDENTITY)
+	var decodeMsg BroadcastRmsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+
+	failOnError(err, "fail to decode random string msg", true)
+
+	identityobj := decodeMsg.Identity
+	Ri := decodeMsg.Ri
+
 	if e.verifyPoW(identityobj) {
-
-		Ri := data["Ri"].(string)
 		HashRi := e.hexdigest(Ri)
 
 		if _, ok := e.newRcommitmentSet[HashRi]; ok {
