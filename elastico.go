@@ -2674,7 +2674,7 @@ func (e *Elastico) logFinalPrePrepareMsg(msg map[string]interface{}) {
 
 // BroadcastRmsg :- structure for Broadcast R msg
 type BroadcastRmsg struct {
-	R        string
+	Ri       string
 	Identity IDENTITY
 }
 
