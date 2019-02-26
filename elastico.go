@@ -338,9 +338,22 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 		checking two objects of Identity class are equal or not
 
 	*/
-	iPK := i.getPK()
-	identityobjPK := identityobj.getPK()
-	return i.IP == identityobj.IP && iPK == identityobjPK && i.committeeID == identityobj.committeeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["setOfRs"] == identityobj.PoW["setOfRs"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.epochRandomness == identityobj.epochRandomness && i.port == identityobj.port
+	// comparing uncomparable type []interface {} ie. set Of Rs
+
+	// ToDo: compare set of Rs
+	// listOfRsInI := i.PoW["setOfRs"].([]interface{})
+	// setOfRsInI := make([]string, len(listOfRsInI))
+	// for i := range listOfRsInI {
+	// 	setOfRsInI[i] = listOfRsInI[i].(string)
+	// }
+
+	// listOfRsIniobj := identityobj.PoW["setOfRs"].([]interface{})
+	// setOfRsIniobj := make([]string, len(listOfRsIniobj))
+	// for i := range listOfRsIniobj {
+	// 	setOfRsIniobj[i] = listOfRsIniobj[i].(string)
+	// }
+
+	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.CommitteeID == identityobj.CommitteeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
 }
 
 func (i *IDENTITY) send(msg map[string]interface{}) {
