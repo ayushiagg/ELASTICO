@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -17,7 +16,6 @@ import (
 
 	// "reflect"
 	"encoding/base64"
-	"encoding/gob"
 	"encoding/json"
 	"math"
 	"os"
@@ -35,8 +33,8 @@ var wg sync.WaitGroup
 // shared lock among processes
 var lock sync.Mutex
 
-// shared port among the processes
-var port = 49152
+// shared Port among the processes
+var Port = 49152
 
 // n : number of nodes
 var n int64 = 66
@@ -201,10 +199,6 @@ func MulticastCommittee(commList map[int64][]Identity, identityobj Identity, txn
 
 // BroadcastToNetwork - Broadcast data to the whole ntw
 func BroadcastToNetwork(msg map[string]interface{}) {
-	// construct msg
-	// msg := make(map[string]interface{})
-	// msg["data"] = data
-	// msg["type"] = _type
 
 	connection := getConnection()
 	defer connection.Close() // close the connection
@@ -1296,7 +1290,7 @@ func (e *Elastico) runPBFT() {
 			// construct prepare msg
 			// ToDo: verify whether the pre-prepare msg comes from various primaries or not
 			preparemsgList := e.constructPrepare()
-			// logging.warning("constructing prepares with port %s" , str(e.port))
+			// logging.warning("constructing prepares with Port %s" , str(e.Port))
 			e.sendPrepare(preparemsgList)
 			e.state = ElasticoStates["PBFT_PREPARE_SENT"]
 		}
