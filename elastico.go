@@ -650,11 +650,13 @@ func (e *Elastico) checkCommitteeFull() {
 }
 
 func (e *Elastico) receiveDirectoryMember(msg msgType) {
-	var decodeMsg directoryMemberMsg
+	var decodeMsg Dmsg
+
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode directory member msg", true)
-	// data := msg["data"].(map[string]interface{})
-	identityobj := decodeMsg.identity
+
+	identityobj := decodeMsg.Identity
+
 	// verify the PoW of the sender
 	if e.verifyPoW(identityobj) {
 		if len(e.curDirectory) < c {
