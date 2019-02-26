@@ -2860,12 +2860,10 @@ func (e *Elastico) SendToDirectory() {
 	// Add the new processor in particular committee list of directory committee nodes
 	for _, nodeID := range e.curDirectory {
 
-		newNode := NewNodeMsg{Data: e.Identity}
-		data := map[string]interface{}{"Data": newNode}
+		data := map[string]interface{}{"Identity": e.Identity}
 
-		msg := make(map[string]interface{})
-		msg["data"] = data
-		msg["type"] = "newNode"
+		msg := map[string]interface{}{"data": data, "type": "newNode"}
+
 		nodeID.send(msg)
 	}
 }
