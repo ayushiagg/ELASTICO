@@ -2722,17 +2722,13 @@ func (e *Elastico) processFinalprepareMsg(msg msgType) {
 	}
 }
 
-func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
+func (e *Elastico) verifyPrePrepare(msg PrePrepareMsg) bool {
 	/*
 		Verify pre-prepare msgs
 	*/
-	// prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
-	// prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
-	// prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContentsDigest), "Identity": e.Identity}
-
-	identityobj := msg["Identity"].(IDENTITY)
-	prePreparedData := msg["pre-prepareData"].(map[string]interface{})
-	txnBlockList := msg["message"].([]Transaction)
+	identityobj := msg.Identity
+	prePreparedData := msg.PrePrepareData
+	txnBlockList := msg.Message
 	// verify Pow
 	if e.verifyPoW(identityobj) == false {
 
@@ -2740,7 +2736,7 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
 		return false
 	}
 	// verify signatures of the received msg
-	sign := msg["sign"].(string)
+	sign := msg.Sign
 	prePreparedDataDigest := e.digestPrePrepareMsg(prePreparedData)
 	PK := identityobj.PK
 	if e.verifySign(sign, prePreparedDataDigest, &PK) == false {
@@ -2749,31 +2745,28 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
 		return false
 	}
 	// verifying the digest of request msg
-	prePreparedDataTxnDigest := prePreparedData["digest"].(string)
+	prePreparedDataTxnDigest := prePreparedData.Digest
 	if txnHexdigest(txnBlockList) != prePreparedDataTxnDigest {
 
 		log.Warn("wrong digest in  verify pre-prepare")
 		return false
 	}
 	// check the view is same or not
-	prePreparedDataView := prePreparedData["viewId"].(int)
+	prePreparedDataView := prePreparedData.ViewID
 	if prePreparedDataView != e.viewID {
 
 		log.Warn("wrong view in  verify pre-prepare")
 		return false
 	}
 	// check if already accepted a pre-prepare msg for view v and sequence num n with different digest
-	seqnum := prePreparedData["seq"].(int)
+	seqnum := prePreparedData.Seq
 	for socket := range e.prePrepareMsgLog {
 
-		prePrepareMsgLogSocket := e.prePrepareMsgLog[socket].(map[string]interface{})
-		prePrepareMsgLogData := prePrepareMsgLogSocket["pre-prepareData"].(map[string]interface{})
-		prePrepareMsgLogView := prePrepareMsgLogData["viewId"].(int)
-		prePrepareMsgLogSeq := prePrepareMsgLogData["seq"].(int)
-		prePrepareMsgLogTxnDigest := prePrepareMsgLogData["digest"].(string)
-		if prePrepareMsgLogView == e.viewID && prePrepareMsgLogSeq == seqnum {
+		prePrepareMsgLogSocket := e.prePrepareMsgLog[socket]
+		prePrepareMsgLogData := prePrepareMsgLogSocket.PrePrepareData
+		if prePrepareMsgLogData.ViewID == e.viewID && prePrepareMsgLogData.Seq == seqnum {
 
-			if prePreparedDataTxnDigest != prePrepareMsgLogTxnDigest {
+			if prePreparedDataTxnDigest != prePrepareMsgLogData.Digest {
 
 				return false
 			}
@@ -2783,18 +2776,14 @@ func (e *Elastico) verifyPrePrepare(msg map[string]interface{}) bool {
 	return true
 }
 
-func (e *Elastico) verifyFinalPrePrepare(msg map[string]interface{}) bool {
+func (e *Elastico) verifyFinalPrePrepare(msg PrePrepareMsg) bool {
 	/*
 		Verify final pre-prepare msgs
 	*/
-	// txnBlockList := e.mergedBlock
-	// prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
 
-	// prePrepareMsg := map[string]interface{}{"type": "Finalpre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.sign(prePrepareContents), "Identity": e.Identity}
-
-	identityobj := msg["Identity"].(IDENTITY)
-	prePreparedData := msg["pre-prepareData"].(map[string]interface{})
-	txnBlockList := msg["message"].([]Transaction)
+	identityobj := msg.Identity
+	prePreparedData := msg.PrePrepareData
+	txnBlockList := msg.Message
 
 	// verify Pow
 	if e.verifyPoW(identityobj) == false {
