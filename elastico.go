@@ -1265,11 +1265,17 @@ func (e *Elastico) SendtoFinal() {
 
 		//  here txnBlock is a set, since sets are unordered hence can't sign them. So convert set to list for signing
 		txnBlock := e.txnBlock
-		data := map[string]interface{}{"txnBlock": txnBlock, "sign": e.signTxnList(txnBlock), "Identity": e.Identity}
+		data := map[string]interface{}{"Txnblock": txnBlock, "Sign": e.signTxnList(txnBlock), "Identity": e.Identity}
 		msg := map[string]interface{}{"data": data, "type": "intraCommitteeBlock"}
 		finalID.send(msg)
 	}
 	e.state = ElasticoStates["Intra Consensus Result Sent to Final"]
+}
+
+type IntraBlockMsg struct {
+	Txnblock []Transaction
+	Sign     string
+	Identity IDENTITY
 }
 
 func (e *Elastico) isFinalMember() bool {
