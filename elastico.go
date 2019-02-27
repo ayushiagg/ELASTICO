@@ -1686,11 +1686,15 @@ func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
 	*/
 	txnBlockList := e.mergedBlock
 	// ToDo :- make pre_prepare_contents Ordered Dict for signatures purpose
-	prePrepareContents := map[string]interface{}{"type": "Finalpre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	prePrepareContents := PrePrepareContents{Type : "Finalpre-prepare", ViewID: e.viewID, Seq : 1, Digest : txnHexdigest(txnBlockList)}
 
 	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
-	prePrepareMsg := map[string]interface{}{"type": "Finalpre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
+
+	data := map[string]interface{}{ "Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity
+	}
+	prePrepareMsg := map[string]interface{}{ "data" : data , "type": "Finalpre-prepare"}
 	return prePrepareMsg
+	
 }
 
 func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
