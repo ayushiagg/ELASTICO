@@ -2834,11 +2834,11 @@ func (e *Elastico) verifyFinalPrePrepare(msg PrePrepareMsg) bool {
 
 }
 
-func (e *Elastico) logPrePrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) logPrePrepareMsg(msg PrePrepareMsg) {
 	/*
 		log the pre-prepare msg
 	*/
-	identityobj := msg["Identity"].(IDENTITY)
+	identityobj := msg.Identity
 	IP := identityobj.IP
 	Port := identityobj.Port
 	// create a socket
