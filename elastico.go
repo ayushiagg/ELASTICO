@@ -1573,10 +1573,10 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 	FinalprepareMsgList := make([]map[string]interface{}, 0)
 	for socketID := range e.FinalPrePrepareMsgLog {
 
-		msg := e.FinalPrePrepareMsgLog[socketID].(map[string]interface{})
-		prePreparedData := msg["pre-prepareData"].(map[string]interface{})
-		seqnum := prePreparedData["seq"].(int)
-		digest := prePreparedData["digest"].(string)
+		msg := e.FinalPrePrepareMsgLog[socketID]
+		prePreparedData := msg.PrePrepareData
+		seqnum := prePreparedData.Seq
+		digest := prePreparedData.Digest
 		//  make prepare_contents Ordered Dict for signatures purpose
 
 		prepareContents := map[string]interface{}{"type": "Finalprepare", "viewId": e.viewID, "seq": seqnum, "digest": digest}
