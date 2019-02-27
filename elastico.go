@@ -3079,49 +3079,61 @@ func (e *Elastico) receiveTxns(epochTxn []Transaction) {
 	}
 }
 
-func (e *Elastico) pbftProcessMessage(msg map[string]interface{}) {
+func (e *Elastico) pbftProcessMessage(msg msgType) {
 	/*
 		Process the messages related to Pbft!
 	*/
-	if msg["type"] == "pre-prepare" {
+	if msg.Type == "pre-prepare" {
 
 		e.processPrePrepareMsg(msg)
 
-	} else if msg["type"] == "prepare" {
+	} else if msg.Type == "prepare" {
 
 		e.processPrepareMsg(msg)
 
-	} else if msg["type"] == "commit" {
+	} else if msg.Type == "commit" {
 		e.processCommitMsg(msg)
 	}
 }
 
-func (e *Elastico) processPrePrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processPrePrepareMsg(msg msgType) {
 	/*
 		Process Pre-Prepare msg
 	*/
+	var decodeMsg PrePrepareMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail to decode pre-prepare msg", true)
+
 	// verify the pre-prepare message
-	verified := e.verifyPrePrepare(msg)
+
+	verified := e.verifyPrePrepare(decodeMsg)
 	if verified {
 		// Log the pre-prepare msgs!
-		e.logPrePrepareMsg(msg)
+		e.logPrePrepareMsg(decodeMsg)
 
 	} else {
 		log.Error("error in verification of processPrePrepareMsg")
 	}
 }
 
-func (e *Elastico) processFinalprePrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalprePrepareMsg(msg msgType) {
 	/*
 		Process Final Pre-Prepare msg
 	*/
 
+	var decodeMsg PrePrepareMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail to decode final pre-prepare msg", true)
+
+
 	// verify the Final pre-prepare message
-	verified := e.verifyFinalPrePrepare(msg)
+	verified := e.verifyFinalPrePrepare(decodeMsg)
 	if verified {
 
 		// Log the final pre-prepare msgs!
-		e.logFinalPrePrepareMsg(msg)
+		e.logFinalPrePrepareMsg(decodeMsg)
 
 	} else {
 		log.Error("error in verification of Final processPrePrepareMsg")
