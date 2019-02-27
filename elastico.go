@@ -1520,9 +1520,12 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	*/
 	txnBlockList := e.txnBlock
 	// ToDo: make prePrepareContents Ordered Dict for signatures purpose
-	prePrepareContents := map[string]interface{}{"type": "pre-prepare", "viewId": e.viewID, "seq": 1, "digest": txnHexdigest(txnBlockList)}
+	prePrepareContents := PrePrepareContents{Type: "pre-prepare", ViewID: e.viewID, Seq: 1, Digest: txnHexdigest(txnBlockList)}
+
 	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
-	prePrepareMsg := map[string]interface{}{"type": "pre-prepare", "message": txnBlockList, "pre-prepareData": prePrepareContents, "sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
+
+	data := map[string]interface{}{"Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
+	prePrepareMsg := map[string]interface{}{"data": data, "type": "pre-prepare"}
 	return prePrepareMsg
 }
 
