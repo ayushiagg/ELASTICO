@@ -2846,11 +2846,11 @@ func (e *Elastico) logPrePrepareMsg(msg PrePrepareMsg) {
 	e.prePrepareMsgLog[socket] = msg
 }
 
-func (e *Elastico) logFinalPrePrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) logFinalPrePrepareMsg(msg PrePrepareMsg) {
 	/*
 		log the pre-prepare msg
 	*/
-	identityobj := msg["Identity"].(IDENTITY)
+	identityobj := msg.Identity
 	IP := identityobj.IP
 	Port := identityobj.Port
 	// create a socket
