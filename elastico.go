@@ -1355,42 +1355,40 @@ func (e *Elastico) isPrepared() bool {
 	/*
 		Check if the state is prepared or not
 	*/
-	/*
-		// collect prepared data
-		preparedData := make(map[int]interface{})
-		f := (c - 1)/3
-		// check for received request messages
-		for socket := range e.prePrepareMsgLog{
+	// collect prepared data
+	preparedData := make(map[int]map[int][]Transaction)
+	f := (c - 1) / 3
+	// check for received request messages
+	for socket := range e.prePrepareMsgLog {
 
-			// In current View Id
-			socketMap := e.prePrepareMsgLog[socket].(map[string]interface{})
-			prePrepareData := socketMap["pre-prepareData"].(map[string]interface{})
-			if prePrepareData["viewId"] == e.viewID{
+		// In current View Id
+		socketMap := e.prePrepareMsgLog[socket]
+		prePrepareData := socketMap.PrePrepareData
+		if prePrepareData.ViewID == e.viewID {
 
-				// request msg of pre-prepare request
-				requestMsg := socketMap["message"].([]Transaction)
-				// digest of the message
-				digest := prePrepareData["digest"].(string)
-				// get sequence number of this msg
-				seqnum := prePrepareData["seq"].(int)
-				// find Prepare msgs for this view and sequence number
-				_ , ok := e.prepareMsgLog[e.viewID]
+			// request msg of pre-prepare request
+			requestMsg := socketMap.Message
+			// digest of the message
+			digest := prePrepareData.Digest
+			// get sequence number of this msg
+			seqnum := prePrepareData.Seq
+			// find Prepare msgs for this view and sequence number
+			_, ok := e.prepareMsgLog[e.viewID]
 
-				if ok == true{
-					prepareMsgLogViewID := e.prepareMsgLog[e.viewID].(map[int]interface{})
-					_ , okk :=  prepareMsgLogViewID[seqnum]
-					if okk == true{
-						// need to find matching prepare msgs from different replicas atleast c/2 + 1
-						count := 0
-						prepareMsgLogSeq := prepareMsgLogViewID[seqnum].(map[string]interface{})
-						for replicaId := range prepareMsgLogSeq{
-							prepareMsgLogReplica := prepareMsgLogSeq[replicaId].([]map[string]interface{})
-							for _, msg := range prepareMsgLogReplica{
-								checkdigest := msg["digest"]
-								if checkdigest == digest{
-									count += 1
-									break
-								}
+			if ok == true {
+				prepareMsgLogViewID := e.prepareMsgLog[e.viewID]
+				_, okk := prepareMsgLogViewID[seqnum]
+				if okk == true {
+					// need to find matching prepare msgs from different replicas atleast c/2 + 1
+					count := 0
+					prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
+					for replicaId := range prepareMsgLogSeq {
+						prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
+						for _, msg := range prepareMsgLogReplica {
+							checkdigest := msg.Digest
+							if checkdigest == digest {
+								count += 1
+								break
 							}
 						}
 						// condition for Prepared state
