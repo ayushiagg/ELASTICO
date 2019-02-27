@@ -1590,6 +1590,19 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 	return FinalprepareMsgList
 }
 
+type CommitContents struct {
+	Type   string
+	ViewID int
+	Seq    int
+	Digest string
+}
+
+type CommitMsg struct {
+	Sign       string
+	CommitData CommitContents
+	Identity   IDENTITY
+}
+
 func (e *Elastico) constructCommit() []map[string]interface{} {
 	/*
 		Construct commit msgs
