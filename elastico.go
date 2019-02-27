@@ -954,16 +954,14 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg msgType) {
 				e.CommitteeConsensusData[identityobj.CommitteeID] = make(map[string][]string)
 				e.CommitteeConsensusDataTxns[identityobj.CommitteeID] = make(map[string][]Transaction)
 			}
-			txnBlock := data["txnBlock"].([]Transaction)
-			TxnBlockDigest := txnHexdigest(txnBlock)
+			TxnBlockDigest := txnHexdigest(TxnBlock)
 			if _, ok := e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest]; ok == false {
 				e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest] = make([]string, 0)
 				// store the txns for this digest
-				e.CommitteeConsensusDataTxns[identityobj.CommitteeID][TxnBlockDigest] = txnBlock
+				e.CommitteeConsensusDataTxns[identityobj.CommitteeID][TxnBlockDigest] = TxnBlock
 			}
 
 			// add signatures for the txn block
-			signature := data["sign"].(string)
 			e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest] = append(e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest], signature)
 
 		} else {
