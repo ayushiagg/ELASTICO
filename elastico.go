@@ -2182,44 +2182,47 @@ func (e *Elastico) isFinalCommitted() bool {
 	return false
 }
 
-func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
+func (e *Elastico) logFinalCommitMsg(msg CommitMsg) {
 	/*
 		log the final commit msg
 	*/
-	/*
-		commitData := msg["commitData"].(map[string]interface{})
-		viewID := commitData["viewId"].(int)
-		seqnum := commitData["seq"].(int)
-		identityobj := msg["Identity"].(IDENTITY)
-		socketId = msg["Identity"].IP + ":" + strconv.Itoa(msg["Identity"].Port)
+	
+		identityobj := msg.Identity
+		commitContents := msg.CommitData
+		viewID := commitContents.ViewID
+		seqnum := commitContents.Seq
+
+		socketID = identityobj.IP + ":" + strconv.Itoa(identityobj.Port)
 		// add msgs for this view
-		_, ok := e.FinalcommitMsgLog[viewId]
+		_, ok := e.FinalcommitMsgLog[viewID]
 		if ok == false {
 
-			e.FinalcommitMsgLog[viewId] = dict()
+			e.FinalcommitMsgLog[viewID] = make(map[int]map[string][]CommitMsgData)
 		}
-
+		commitMsgLogViewID := e.FinalcommitMsgLog[viewID]
 		// add msgs for this sequence num
-		_, okk := e.FinalcommitMsgLog[viewId][seqnum]
+		_, okk := commitMsgLogViewID[seqnum]
 		if okk == false {
 
-			e.FinalcommitMsgLog[viewId][seqnum] = dict()
+			commitMsgLogViewID[seqnum] = make(map[string][]CommitMsgData)
 		}
 
+		commitMsgLogSeq := commitMsgLogViewID[seqnum]
 		// add all msgs from this sender
-		_, okkk := e.FinalcommitMsgLog[viewId][seqnum][socketId]
+		_, okkk := commitMsgLogSeq[socketID]
 		if okkk == false {
 
-			e.FinalcommitMsgLog[viewId][seqnum][socketId] = list()
+			commitMsgLogSeq[socketID] = make([]CommitMsgData, 0)
 		}
 
 		// log only required details from the commit msg
-		identityobj := msg["Identity"].(IDENTITY)
-		msgDetails := map[string]interface{}{"digest": commitData["digest"], "Identity": identityobj}
+		commitDataDigest := commitContents.Digest
+		msgDetails := CommitMsgData{Digest: commitDataDigest, Identity: identityobj}
 		// append msg
-		log.Warn("Log committed msg for view , seqnum ", viewId, seqnum)
-		e.FinalcommitMsgLog[viewId][seqnum][socketId].append(msgDetails)
-	*/
+		commitMsgLogSocket := commitMsgLogSeq[socketID]
+		commitMsgLogSocket = append(commitMsgLogSocket, msgDetails)
+		e.FinalcommitMsgLog[viewID][seqnum][socketID] = commitMsgLogSocket
+	
 }
 
 func (e *Elastico) formIdentity() {
