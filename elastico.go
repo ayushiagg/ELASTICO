@@ -2649,16 +2649,24 @@ func (e *Elastico) FinalpbftProcessMessage(msg msgType) {
 	}
 }
 
-func (e *Elastico) processCommitMsg(msg map[string]interface{}) {
+func (e *Elastico) processCommitMsg(msg msgType) {
 	/*
 		process the commit msg
 	*/
 	// verify the commit message
-	verified := e.verifyCommit(msg)
+
+	var decodeMsg CommitMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail to decode commit msg", true)
+
+	// fmt.Println("commit msg---------", decodeMsg)
+
+	verified := e.verifyCommit(decodeMsg)
 	if verified {
 
 		// Log the commit msgs!
-		e.logCommitMsg(msg)
+		e.logCommitMsg(decodeMsg)
 	}
 }
 
