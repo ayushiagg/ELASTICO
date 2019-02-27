@@ -448,7 +448,7 @@ type Elastico struct {
 		flag- to denote a bad or good node
 		views - stores the ports of processes from which committee member views have been received
 		primary- boolean to denote the primary node in the committee for PBFT run
-		viewId - view number of the pbft
+		viewID - view number of the pbft
 		prePrepareMsgLog - log of pre-prepare msgs received during PBFT
 		prepareMsgLog - log of prepare msgs received during PBFT
 		commitMsgLog - log of commit msgs received during PBFT
@@ -1321,7 +1321,6 @@ func (e *Elastico) runPBFT() {
 			// construct prepare msg
 			// ToDo: verify whether the pre-prepare msg comes from various primaries or not
 			preparemsgList := e.constructPrepare()
-			// logging.warning("constructing prepares with Port %s" , str(e.Port))
 			e.sendPrepare(preparemsgList)
 			e.state = ElasticoStates["PBFT_PREPARE_SENT"]
 		}
@@ -2985,7 +2984,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 	} else if e.state == ElasticoStates["PBFT_COMMITTED"] {
 
 		// send pbft consensus blocks to final committee members
-		log.Info("pbft finished by members %s", e.Port)
+		log.Info("pbft finished by members", e.Port)
 		e.SendtoFinal()
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["Intra Consensus Result Sent to Final"] {
