@@ -1773,20 +1773,30 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 		atleast c/2 + 1 members of the proper committee and takes the ordered set union of all the inputs
 
 	*/
-	// logging.warning("verify and merge %s -- %s" , str(self.Port) ,str(self.committee_id))
-	// for committeeid in range(pow(2,s)):
-	// 	if committeeid in self.CommitteeConsensusData:
-	// 		for txnBlockDigest in self.CommitteeConsensusData[committeeid]:
-	// 			if len(self.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c//2 + 1:
-	// 				# get the txns from the digest
-	// 				txnBlock = self.CommitteeConsensusDataTxns[committeeid][txnBlockDigest]
-	// 				if len(txnBlock) > 0:
-	// 					# set_of_txns = ast.literal_eval(txnBlockDigest)
-	// 					# self.mergedBlock.extend(set_of_txns)
-	// 					self.mergedBlock = self.unionTxns(self.mergedBlock, txnBlock)
-	// if len(self.mergedBlock) > 0:
-	// 	self.state = ELASTICO_STATES["Merged Consensus Data"]
-	// 	logging.warning("%s - Port , %s - mergedBlock" ,str(self.Port) ,  str(self.mergedBlock))
+
+	var committeeid int64
+	for committeeid  = 0 ; committeeid < int64(math.Pow(2, float64(s))); committeeid{
+
+		if _,  presentCommID := range e.CommitteeConsensusData[committeeid] ; presentCommID == true{
+			
+			for  txnBlockDigest := range e.CommitteeConsensusData[committeeid]{
+
+				if len(e.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c/2 + 1{
+					
+					// get the txns from the digest
+					txnBlock := e.CommitteeConsensusDataTxns[committeeid][txnBlockDigest]
+					if len(txnBlock) > 0{
+
+						e.mergedBlock = e.unionTxns(e.mergedBlock, txnBlock)
+					}
+				}
+			}
+		}
+	}
+	if len(e.mergedBlock) > 0{
+
+		e.state = ElasticoStates["Merged Consensus Data"]
+	}
 }
 
 func (e *Elastico) logCommitMsg(msg map[string]interface{}) {
