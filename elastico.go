@@ -935,14 +935,17 @@ func (e *Elastico) BroadcastFinalTxn() {
 	// BroadcastTo_Network(data, "finalTxnBlock")
 }
 
-func (e *Elastico) receiveIntraCommitteeBlock(msg map[string]interface{}) {
+func (e *Elastico) receiveIntraCommitteeBlock(msg msgType) {
 	// final committee member receives the final set of txns along with the signature from the node
-	data := msg["data"].(map[string]interface{})
-	identityobj := data["Identity"].(IDENTITY)
+	var decodeMsg IntraBlockMsg
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "error in unmarshal intra committee block", true)
+
+	identityobj := decodeMsg.Identity
 
 	if e.verifyPoW(identityobj) {
-		signature := data["sign"].(string)
-		TxnBlock := data["txnBlock"].([]Transaction)
+		signature := decodeMsg.Sign
+		TxnBlock := decodeMsg.Txnblock
 		// verify the signatures
 		PK := identityobj.PK
 		if e.verifySignTxnList(signature, TxnBlock, &PK) {
