@@ -1662,7 +1662,7 @@ func (e *Elastico) digestPrePrepareMsg(msg PrePrepareContents) []byte {
 	return digest.Sum(nil)
 }
 
-func (e *Elastico) digestPrepareMsg(msg map[string]interface{}) []byte {
+func (e *Elastico) digestPrepareMsg(msg PrepareContents) []byte {
 	digest := sha256.New()
 	digest.Write([]byte(msg.Type))
 	digest.Write([]byte(strconv.Itoa(msg.ViewID)))
@@ -1671,16 +1671,12 @@ func (e *Elastico) digestPrepareMsg(msg map[string]interface{}) []byte {
 	return digest.Sum(nil)
 }
 
-func (e *Elastico) digestCommitMsg(msg map[string]interface{}) []byte {
+func (e *Elastico) digestCommitMsg(msg CommitContents) []byte {
 	digest := sha256.New()
-	digest.Write([]byte("type"))
-	digest.Write([]byte(msg["type"].(string)))
-	digest.Write([]byte("viewId"))
-	digest.Write([]byte(strconv.Itoa(msg["viewId"].(int))))
-	digest.Write([]byte("seq"))
-	digest.Write([]byte(strconv.Itoa(msg["seq"].(int))))
-	digest.Write([]byte("digest"))
-	digest.Write([]byte(msg["digest"].(string)))
+	digest.Write([]byte(msg.Type))
+	digest.Write([]byte(strconv.Itoa(msg.ViewID)))
+	digest.Write([]byte(strconv.Itoa(msg.Seq)))
+	digest.Write([]byte(msg.Digest))
 	return digest.Sum(nil)
 }
 
