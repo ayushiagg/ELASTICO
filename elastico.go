@@ -2893,6 +2893,10 @@ func (e *Elastico) generateRandomstrings() {
 	}
 }
 
+type NotifyFinalMsg struct{
+	Identity IDENTITY
+}
+
 func (e *Elastico) notifyFinalCommittee() {
 	/*
 		notify the members of the final committee that they are the final committee members
