@@ -1251,14 +1251,11 @@ func (e *Elastico) SendtoFinal() {
 	// PK := e.key.Public() // public key
 	// rsaPublickey := PK.(*rsa.PublicKey) //converted to rsa public key object
 	for viewID := range e.committedData {
-		committedDataViewID := e.committedData[viewID].(map[string]interface{})
+		committedDataViewID := e.committedData[viewID]
 		for seqnum := range committedDataViewID {
 
-			msgList := committedDataViewID[seqnum].([]Transaction)
-			// for msg := range msgList {
+			msgList := committedDataViewID[seqnum]
 
-			// 	e.txnBlock = e.unionTxns(e.txnBlock, msg)
-			// }
 			e.txnBlock = e.unionTxns(e.txnBlock, msgList)
 		}
 	}
