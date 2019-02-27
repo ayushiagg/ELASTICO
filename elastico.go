@@ -2546,8 +2546,8 @@ func (e *Elastico) formCommittee() {
 
 		e.isDirectory = true
 
-		data1 := map[string]interface{}{"Identity": e.Identity}
-		msg := map[string]interface{}{"data": data1, "type": "directoryMember"}
+		data := map[string]interface{}{"Identity": e.Identity}
+		msg := map[string]interface{}{"data": data, "type": "directoryMember"}
 
 		BroadcastToNetwork(msg)
 		// change the state as it is the directory member
