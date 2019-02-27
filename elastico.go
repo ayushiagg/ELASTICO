@@ -3179,19 +3179,19 @@ func makeFaulty() {
 	}
 }
 
-func (e *Elastico) verifyCommit(msg map[string]interface{}) bool {
+func (e *Elastico) verifyCommit(msg CommitMsg) bool {
 	/*
 		verify commit msgs
 	*/
 	// verify Pow
-	identityobj := msg["Identity"].(IDENTITY)
+	identityobj := msg.Identity
 	if !e.verifyPoW(identityobj) {
 		return false
 	}
 	// verify signatures of the received msg
 
-	sign := msg["sign"].(string)
-	commitData := msg["commitData"].(map[string]interface{})
+	sign := msg.Sign
+	commitData := msg.CommitData
 	digestCommitData := e.digestCommitMsg(commitData)
 	PK := identityobj.PK
 	if !e.verifySign(sign, digestCommitData, &PK) {
@@ -3199,10 +3199,11 @@ func (e *Elastico) verifyCommit(msg map[string]interface{}) bool {
 	}
 
 	// check the view is same or not
-	viewID := commitData["viewID"].(int)
+	viewID := commitData.ViewID
 	if viewID != e.viewID {
 		return false
 	}
+	// log.Info("commit verified")
 	return true
 }
 
