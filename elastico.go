@@ -1608,23 +1608,22 @@ func (e *Elastico) constructCommit() []map[string]interface{} {
 		Construct commit msgs
 	*/
 	commitMsges := make([]map[string]interface{}, 0)
-	/*
-		 for viewId := range e.preparedData{
 
-			 for seqnum := range e.preparedData[viewId] {
+	for viewID := range e.preparedData {
 
-				 for msg :=  range e.preparedData[viewId][seqnum] {
+		for seqnum := range e.preparedData[viewID] {
 
-					 digest := txnHexdigest(msg)
-					// make commit_contents Ordered Dict for signatures purpose
-					 commitContents := map[string]interface{}{"type" : "commit" , "viewId" : viewId , "seq" : seqnum , "digest": digest }
-					 commitContentsDigest := e.digestCommitMsg(commitContents)
-					 commitMsg := map[string]interface{}{"type" : "commit" , "sign" : e.Sign(commitContentsDigest) , "commitData" : commitContents, "Identity" : e.Identity}
-					 commitMsges = append(commitMsges , commitMsg)
-				 }
-			 }
-		 }
-	*/
+			digest := txnHexdigest(e.preparedData[viewID][seqnum])
+			// make commit_contents Ordered Dict for signatures purpose
+			commitContents := CommitContents{Type: "commit", ViewID: viewID, Seq: seqnum, Digest: digest}
+			commitContentsDigest := e.digestCommitMsg(commitContents)
+			data := map[string]interface{}{"Sign": e.Sign(commitContentsDigest), "CommitData": commitContents, "Identity": e.Identity}
+			commitMsg := map[string]interface{}{"data": data, "type": "commit"}
+			commitMsges = append(commitMsges, commitMsg)
+
+		}
+	}
+
 	return commitMsges
 }
 
@@ -1633,23 +1632,24 @@ func (e *Elastico) constructFinalCommit() []map[string]interface{} {
 		Construct commit msgs
 	*/
 	commitMsges := make([]map[string]interface{}, 0)
-	/*
-		 for viewId := range e.FinalpreparedData{
+	
+		 for viewID := range e.FinalpreparedData{
 
-			 for seqnum := range e.FinalpreparedData[viewId]{
+			 for seqnum := range e.FinalpreparedData[viewID]{
 
-				 for msg := range e.FinalpreparedData[viewId][seqnum]{
-
-					 digest := txnHexdigest(msg)
+				
+					 digest := txnHexdigest(e.FinalpreparedData[viewID][seqnum])
 					//  make commit_contents Ordered Dict for signatures purpose
-					 commitContents := map[string]interface{}{"type" : "Finalcommit" , "viewId" : viewId , "seq" : seqnum , "digest":digest }
+					 commitContents := CommitContents{Type : "Finalcommit" , ViewID : viewID , Seq : seqnum ,  Digest:digest }
 					 commitContentsDigest := e.digestCommitments(commitContents)
-					 commitMsg := map[string]interface{}{"type" : "Finalcommit" , "sign" : e.Sign(commitContentsDigest) , "commitData" : commitContents, "Identity" : e.Identity}
+
+					 data:= map[string]interface{}{"Sign" : e.Sign(commitContentsDigest) , "CommitData" : commitContents, "Identity" : e.Identity}
+					 commitMsg := map[string]interface{}{"data" :data, "type" : "Finalcommit"}
 					 commitMsges = append(commitMsges, commitMsg)
-				 }
+				 
 			 }
 		 }
-	*/
+	
 	return commitMsges
 }
 
