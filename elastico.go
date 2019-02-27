@@ -1032,60 +1032,36 @@ func (e *Elastico) receive(msg msgType) {
 	} else if msg.Type == "hash" && e.isFinalMember() {
 		e.receiveHash(msg)
 
-	} /*else if msg.Type == "RandomStringBroadcast" {
+	} else if msg.Type == "RandomStringBroadcast" {
 		e.receiveRandomStringBroadcast(msg)
-
-	} else if msg.Type == "finalTxnBlock" {
-		e.receiveFinalTxnBlock(msg)
-
-	} else if msg.Type == "intraCommitteeBlock" && e.isFinalMember() {
-		e.receiveIntraCommitteeBlock(msg)
-
-	} else if msg.Type == "command to run pbft" {
-		if e.isDirectory == false {
-			e.runPBFT()
-		}
-	} else if msg.Type == "command to run pbft by final committee" {
-		if e.isFinalMember() {
-			e.runPBFT()
-		}
-	} else if msg.Type == "send txn set and sign to final committee" {
-		if e.isDirectory == false {
-			e.SendtoFinal()
-		}
-	} else if msg.Type == "verify and merge intra consensus data" {
-		if e.isFinalMember() {
-			e.verifyAndMergeConsensusData()
-		}
-	} else if msg.Type == "send commitments of Ris" {
-		if e.isFinalMember() {
-			e.sendCommitment()
-		}
-	} else if msg.Type == "broadcast final set of txns to the ntw" {
-
-		if e.isFinalMember() {
-			e.BroadcastFinalTxn()
-		}
-	} else if msg.Type == "notify final member" {
-		log.Warn("notifying final member ", e.Port)
-		data := msg["data"].(map[string]interface{})
-		identityobj := data["Identity"].(IDENTITY)
-		if e.verifyPoW(identityobj) && e.CommitteeID == finNum {
-			e.isFinal = true
-		}
-	} else if msg.Type == "Broadcast Ri" {
-		if e.isFinalMember() {
-			e.BroadcastR()
-		}
-	} else if msg.Type == "reset-all" {
-		// ToDo: Add verification of pow here.
-		// reset the elastico node
-		e.reset()
 
 	} else if msg.Type == "pre-prepare" || msg.Type == "prepare" || msg.Type == "commit" {
 
 		e.pbftProcessMessage(msg)
-	} else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
+	} else if msg.Type == "intraCommitteeBlock" && e.isFinalMember() {
+
+		e.receiveIntraCommitteeBlock(msg)
+	}
+	else if msg.Type == "notify final member" {
+		log.Warn("notifying final member ", e.Port)
+		var decodeMsg NotifyFinalMsg
+		err := json.Unmarshal(msg.Data , &decodeMsg)
+		failOnError(err, "error in decoding final member msg" , true)
+		identityobj := decodeMsg.Identity
+		if e.verifyPoW(identityobj) && e.CommitteeID == finNum {
+			e.isFinal = true
+		}
+	} 
+	/* else if msg.Type == "finalTxnBlock" {
+			e.receiveFinalTxnBlock(msg)
+	}*/
+
+	/*  else if msg.Type == "reset-all" {
+		// ToDo: Add verification of pow here.
+		// reset the elastico node
+		e.reset()
+
+	} */ /* else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
 		e.FinalpbftProcessMessage(msg)
 	}
 	*/
