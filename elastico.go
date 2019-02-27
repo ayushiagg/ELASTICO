@@ -1131,15 +1131,15 @@ func (e *Elastico) ElasticoInit() {
 	e.faulty = false
 
 	e.prePrepareMsgLog = make(map[string]PrePrepareMsg)
-	e.prepareMsgLog = make(map[int]interface{})
-	e.commitMsgLog = make(map[int]interface{})
-	e.preparedData = make(map[int]interface{})
-	e.committedData = make(map[int]interface{})
-	e.FinalPrePrepareMsgLog = make(map[string]interface{})
-	e.FinalPrepareMsgLog = make(map[int]interface{})
-	e.FinalcommitMsgLog = make(map[int]interface{})
-	e.FinalpreparedData = make(map[int]interface{})
-	e.FinalcommittedData = make(map[int]interface{})
+	e.prepareMsgLog = make(map[int]map[int]map[string][]PrepareMsgData)
+	e.commitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
+	e.preparedData = make(map[int]map[int][]Transaction)
+	e.committedData = make(map[int]map[int][]Transaction)
+	e.FinalPrePrepareMsgLog = make(map[string]PrePrepareMsg)
+	e.FinalPrepareMsgLog = make(map[int]map[int]map[string][]PrepareMsgData)
+	e.FinalcommitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
+	e.FinalpreparedData = make(map[int]map[int][]Transaction)
+	e.FinalcommittedData = make(map[int]map[int][]Transaction)
 }
 
 func (e *Elastico) reset() {
@@ -1204,15 +1204,15 @@ func (e *Elastico) reset() {
 	e.faulty = false
 
 	e.prePrepareMsgLog = make(map[string]PrePrepareMsg)
-	e.prepareMsgLog = make(map[int]interface{})
-	e.commitMsgLog = make(map[int]interface{})
-	e.preparedData = make(map[int]interface{})
-	e.committedData = make(map[int]interface{})
-	e.FinalPrePrepareMsgLog = make(map[string]interface{})
-	e.FinalPrepareMsgLog = make(map[int]interface{})
-	e.FinalcommitMsgLog = make(map[int]interface{})
-	e.FinalpreparedData = make(map[int]interface{})
-	e.FinalcommittedData = make(map[int]interface{})
+	e.prepareMsgLog = make(map[int]map[int]map[string][]PrepareMsgData)
+	e.commitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
+	e.preparedData = make(map[int]map[int][]Transaction)
+	e.committedData = make(map[int]map[int][]Transaction)
+	e.FinalPrePrepareMsgLog = make(map[string]PrePrepareMsg)
+	e.FinalPrepareMsgLog = make(map[int]map[int]map[string][]PrepareMsgData)
+	e.FinalcommitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
+	e.FinalpreparedData = make(map[int]map[int][]Transaction)
+	e.FinalcommittedData = make(map[int]map[int][]Transaction)
 }
 
 func (e *Elastico) getCommitteeid(PoW string) int64 {
