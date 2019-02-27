@@ -2280,20 +2280,20 @@ func (e *Elastico) appendToLedger() {
 
 }
 
-func (e *Elastico) verifyFinalPrepare(msg map[string]interface{}) bool {
+func (e *Elastico) verifyFinalPrepare(msg PrepareMsg) bool {
 	/*
 		Verify final prepare msgs
 	*/
 	// verify Pow
-	identityobj := msg["Identity"].(IDENTITY)
+	identityobj := msg.Identity
 	if e.verifyPoW(identityobj) == false {
 
 		log.Warn("wrong pow in verify final prepares")
 		return false
 	}
 	// verify signatures of the received msg
-	sign := msg["sign"].(string)
-	prepareData := msg["prepareData"].(map[string]interface{})
+	sign := msg.Sign
+	prepareData := msg.PrepareData
 	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
 
 	PK := identityobj.PK
