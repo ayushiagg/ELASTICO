@@ -1439,7 +1439,15 @@ func (e *Elastico) runFinalPBFT() {
 			// change the state of primary to pre-prepared
 			e.state = ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"]
 			// primary will log the pre-prepare msg for itself
-			e.logFinalPrePrepareMsg(finalPrePreparemsg)
+
+			prePrepareMsgEncoded, _ := json.Marshal(finalPrePrepareMsg["data"])
+
+			var decodedMsg PrePrepareMsg
+			err := json.Unmarshal(prePrepareMsgEncoded, &decodedMsg)
+			failOnError(err, "error in unmarshal final pre-prepare", true)
+
+
+			e.logFinalPrePrepareMsg(decodedMsg)
 
 		} else {
 
