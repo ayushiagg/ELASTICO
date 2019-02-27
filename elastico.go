@@ -2670,16 +2670,21 @@ func (e *Elastico) processCommitMsg(msg msgType) {
 	}
 }
 
-func (e *Elastico) processFinalcommitMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalcommitMsg(msg msgType) {
 	/*
 		process the final commit msg
 	*/
 	// verify the commit message
-	verified := e.verifyCommit(msg)
+	var decodeMsg CommitMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail to decode final commit msg", true)
+
+	verified := e.verifyCommit(decodeMsg)
 	if verified {
 
 		// Log the commit msgs!
-		e.logFinalCommitMsg(msg)
+		e.logFinalCommitMsg(decodeMsg)
 	}
 }
 
