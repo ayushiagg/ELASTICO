@@ -1041,17 +1041,16 @@ func (e *Elastico) receive(msg msgType) {
 	} else if msg.Type == "intraCommitteeBlock" && e.isFinalMember() {
 
 		e.receiveIntraCommitteeBlock(msg)
-	}
-	else if msg.Type == "notify final member" {
+	} else if msg.Type == "notify final member" {
 		log.Warn("notifying final member ", e.Port)
 		var decodeMsg NotifyFinalMsg
-		err := json.Unmarshal(msg.Data , &decodeMsg)
-		failOnError(err, "error in decoding final member msg" , true)
+		err := json.Unmarshal(msg.Data, &decodeMsg)
+		failOnError(err, "error in decoding final member msg", true)
 		identityobj := decodeMsg.Identity
 		if e.verifyPoW(identityobj) && e.CommitteeID == finNum {
 			e.isFinal = true
 		}
-	} 
+	}
 	/* else if msg.Type == "finalTxnBlock" {
 			e.receiveFinalTxnBlock(msg)
 	}*/
@@ -1439,12 +1438,11 @@ func (e *Elastico) runFinalPBFT() {
 			e.state = ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"]
 			// primary will log the pre-prepare msg for itself
 
-			prePrepareMsgEncoded, _ := json.Marshal(finalPrePrepareMsg["data"])
+			prePrepareMsgEncoded, _ := json.Marshal(finalPrePreparemsg["data"])
 
 			var decodedMsg PrePrepareMsg
 			err := json.Unmarshal(prePrepareMsgEncoded, &decodedMsg)
 			failOnError(err, "error in unmarshal final pre-prepare", true)
-
 
 			e.logFinalPrePrepareMsg(decodedMsg)
 
@@ -1482,19 +1480,19 @@ func (e *Elastico) runFinalPBFT() {
 
 		if e.isFinalCommitted() {
 
-			for viewID := range e.FinalcommittedData{
-				
-				for seqnum := range e.FinalcommittedData[viewID]{
-					
-					msgList := e.FinalcommittedData[viewID][seqnum]
-					
-					e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msgList)
-				}
-			}
-			finalTxnBlock := e.finalBlock["finalBlock"]
-			// finalTxnBlock = list(finalTxnBlock)
-			// order them! Reason : to avoid errors in signatures as sets are unordered
-			// e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
+			// for viewID := range e.FinalcommittedData {
+
+			// 	for seqnum := range e.FinalcommittedData[viewID] {
+
+			// 		msgList := e.FinalcommittedData[viewID][seqnum]
+
+			// 		e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msgList)
+			// 	}
+			// }
+			// finalTxnBlock := e.finalBlock["finalBlock"]
+			// // finalTxnBlock = list(finalTxnBlock)
+			// // order them! Reason : to avoid errors in signatures as sets are unordered
+			// // e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
 			e.state = ElasticoStates["FinalPBFT_COMMITTED"]
 		}
 	}
@@ -1578,12 +1576,12 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 		digest := prePreparedData.Digest
 		//  make prepare_contents Ordered Dict for signatures purpose
 
-		prepareContents := PrepareContents{Type : "Finalprepare", ViewID: e.viewID, Seq : seqnum, Digest : digest}
+		prepareContents := PrepareContents{Type: "Finalprepare", ViewID: e.viewID, Seq: seqnum, Digest: digest}
 		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
 
 		data := map[string]interface{}{"PrepareData": prepareContents, "Sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
 
-		prepareMsg := map[string]interface{}{ "data" : data , "type": "Finalprepare"}
+		prepareMsg := map[string]interface{}{"data": data, "type": "Finalprepare"}
 		FinalprepareMsgList = append(FinalprepareMsgList, prepareMsg)
 	}
 	return FinalprepareMsgList
@@ -1631,24 +1629,23 @@ func (e *Elastico) constructFinalCommit() []map[string]interface{} {
 		Construct commit msgs
 	*/
 	commitMsges := make([]map[string]interface{}, 0)
-	
-		 for viewID := range e.FinalpreparedData{
 
-			 for seqnum := range e.FinalpreparedData[viewID]{
+	for viewID := range e.FinalpreparedData {
 
-				
-					 digest := txnHexdigest(e.FinalpreparedData[viewID][seqnum])
-					//  make commit_contents Ordered Dict for signatures purpose
-					 commitContents := CommitContents{Type : "Finalcommit" , ViewID : viewID , Seq : seqnum ,  Digest:digest }
-					 commitContentsDigest := e.digestCommitments(commitContents)
+		for seqnum := range e.FinalpreparedData[viewID] {
 
-					 data:= map[string]interface{}{"Sign" : e.Sign(commitContentsDigest) , "CommitData" : commitContents, "Identity" : e.Identity}
-					 commitMsg := map[string]interface{}{"data" :data, "type" : "Finalcommit"}
-					 commitMsges = append(commitMsges, commitMsg)
-				 
-			 }
-		 }
-	
+			digest := txnHexdigest(e.FinalpreparedData[viewID][seqnum])
+			//  make commit_contents Ordered Dict for signatures purpose
+			commitContents := CommitContents{Type: "Finalcommit", ViewID: viewID, Seq: seqnum, Digest: digest}
+			commitContentsDigest := e.digestCommitMsg(commitContents)
+
+			data := map[string]interface{}{"Sign": e.Sign(commitContentsDigest), "CommitData": commitContents, "Identity": e.Identity}
+			commitMsg := map[string]interface{}{"data": data, "type": "Finalcommit"}
+			commitMsges = append(commitMsges, commitMsg)
+
+		}
+	}
+
 	return commitMsges
 }
 
@@ -1685,15 +1682,14 @@ func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
 	*/
 	txnBlockList := e.mergedBlock
 	// ToDo :- make pre_prepare_contents Ordered Dict for signatures purpose
-	prePrepareContents := PrePrepareContents{Type : "Finalpre-prepare", ViewID: e.viewID, Seq : 1, Digest : txnHexdigest(txnBlockList)}
+	prePrepareContents := PrePrepareContents{Type: "Finalpre-prepare", ViewID: e.viewID, Seq: 1, Digest: txnHexdigest(txnBlockList)}
 
 	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
 
-	data := map[string]interface{}{ "Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity
-	}
-	prePrepareMsg := map[string]interface{}{ "data" : data , "type": "Finalpre-prepare"}
+	data := map[string]interface{}{"Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
+	prePrepareMsg := map[string]interface{}{"data": data, "type": "Finalpre-prepare"}
 	return prePrepareMsg
-	
+
 }
 
 func (e *Elastico) sendPrePrepare(prePrepareMsg map[string]interface{}) {
@@ -1742,23 +1738,23 @@ func (e *Elastico) checkCountForFinalData() {
 		check the sufficient counts for final data
 	*/
 	//  collect final blocks sent by final committee and add the blocks to the response
-	/*
-		 for txnBlockDigest := range e.finalBlockbyFinalCommittee{
 
-			 if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2 + 1{
+	// for txnBlockDigest := range e.finalBlockbyFinalCommittee {
 
-				 TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
-				//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
-				 finalCommittedBlock := FinalCommittedBlock(TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest])
-				//  add the block to the response
-				 e.response = append(e.response , finalCommittedBlock)
+	// 	if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2+1 {
 
-			 } else {
+	// 		TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
+	// 		//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
+	// 		finalCommittedBlock := FinalCommittedBlock(TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest])
+	// 		//  add the block to the response
+	// 		e.response = append(e.response, finalCommittedBlock)
 
-				 log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
-			 }
-		 }
-	*/
+	// 	} else {
+
+	// 		log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
+	// 	}
+	// }
+
 	if len(e.response) > 0 {
 
 		log.Warn("final block sent the block to client by", e.Port)
@@ -1774,17 +1770,17 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 	*/
 
 	var committeeid int64
-	for committeeid  = 0 ; committeeid < int64(math.Pow(2, float64(s))); committeeid{
+	for committeeid = 0; committeeid < int64(math.Pow(2, float64(s))); committeeid++ {
 
-		if _,  presentCommID := range e.CommitteeConsensusData[committeeid] ; presentCommID == true{
-			
-			for  txnBlockDigest := range e.CommitteeConsensusData[committeeid]{
+		if _, presentCommID := e.CommitteeConsensusData[committeeid]; presentCommID == true {
 
-				if len(e.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c/2 + 1{
-					
+			for txnBlockDigest := range e.CommitteeConsensusData[committeeid] {
+
+				if len(e.CommitteeConsensusData[committeeid][txnBlockDigest]) >= c/2+1 {
+
 					// get the txns from the digest
 					txnBlock := e.CommitteeConsensusDataTxns[committeeid][txnBlockDigest]
-					if len(txnBlock) > 0{
+					if len(txnBlock) > 0 {
 
 						e.mergedBlock = e.unionTxns(e.mergedBlock, txnBlock)
 					}
@@ -1792,7 +1788,7 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 			}
 		}
 	}
-	if len(e.mergedBlock) > 0{
+	if len(e.mergedBlock) > 0 {
 
 		e.state = ElasticoStates["Merged Consensus Data"]
 	}
@@ -1940,67 +1936,67 @@ func (e *Elastico) isFinalPrepared() bool {
 	*/
 	//  collect prepared data
 	preparedData := make(map[int]map[int][]Transaction)
-	f := (c - 1)//3
+	f := (c - 1) //3
 	//  check for received request messages
-	for socket := range e.Finalpre_prepareMsgLog{
+	for socket := range e.FinalPrePrepareMsgLog {
 
 		//  In current View Id
 		socketMap := e.FinalPrePrepareMsgLog[socket]
 		prePrepareData := socketMap.PrePrepareData
-		if prePrepareData.ViewID == e.viewID{
+		if prePrepareData.ViewID == e.viewID {
 
 			//  request msg of pre-prepare request
 			requestMsg := socketMap.Message
-			
+
 			//  digest of the message
-			digest := prePrepareData.Digest 
+			digest := prePrepareData.Digest
 			//  get sequence number of this msg
 			seqnum := prePrepareData.Seq
 			//  find Prepare msgs for this view and sequence number
-			if _, presentView := e.FinalPrepareMsgLog[e.viewID] ; presentView ==true{
+			if _, presentView := e.FinalPrepareMsgLog[e.viewID]; presentView == true {
 				prepareMsgLogViewID := e.FinalPrepareMsgLog[e.viewID]
-			if _ , presentSeq := prepareMsgLogViewID[seqnum] ; presentSeq == true{
+				if _, presentSeq := prepareMsgLogViewID[seqnum]; presentSeq == true {
 
-				//  need to find matching prepare msgs from different replicas atleast c//2 + 1
-				count := 0
-				prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
-				for replicaId := range prepareMsgLogSeq{
-					prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
-					for _ , msg := range prepareMsgLogReplica{
-						checkdigest := msg.Digest
-						if checkdigest == digest{
-							count ++
-							break
+					//  need to find matching prepare msgs from different replicas atleast c//2 + 1
+					count := 0
+					prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
+					for replicaId := range prepareMsgLogSeq {
+						prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
+						for _, msg := range prepareMsgLogReplica {
+							checkdigest := msg.Digest
+							if checkdigest == digest {
+								count++
+								break
 
+							}
 						}
+
 					}
-					
+					//  condition for Prepared state
+					if count >= 2*f {
+
+						if _, ok := preparedData[e.viewID]; ok == false {
+
+							preparedData[e.viewID] = make(map[int][]Transaction)
+						}
+						preparedViewID := preparedData[e.viewID]
+						if _, ok := preparedViewID[seqnum]; ok == false {
+
+							preparedViewID[seqnum] = make([]Transaction, 0)
+						}
+						for _, txn := range requestMsg {
+
+							preparedViewID[seqnum] = append(preparedViewID[seqnum], txn)
+						}
+						preparedData[e.viewID][seqnum] = preparedViewID[seqnum]
+					}
+
 				}
-				//  condition for Prepared state
-				if count >= 2*f{
 
-					if  _ , ok := preparedData[e.viewID] ; ok == false{
-
-						preparedData[e.viewID] = make(map[int][]Transaction)
-					}
-					preparedViewID := preparedData[e.viewID]
-					if  _, ok :=  not in preparedViewID[seqnum] ; ok == false{
-						
-						preparedViewID[seqnum] = amke([]Transaction , 0)
-					}
-					for _, txn := range requestMsg {
-
-						preparedViewID[seqnum] = append(preparedViewID[seqnum], txn)
-					}
-					preparedData[e.viewID][seqnum] = preparedViewID[seqnum]
-				}
-	
-			}	
-			 
-			}	
+			}
 		}
 	}
-	if len(preparedData) > 0{
+	if len(preparedData) > 0 {
 
 		e.FinalpreparedData = preparedData
 		return true
@@ -2105,36 +2101,36 @@ func (e *Elastico) isFinalCommitted() bool {
 	*/
 	// collect committed data
 	committedData := make(map[int]map[int][]Transaction)
-	f := (c - 1)/3
+	f := (c - 1) / 3
 	// check for received request messages
-	for socket := range e.FinalPrePrepareMsgLog{
+	for socket := range e.FinalPrePrepareMsgLog {
 		prePrepareMsg := e.FinalPrePrepareMsgLog[socket]
 		// In current View Id
-		if prePrepareMsg.PrePrepareData.ViewID == e.viewID{
+		if prePrepareMsg.PrePrepareData.ViewID == e.viewID {
 			// request msg of pre-prepare request
 			requestMsg := prePrepareMsg.Message
 			// digest of the message
 			digest := prePrepareMsg.PrePrepareData.Digest
 			// get sequence number of this msg
 			seqnum := prePrepareMsg.PrePrepareData.Seq
-			if _, presentView := e.FinalpreparedData[e.viewID] ; presentView == true{
-				if _,presentSeq := e.FinalpreparedData[e.viewID][seqnum] ; presentSeq == true{
-					if txnHexdigest(e.FinalpreparedData[e.viewID][seqnum]) == digest{
+			if _, presentView := e.FinalpreparedData[e.viewID]; presentView == true {
+				if _, presentSeq := e.FinalpreparedData[e.viewID][seqnum]; presentSeq == true {
+					if txnHexdigest(e.FinalpreparedData[e.viewID][seqnum]) == digest {
 						// pre-prepared matched and prepared is also true, check for commits
-						if _, ok := e.FinalcommitMsgLog[e.viewID] ; ok == true{
-							if _ , okk := e.FinalcommitMsgLog[e.viewID][seqnum] ; okk == true{
+						if _, ok := e.FinalcommitMsgLog[e.viewID]; ok == true {
+							if _, okk := e.FinalcommitMsgLog[e.viewID][seqnum]; okk == true {
 								count := 0
-								for replicaId := range e.FinalcommitMsgLog[e.viewID][seqnum]{
-									for _ , msg := range e.FinalcommitMsgLog[e.viewID][seqnum][replicaId]{
+								for replicaId := range e.FinalcommitMsgLog[e.viewID][seqnum] {
+									for _, msg := range e.FinalcommitMsgLog[e.viewID][seqnum][replicaId] {
 
-										if msg.Digest == digest{
-											count ++
+										if msg.Digest == digest {
+											count++
 											break
 										}
 									}
 								}
 								// ToDo: condition check
-								if count >= 2*f + 1{
+								if count >= 2*f+1 {
 									if _, presentview := committedData[e.viewID]; presentview == false {
 
 										committedData[e.viewID] = make(map[int][]Transaction)
@@ -2148,32 +2144,32 @@ func (e *Elastico) isFinalCommitted() bool {
 										committedData[e.viewID][seqnum] = append(committedData[e.viewID][seqnum], txn)
 									}
 								}
-								
-							} else{
+
+							} else {
 
 								log.Error("no seqnum found in commit msg log")
 							}
-						} else{
+						} else {
 							log.Error("no view id found in commit msg log")
 						}
-					} else{
+					} else {
 
 						log.Error("wrong digest in is committed")
 					}
-				} else{
+				} else {
 
 					log.Error("seq not found in isCommitted")
 				}
-			} else{
+			} else {
 
 				log.Error("view not found in isCommitted")
 			}
-		} else{
+		} else {
 
 			log.Error("wrong view in is committed")
 		}
 	}
-	if len(committedData) > 0{
+	if len(committedData) > 0 {
 
 		e.FinalcommittedData = committedData
 		return true
@@ -2185,43 +2181,43 @@ func (e *Elastico) logFinalCommitMsg(msg CommitMsg) {
 	/*
 		log the final commit msg
 	*/
-	
-		identityobj := msg.Identity
-		commitContents := msg.CommitData
-		viewID := commitContents.ViewID
-		seqnum := commitContents.Seq
 
-		socketID = identityobj.IP + ":" + strconv.Itoa(identityobj.Port)
-		// add msgs for this view
-		_, ok := e.FinalcommitMsgLog[viewID]
-		if ok == false {
+	identityobj := msg.Identity
+	commitContents := msg.CommitData
+	viewID := commitContents.ViewID
+	seqnum := commitContents.Seq
 
-			e.FinalcommitMsgLog[viewID] = make(map[int]map[string][]CommitMsgData)
-		}
-		commitMsgLogViewID := e.FinalcommitMsgLog[viewID]
-		// add msgs for this sequence num
-		_, okk := commitMsgLogViewID[seqnum]
-		if okk == false {
+	socketID := identityobj.IP + ":" + strconv.Itoa(identityobj.Port)
+	// add msgs for this view
+	_, ok := e.FinalcommitMsgLog[viewID]
+	if ok == false {
 
-			commitMsgLogViewID[seqnum] = make(map[string][]CommitMsgData)
-		}
+		e.FinalcommitMsgLog[viewID] = make(map[int]map[string][]CommitMsgData)
+	}
+	commitMsgLogViewID := e.FinalcommitMsgLog[viewID]
+	// add msgs for this sequence num
+	_, okk := commitMsgLogViewID[seqnum]
+	if okk == false {
 
-		commitMsgLogSeq := commitMsgLogViewID[seqnum]
-		// add all msgs from this sender
-		_, okkk := commitMsgLogSeq[socketID]
-		if okkk == false {
+		commitMsgLogViewID[seqnum] = make(map[string][]CommitMsgData)
+	}
 
-			commitMsgLogSeq[socketID] = make([]CommitMsgData, 0)
-		}
+	commitMsgLogSeq := commitMsgLogViewID[seqnum]
+	// add all msgs from this sender
+	_, okkk := commitMsgLogSeq[socketID]
+	if okkk == false {
 
-		// log only required details from the commit msg
-		commitDataDigest := commitContents.Digest
-		msgDetails := CommitMsgData{Digest: commitDataDigest, Identity: identityobj}
-		// append msg
-		commitMsgLogSocket := commitMsgLogSeq[socketID]
-		commitMsgLogSocket = append(commitMsgLogSocket, msgDetails)
-		e.FinalcommitMsgLog[viewID][seqnum][socketID] = commitMsgLogSocket
-	
+		commitMsgLogSeq[socketID] = make([]CommitMsgData, 0)
+	}
+
+	// log only required details from the commit msg
+	commitDataDigest := commitContents.Digest
+	msgDetails := CommitMsgData{Digest: commitDataDigest, Identity: identityobj}
+	// append msg
+	commitMsgLogSocket := commitMsgLogSeq[socketID]
+	commitMsgLogSocket = append(commitMsgLogSocket, msgDetails)
+	e.FinalcommitMsgLog[viewID][seqnum][socketID] = commitMsgLogSocket
+
 }
 
 func (e *Elastico) formIdentity() {
@@ -2316,7 +2312,7 @@ func (e *Elastico) verifyFinalPrepare(msg PrepareMsg) bool {
 	for socketID := range e.FinalPrePrepareMsgLog {
 		prePrepareMsg := e.FinalPrePrepareMsgLog[socketID]
 		prePrepareData := prePrepareMsg.PrePrepareData
-		
+
 		if prePrepareData.ViewID == viewID && prePrepareData.Seq == seq && prePrepareData.Digest == digest {
 
 			return true
@@ -2711,7 +2707,7 @@ func (e *Elastico) processFinalprepareMsg(msg msgType) {
 	*/
 	var decodeMsg PrepareMsg
 	err := json.Unmarshal(msg.Data, &decodeMsg)
-	failOnError(err ,  "fail to decode final prepare msg" , true)
+	failOnError(err, "fail to decode final prepare msg", true)
 	// verify the prepare message
 	verified := e.verifyFinalPrepare(decodeMsg)
 	if verified {
@@ -2892,7 +2888,7 @@ func (e *Elastico) generateRandomstrings() {
 	}
 }
 
-type NotifyFinalMsg struct{
+type NotifyFinalMsg struct {
 	Identity IDENTITY
 }
 
@@ -2902,9 +2898,9 @@ func (e *Elastico) notifyFinalCommittee() {
 	*/
 	finalCommList := e.committeeList[finNum]
 	for _, finalMember := range finalCommList {
-		data := map[string]interface{}{"Identity" : e.Identity}
+		data := map[string]interface{}{"Identity": e.Identity}
 		// construct the msg
-		msg := map[string]interface{}{"data" : data , "type" : "notify final member"}
+		msg := map[string]interface{}{"data": data, "type": "notify final member"}
 		finalMember.send(msg)
 	}
 }
@@ -3126,7 +3122,6 @@ func (e *Elastico) processFinalprePrepareMsg(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode final pre-prepare msg", true)
 
-
 	// verify the Final pre-prepare message
 	verified := e.verifyFinalPrePrepare(decodeMsg)
 	if verified {
@@ -3202,7 +3197,6 @@ func (e *Elastico) verifyCommit(msg CommitMsg) bool {
 	if viewID != e.viewID {
 		return false
 	}
-	// log.Info("commit verified")
 	return true
 }
 
