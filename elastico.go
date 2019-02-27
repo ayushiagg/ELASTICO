@@ -517,7 +517,10 @@ type PrepareMsgData struct {
 	Identity IDENTITY
 }
 
-
+type CommitMsgData struct {
+	Digest   string
+	Identity IDENTITY
+}
 
 func (e *Elastico) getKey() {
 	/*
