@@ -1579,7 +1579,7 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 		digest := prePreparedData.Digest
 		//  make prepare_contents Ordered Dict for signatures purpose
 
-		prepareContents := map[string]interface{}{"type": "Finalprepare", "viewId": e.viewID, "seq": seqnum, "digest": digest}
+		prepareContents := PrepareContents{Type : "Finalprepare", ViewID: e.viewID, Seq : seqnum, Digest : digest}
 		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
 		prepareMsg := map[string]interface{}{"type": "Finalprepare", "prepareData": prepareContents, "sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
 		FinalprepareMsgList = append(FinalprepareMsgList, prepareMsg)
