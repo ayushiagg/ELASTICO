@@ -512,6 +512,11 @@ type Elastico struct {
 	FinalcommittedData    map[int]map[int][]Transaction
 }
 
+type PrepareMsgData struct {
+	Digest   string
+	Identity IDENTITY
+}
+
 
 
 func (e *Elastico) getKey() {
