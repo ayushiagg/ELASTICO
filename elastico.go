@@ -2903,12 +2903,9 @@ func (e *Elastico) notifyFinalCommittee() {
 	*/
 	finalCommList := e.committeeList[finNum]
 	for _, finalMember := range finalCommList {
-		data := make(map[string]interface{})
-		data["Identity"] = e.Identity
+		data := map[string]interface{}{"Identity" : e.Identity}
 		// construct the msg
-		msg := make(map[string]interface{})
-		msg["data"] = data
-		msg["type"] = "notify final member"
+		msg := map[string]interface{}{"data" : data , "type" : "notify final member"}
 		finalMember.send(msg)
 	}
 }
