@@ -1391,32 +1391,35 @@ func (e *Elastico) isPrepared() bool {
 								break
 							}
 						}
-						// condition for Prepared state
-						if count >= 2*f{
+					}
+					// condition for Prepared state
+					if count >= 2*f {
 
-							if _ , ok := preparedData[e.viewID] ; ok == false{
+						if _, ok := preparedData[e.viewID]; ok == false {
 
-								preparedData[e.viewID] = make(map[int]interface{})
-							}
-							preparedViewId := preparedData[e.viewID].(map[int]interface{})
-							if  _ , ok := preparedViewId[seqnum] ; ok == false{
-
-								preparedViewId[seqnum] = make([]Transaction,0)
-							}
-							preparedViewId[seqnum] = append(preparedViewId[seqnum], requestMsg)
+							preparedData[e.viewID] = make(map[int][]Transaction)
 						}
+						preparedViewID := preparedData[e.viewID]
+						if _, ok := preparedViewID[seqnum]; ok == false {
 
+							preparedViewID[seqnum] = make([]Transaction, 0)
+						}
+						for _, txn := range requestMsg {
+
+							preparedViewID[seqnum] = append(preparedViewID[seqnum], txn)
+						}
+						preparedData[e.viewID][seqnum] = preparedViewID[seqnum]
 					}
 				}
-
 			}
-		}
-		if len(preparedData) > 0{
 
-			e.preparedData = preparedData
-			return true
 		}
-	*/
+	}
+	if len(preparedData) > 0 {
+		e.preparedData = preparedData
+		return true
+	}
+
 	return false
 }
 
