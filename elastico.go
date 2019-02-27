@@ -2636,15 +2636,15 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 }
 
 // FinalpbftProcessMessage :- Process the messages related to Pbft!
-func (e *Elastico) FinalpbftProcessMessage(msg map[string]interface{}) {
+func (e *Elastico) FinalpbftProcessMessage(msg msgType) {
 
-	if msg["type"] == "Finalpre-prepare" {
+	if msg.Type == "Finalpre-prepare" {
 		e.processFinalprePrepareMsg(msg)
 
-	} else if msg["type"] == "Finalprepare" {
+	} else if msg.Type == "Finalprepare" {
 		e.processFinalprepareMsg(msg)
 
-	} else if msg["type"] == "Finalcommit" {
+	} else if msg.Type == "Finalcommit" {
 		e.processFinalcommitMsg(msg)
 	}
 }
