@@ -2706,16 +2706,19 @@ func (e *Elastico) processPrepareMsg(msg msgType) {
 	}
 }
 
-func (e *Elastico) processFinalprepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processFinalprepareMsg(msg msgType) {
 	/*
 		process final prepare msg
 	*/
+	var decodeMsg PrepareMsg
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err ,  "fail to decode final prepare msg" , true)
 	// verify the prepare message
-	verified := e.verifyFinalPrepare(msg)
+	verified := e.verifyFinalPrepare(decodeMsg)
 	if verified {
 
 		// Log the prepare msgs!
-		e.logFinalPrepareMsg(msg)
+		e.logFinalPrepareMsg(decodeMsg)
 	}
 }
 
