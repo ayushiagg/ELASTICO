@@ -1939,41 +1939,74 @@ func (e *Elastico) isFinalPrepared() bool {
 	/*
 		Check if the state is prepared or not
 	*/
-	// //  collect prepared data
-	// preparedData = dict()
-	// f = (c - 1)//3
-	// //  check for received request messages
-	// for socket in self.Finalpre_prepareMsgLog:
-	// 	//  In current View Id
-	// 	if self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
-	// 		//  request msg of pre-prepare request
-	// 		requestMsg = self.Finalpre_prepareMsgLog[socket]["message"]
-	// 		//  digest of the message
-	// 		digest = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
-	// 		//  get sequence number of this msg
-	// 		seqnum = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
-	// 		//  find Prepare msgs for this view and sequence number
-	// 		if self.viewId in self.FinalprepareMsgLog and seqnum in self.FinalprepareMsgLog[self.viewId]:
-	// 			//  need to find matching prepare msgs from different replicas atleast c//2 + 1
-	// 			count = 0
-	// 			for replicaId in self.FinalprepareMsgLog[self.viewId][seqnum]:
-	// 				for msg in self.FinalprepareMsgLog[self.viewId][seqnum][replicaId]:
-	// 					if msg["digest"] == digest:
-	// 						count += 1
-	// 						break
-	// 			//  condition for Prepared state
-	// 			if count >= 2*f:
+	//  collect prepared data
+	preparedData := make(map[int]map[int][]Transaction)
+	f := (c - 1)//3
+	//  check for received request messages
+	for socket := range e.Finalpre_prepareMsgLog{
 
-	// 				if self.viewId not in preparedData:
-	// 					preparedData[self.viewId] = dict()
-	// 				if seqnum not in preparedData[self.viewId]:
-	// 					preparedData[self.viewId][seqnum] = list()
-	// 				preparedData[self.viewId][seqnum].append(requestMsg)
-	// if len(preparedData) > 0:
-	// 	self.FinalpreparedData = preparedData
-	// 	return True
-	// return False
-	return true
+		//  In current View Id
+		socketMap := e.FinalPrePrepareMsgLog[socket]
+		prePrepareData := socketMap.PrePrepareData
+		if prePrepareData.ViewID == e.viewID{
+
+			//  request msg of pre-prepare request
+			requestMsg := socketMap.Message
+			
+			//  digest of the message
+			digest := prePrepareData.Digest 
+			//  get sequence number of this msg
+			seqnum := prePrepareData.Seq
+			//  find Prepare msgs for this view and sequence number
+			if _, presentView := e.FinalPrepareMsgLog[e.viewID] ; presentView ==true{
+				prepareMsgLogViewID := e.FinalPrepareMsgLog[e.viewID]
+			if _ , presentSeq := prepareMsgLogViewID[seqnum] ; presentSeq == true{
+
+				//  need to find matching prepare msgs from different replicas atleast c//2 + 1
+				count := 0
+				prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
+				for replicaId := range prepareMsgLogSeq{
+					prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
+					for _ , msg := range prepareMsgLogReplica{
+						checkdigest := msg.Digest
+						if checkdigest == digest{
+							count ++
+							break
+
+						}
+					}
+					
+				}
+				//  condition for Prepared state
+				if count >= 2*f{
+
+					if  _ , ok := preparedData[e.viewID] ; ok == false{
+
+						preparedData[e.viewID] = make(map[int][]Transaction)
+					}
+					preparedViewID := preparedData[e.viewID]
+					if  _, ok :=  not in preparedViewID[seqnum] ; ok == false{
+						
+						preparedViewID[seqnum] = amke([]Transaction , 0)
+					}
+					for _, txn := range requestMsg {
+
+						preparedViewID[seqnum] = append(preparedViewID[seqnum], txn)
+					}
+					preparedData[e.viewID][seqnum] = preparedViewID[seqnum]
+				}
+	
+			}	
+			 
+			}	
+		}
+	}
+	if len(preparedData) > 0{
+
+		e.FinalpreparedData = preparedData
+		return true
+	}
+	return false
 }
 
 func (e *Elastico) isCommitted() bool {
