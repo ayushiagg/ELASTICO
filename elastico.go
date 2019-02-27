@@ -2303,9 +2303,9 @@ func (e *Elastico) verifyFinalPrepare(msg PrepareMsg) bool {
 		log.Warn("wrong sign in verify final prepares")
 		return false
 	}
-	viewID := prepareData["viewId"].(int)
-	seq := prepareData["seq"].(int)
-	digest := prepareData["digest"].(string)
+	viewID := prepareData.ViewID
+	seq := prepareData.Seq
+	digest := prepareData.Digest
 	// check the view is same or not
 	if viewID != e.viewID {
 
