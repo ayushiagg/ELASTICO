@@ -1581,7 +1581,10 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 
 		prepareContents := PrepareContents{Type : "Finalprepare", ViewID: e.viewID, Seq : seqnum, Digest : digest}
 		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
-		prepareMsg := map[string]interface{}{"type": "Finalprepare", "prepareData": prepareContents, "sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
+
+		data := map[string]interface{}{"PrepareData": prepareContents, "Sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
+
+		prepareMsg := map[string]interface{}{ "data" : data , "type": "Finalprepare"}
 		FinalprepareMsgList = append(FinalprepareMsgList, prepareMsg)
 	}
 	return FinalprepareMsgList
