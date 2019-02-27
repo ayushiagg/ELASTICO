@@ -501,16 +501,18 @@ type Elastico struct {
 	viewID                int
 	faulty                bool
 	prePrepareMsgLog      map[string]PrePrepareMsg
-	prepareMsgLog         map[int]interface{}
-	commitMsgLog          map[int]interface{}
-	preparedData          map[int]interface{}
-	committedData         map[int]interface{}
-	FinalPrePrepareMsgLog map[string]interface{}
-	FinalPrepareMsgLog    map[int]interface{}
-	FinalcommitMsgLog     map[int]interface{}
-	FinalpreparedData     map[int]interface{}
-	FinalcommittedData    map[int]interface{}
+	prepareMsgLog         map[int]map[int]map[string][]PrepareMsgData
+	commitMsgLog          map[int]map[int]map[string][]CommitMsgData
+	preparedData          map[int]map[int][]Transaction
+	committedData         map[int]map[int][]Transaction
+	FinalPrePrepareMsgLog map[string]PrePrepareMsg
+	FinalPrepareMsgLog    map[int]map[int]map[string][]PrepareMsgData
+	FinalcommitMsgLog     map[int]map[int]map[string][]CommitMsgData
+	FinalpreparedData     map[int]map[int][]Transaction
+	FinalcommittedData    map[int]map[int][]Transaction
 }
+
+
 
 func (e *Elastico) getKey() {
 	/*
