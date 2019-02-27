@@ -2366,44 +2366,45 @@ func (e *Elastico) logPrepareMsg(msg PrepareMsg) {
 
 }
 
-func (e *Elastico) logFinalPrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) logFinalPrepareMsg(msg PrepareMsg) {
 	/*
 		log the prepare msg
 	*/
-	identityobj := msg["Identity"].(IDENTITY)
-	prepareData := msg["prepareData"].(map[string]interface{})
-	viewID := prepareData["viewId"].(int)
-	seqnum := prepareData["seq"].(int)
+	identityobj := msg.Identity
+	prepareData := msg.PrepareData
+	viewID := prepareData.ViewID
+	seqnum := prepareData.Seq
+
 	socketID := identityobj.IP + ":" + strconv.Itoa(identityobj.Port)
 
 	// add msgs for this view
 	if _, ok := e.FinalPrepareMsgLog[viewID]; ok == false {
 
-		e.FinalPrepareMsgLog[viewID] = make(map[int]interface{})
+		e.FinalPrepareMsgLog[viewID] = make(map[int]map[string][]PrepareMsgData)
 	}
 
-	prepareMsgLogViewID := e.FinalPrepareMsgLog[viewID].(map[int]interface{})
+	prepareMsgLogViewID := e.FinalPrepareMsgLog[viewID]
 	// add msgs for this sequence num
 	if _, ok := prepareMsgLogViewID[seqnum]; ok == false {
 
-		prepareMsgLogViewID[seqnum] = make(map[string]interface{})
+		prepareMsgLogViewID[seqnum] = make(map[string][]PrepareMsgData)
 	}
 
 	// add all msgs from this sender
-	prepareMsgLogSeq := prepareMsgLogViewID[seqnum].(map[string]interface{})
+	prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
 	if _, ok := prepareMsgLogSeq[socketID]; ok == false {
 
-		prepareMsgLogSeq[socketID] = make([]map[string]interface{}, 0)
+		prepareMsgLogSeq[socketID] = make([]PrepareMsgData, 0)
 	}
 
 	// ToDo: check that the msg appended is dupicate or not
 	// log only required details from the prepare msg
-	prepareDataDigest := prepareData["digest"].(string)
-	msgDetails := map[string]interface{}{"digest": prepareDataDigest, "Identity": identityobj}
+	prepareDataDigest := prepareData.Digest
+	msgDetails := PrepareMsgData{Digest: prepareDataDigest, Identity: identityobj}
 	// append msg to prepare msg log
-	prepareMsgLogSocket := prepareMsgLogSeq[socketID].([]map[string]interface{})
+	prepareMsgLogSocket := prepareMsgLogSeq[socketID]
 	prepareMsgLogSocket = append(prepareMsgLogSocket, msgDetails)
-
+	e.FinalPrepareMsgLog[viewID][seqnum][socketID] = prepareMsgLogSocket
 }
 
 func (e *Elastico) checkCountForConsensusData() {
