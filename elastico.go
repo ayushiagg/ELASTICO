@@ -2466,12 +2466,12 @@ func (e *Elastico) unionViews(nodeData, incomingData []IDENTITY) []IDENTITY {
 	return nodeData
 }
 
-func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
+func (e *Elastico) verifyPrepare(msg PrepareMsg) bool {
 	/*
 	 Verify prepare msgs
 	*/
 	// verify Pow
-	identityobj := msg["Identity"].(IDENTITY)
+	identityobj := msg.Identity
 	if e.verifyPoW(identityobj) == false {
 
 		log.Warn("wrong pow in verify prepares")
@@ -2479,8 +2479,8 @@ func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	}
 
 	// verify signatures of the received msg
-	sign := msg["sign"].(string)
-	prepareData := msg["prepareData"].(map[string]interface{})
+	sign := msg.Sign
+	prepareData := msg.PrepareData
 	PrepareContentsDigest := e.digestPrepareMsg(prepareData)
 	PK := identityobj.PK
 	if e.verifySign(sign, PrepareContentsDigest, &PK) == false {
@@ -2490,9 +2490,9 @@ func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	}
 
 	// check the view is same or not
-	viewID := prepareData["viewId"].(int)
-	seq := prepareData["seq"].(int)
-	digest := prepareData["digest"].(string)
+	viewID := prepareData.ViewID
+	seq := prepareData.Seq
+	digest := prepareData.Digest
 	if viewID != e.viewID {
 
 		log.Warn("wrong view in verify prepares")
@@ -2501,13 +2501,11 @@ func (e *Elastico) verifyPrepare(msg map[string]interface{}) bool {
 	// verifying the digest of request msg
 	for socketID := range e.prePrepareMsgLog {
 
-		prePrepareMsg := e.prePrepareMsgLog[socketID].(map[string]interface{})
-		prePrepareData := prePrepareMsg["pre-prepareData"].(map[string]interface{})
-		prePrepareView := prePrepareData["viewId"].(int)
-		prePrepareSeq := prePrepareData["seq"].(int)
-		prePrepareDigest := prePrepareData["digest"].(string)
-		if prePrepareView == viewID && prePrepareSeq == seq && prePrepareDigest == digest {
+		prePrepareMsg := e.prePrepareMsgLog[socketID]
+		prePrepareData := prePrepareMsg.PrePrepareData
 
+		if prePrepareData.ViewID == viewID && prePrepareData.Seq == seq && prePrepareData.Digest == digest {
+			// fmt.Println("prepared verified")
 			return true
 		}
 	}
