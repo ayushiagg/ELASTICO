@@ -1550,14 +1550,16 @@ func (e *Elastico) constructPrepare() []map[string]interface{} {
 	//  loop over all pre-prepare msgs
 	for socketID := range e.prePrepareMsgLog {
 
-		msg := e.prePrepareMsgLog[socketID].(map[string]interface{})
-		prePreparedData := msg["pre-prepareData"].(map[string]interface{})
-		seqnum := prePreparedData["seq"].(int)
-		digest := prePreparedData["digest"].(string)
+		msg := e.prePrepareMsgLog[socketID]
+		prePreparedData := msg.PrePrepareData
+		seqnum := prePreparedData.Seq
+		digest := prePreparedData.Digest
+
 		//  make prepare_contents Ordered Dict for signatures purpose
-		prepareContents := map[string]interface{}{"type": "prepare", "viewId": e.viewID, "seq": seqnum, "digest": digest}
+		prepareContents := PrepareContents{Type: "prepare", ViewID: e.viewID, Seq: seqnum, Digest: digest}
 		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
-		preparemsg := map[string]interface{}{"type": "prepare", "prepareData": prepareContents, "sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
+		data := map[string]interface{}{"PrepareData": prepareContents, "Sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
+		preparemsg := map[string]interface{}{"data": data, "type": "prepare"}
 		prepareMsgList = append(prepareMsgList, preparemsg)
 	}
 	return prepareMsgList
