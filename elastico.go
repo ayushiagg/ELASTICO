@@ -2688,16 +2688,21 @@ func (e *Elastico) processFinalcommitMsg(msg msgType) {
 	}
 }
 
-func (e *Elastico) processPrepareMsg(msg map[string]interface{}) {
+func (e *Elastico) processPrepareMsg(msg msgType) {
 	/*
 		process prepare msg
 	*/
 	// verify the prepare message
-	verified := e.verifyPrepare(msg)
+	var decodeMsg PrepareMsg
+
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail to decode prepare msg", true)
+
+	verified := e.verifyPrepare(decodeMsg)
 	if verified {
 
 		// Log the prepare msgs!
-		e.logPrepareMsg(msg)
+		e.logPrepareMsg(decodeMsg)
 	}
 }
 
