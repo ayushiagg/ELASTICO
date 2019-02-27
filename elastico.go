@@ -1799,30 +1799,43 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 	}
 }
 
-func (e *Elastico) logCommitMsg(msg map[string]interface{}) {
+func (e *Elastico) logCommitMsg(msg CommitMsg) {
 	/*
 	 log the commit msg
 	*/
-	// viewId = msg["commitData"]["viewId"]
-	// seqnum = msg["commitData"]["seq"]
-	// socketId = msg["Identity"].IP +  ":" + str(msg["Identity"].Port)
-	// # add msgs for this view
-	// if viewId not in self.commitMsgLog:
-	// 	self.commitMsgLog[viewId] = dict()
+	identityobj := msg.Identity
+	commitContents := msg.CommitData
+	viewID := commitContents.ViewID
+	seqnum := commitContents.Seq
+	socketID := msg.Identity.IP + ":" + strconv.Itoa(msg.Identity.Port)
 
-	// # add msgs for this sequence num
-	// if seqnum not in self.commitMsgLog[viewId]:
-	// 	self.commitMsgLog[viewId][seqnum] = dict()
+	// add msgs for this view
+	if _, ok := e.commitMsgLog[viewID]; ok == false {
 
-	// # add all msgs from this sender
-	// if socketId not in self.commitMsgLog[viewId][seqnum]:
-	// 	self.commitMsgLog[viewId][seqnum][socketId] = list()
+		e.commitMsgLog[viewID] = make(map[int]map[string][]CommitMsgData)
+	}
 
-	// # log only required details from the commit msg
-	// msgDetails = {"digest" : msg["commitData"]["digest"], "Identity" : msg["Identity"]}
-	// # append msg
-	// logging.warning("Log committed msg for view %s, seqnum %s", str(viewId), str(seqnum))
-	// self.commitMsgLog[viewId][seqnum][socketId].append(msgDetails)
+	commitMsgLogViewID := e.commitMsgLog[viewID]
+	// add msgs for this sequence num
+	if _, ok := commitMsgLogViewID[seqnum]; ok == false {
+
+		commitMsgLogViewID[seqnum] = make(map[string][]CommitMsgData)
+	}
+
+	// add all msgs from this sender
+	commitMsgLogSeq := commitMsgLogViewID[seqnum]
+	if _, ok := commitMsgLogSeq[socketID]; ok == false {
+
+		commitMsgLogSeq[socketID] = make([]CommitMsgData, 0)
+	}
+
+	// log only required details from the commit msg
+	commitDataDigest := commitContents.Digest
+	msgDetails := CommitMsgData{Digest: commitDataDigest, Identity: identityobj}
+	// append msg
+	commitMsgLogSocket := commitMsgLogSeq[socketID]
+	commitMsgLogSocket = append(commitMsgLogSocket, msgDetails)
+	e.commitMsgLog[viewID][seqnum][socketID] = commitMsgLogSocket
 }
 
 //Sign :- sign the byte array
