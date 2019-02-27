@@ -2104,54 +2104,82 @@ func (e *Elastico) isFinalCommitted() bool {
 	/*
 		Check if the state is committed or not
 	*/
-	// // collect committed data
-	// committedData = dict()
-	// f = (c - 1)//3
-	// // check for received request messages
-	// for socket in self.Finalpre_prepareMsgLog:
-	// 	// In current View Id
-	// 	if self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["viewId"] == self.viewId:
-	// 		// request msg of pre-prepare request
-	// 		requestMsg = self.Finalpre_prepareMsgLog[socket]["message"]
-	// 		// digest of the message
-	// 		digest = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["digest"]
-	// 		// get sequence number of this msg
-	// 		seqnum = self.Finalpre_prepareMsgLog[socket]["pre-prepareData"]["seq"]
-	// 		if self.viewId in self.FinalpreparedData and seqnum in self.FinalpreparedData[self.viewId]:
-	// 			for prepareMsg in self.FinalpreparedData[self.viewId][seqnum]:
-	// 				if txnHexdigest(prepareMsg) == digest:
-	// 					// pre-prepared matched and prepared is also true, check for commits
-	// 					if self.viewId in self.FinalcommitMsgLog:
-	// 						if seqnum in self.FinalcommitMsgLog[self.viewId]:
-	// 							count = 0
-	// 							logging.warning("CHECK FOR COUNT IN COMMITTED BY PORT %s" , str(self.Port))
-	// 							for replicaId in self.FinalcommitMsgLog[self.viewId][seqnum]:
-	// 								for msg in self.FinalcommitMsgLog[self.viewId][seqnum][replicaId]:
-	// 									if msg["digest"] == digest:
-	// 										count += 1
-	// 										break
-	// 							// ToDo: condition check
-	// 							if count >= 2*f + 1:
-	// 								if self.viewId not in committedData:
-	// 									committedData[self.viewId] = dict()
-	// 								if seqnum not in committedData[self.viewId]:
-	// 									committedData[self.viewId][seqnum] = list()
-	// 								committedData[self.viewId][seqnum].append(requestMsg)
-	// 						else:
-	// 							logging.error("no seqnum found in commit msg log")
-	// 					else:
-	// 						logging.error("no view id found in commit msg log")
-	// 				else:
-	// 					logging.error("wrong digest in is committed")
-	// 		else:
-	// 			logging.error("view and seqnum not found in isCommitted")
-	// 	else:
-	// 		logging.error("wrong view in is committed")
-	// if len(committedData) > 0:
-	// 	self.FinalcommittedData = committedData
-	// 	return True
-	// return False
-	return true
+	// collect committed data
+	committedData := make(map[int]map[int][]Transaction)
+	f := (c - 1)/3
+	// check for received request messages
+	for socket := range e.FinalPrePrepareMsgLog{
+		prePrepareMsg := e.FinalPrePrepareMsgLog[socket]
+		// In current View Id
+		if prePrepareMsg.PrePrepareData.ViewID == e.viewID{
+			// request msg of pre-prepare request
+			requestMsg := prePrepareMsg.Message
+			// digest of the message
+			digest := prePrepareMsg.PrePrepareData.Digest
+			// get sequence number of this msg
+			seqnum := prePrepareMsg.PrePrepareData.Seq
+			if _, presentView := e.FinalpreparedData[e.viewID] ; presentView == true{
+				if _,presentSeq := e.FinalpreparedData[e.viewID][seqnum] ; presentSeq == true{
+					if txnHexdigest(e.FinalpreparedData[e.viewID][seqnum]) == digest{
+						// pre-prepared matched and prepared is also true, check for commits
+						if _, ok := e.FinalcommitMsgLog[e.viewID] ; ok == true{
+							if _ , okk := e.FinalcommitMsgLog[e.viewID][seqnum] ; okk == true{
+								count := 0
+								for replicaId := range e.FinalcommitMsgLog[e.viewID][seqnum]{
+									for _ , msg := range e.FinalcommitMsgLog[e.viewID][seqnum][replicaId]{
+
+										if msg.Digest == digest{
+											count ++
+											break
+										}
+									}
+								}
+								// ToDo: condition check
+								if count >= 2*f + 1{
+									if _, presentview := committedData[e.viewID]; presentview == false {
+
+										committedData[e.viewID] = make(map[int][]Transaction)
+									}
+									if _, presentSeq := committedData[e.viewID][seqnum]; presentSeq == false {
+
+										committedData[e.viewID][seqnum] = make([]Transaction, 0)
+									}
+									for _, txn := range requestMsg {
+
+										committedData[e.viewID][seqnum] = append(committedData[e.viewID][seqnum], txn)
+									}
+								}
+								
+							} else{
+
+								log.Error("no seqnum found in commit msg log")
+							}
+						} else{
+							log.Error("no view id found in commit msg log")
+						}
+					} else{
+
+						log.Error("wrong digest in is committed")
+					}
+				} else{
+
+					log.Error("seq not found in isCommitted")
+				}
+			} else{
+
+				log.Error("view not found in isCommitted")
+			}
+		} else{
+
+			log.Error("wrong view in is committed")
+		}
+	}
+	if len(committedData) > 0{
+
+		e.FinalcommittedData = committedData
+		return true
+	}
+	return false
 }
 
 func (e *Elastico) logFinalCommitMsg(msg map[string]interface{}) {
