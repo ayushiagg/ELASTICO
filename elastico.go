@@ -1332,22 +1332,23 @@ func (e *Elastico) runPBFT() {
 
 			// logging.warning("prepared done by %s" , str(e.Port))
 			e.state = ElasticoStates["PBFT_PREPARED"]
+		}
 
-		} else if e.state == ElasticoStates["PBFT_PREPARED"] {
+	} else if e.state == ElasticoStates["PBFT_PREPARED"] {
 
-			commitMsgList := e.constructCommit()
-			e.sendCommit(commitMsgList)
-			e.state = ElasticoStates["PBFT_COMMIT_SENT"]
+		commitMsgList := e.constructCommit()
+		e.sendCommit(commitMsgList)
+		e.state = ElasticoStates["PBFT_COMMIT_SENT"]
 
-		} else if e.state == ElasticoStates["PBFT_COMMIT_SENT"] {
+	} else if e.state == ElasticoStates["PBFT_COMMIT_SENT"] {
 
-			if e.isCommitted() {
+		if e.isCommitted() {
 
-				// logging.warning("committed done by %s" , str(e.Port))
-				e.state = ElasticoStates["PBFT_COMMITTED"]
-			}
+			// logging.warning("committed done by %s" , str(e.Port))
+			e.state = ElasticoStates["PBFT_COMMITTED"]
 		}
 	}
+
 }
 
 func (e *Elastico) isPrepared() bool {
