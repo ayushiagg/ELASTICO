@@ -2315,13 +2315,10 @@ func (e *Elastico) verifyFinalPrepare(msg PrepareMsg) bool {
 
 	// verifying the digest of request msg
 	for socketID := range e.FinalPrePrepareMsgLog {
-		prePrepareMsg := e.FinalPrePrepareMsgLog[socketID].(map[string]interface{})
-		prePrepareData := prePrepareMsg["pre-prepareData"].(map[string]interface{})
-		prePrepareView := prePrepareData["viewId"].(int)
-		prePrepareSeq := prePrepareData["seq"].(int)
-		prePrepareDigest := prePrepareData["digest"].(string)
-
-		if prePrepareView == viewID && prePrepareSeq == seq && prePrepareDigest == digest {
+		prePrepareMsg := e.FinalPrePrepareMsgLog[socketID]
+		prePrepareData := prePrepareMsg.PrePrepareData
+		
+		if prePrepareData.ViewID == viewID && prePrepareData.Seq == seq && prePrepareData.Digest == digest {
 
 			return true
 		}
