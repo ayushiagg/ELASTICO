@@ -846,17 +846,23 @@ func (e *Elastico) digestCommitments(receivedCommitments map[string]bool) []byte
 	return digest.Sum(nil)
 }
 
-func (e *Elastico) receiveFinalTxnBlock(msg map[string]interface{}) {
+func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 
-	data := msg["data"].(map[string]interface{})
-	identityobj := data["Identity"].(IDENTITY)
+	var decodeMsg FinalBlockMsg
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "fail in decoding the final block msg", true)
+
+	identityobj := decodeMsg.Identity
 	// verify the PoW of the sender
 	if e.verifyPoW(identityobj) {
 
-		sign := data["signature"].(string)
-		receivedCommitments := data["commitmentSet"].(map[string]bool)
-		finalTxnBlock := data["finalTxnBlock"].([]Transaction)
-		finalTxnBlockSignature := data["finalTxnBlockSignature"].(string)
+		sign := decodeMsg.Signature
+		receivedCommitments := decodeMsg.CommitSet
+
+		finalTxnBlock := decodeMsg.FinalBlock
+
+		finalTxnBlockSignature := decodeMsg.FinalBlockSign
+
 		// verify the signatures
 		receivedCommitmentDigest := e.digestCommitments(receivedCommitments)
 		PK := identityobj.PK
