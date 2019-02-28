@@ -131,37 +131,37 @@ func consistencyProtocol() (bool, map[string]bool) {
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
 	*/
-	// // ToDo: implement interactive consistency Protocol
-	// for node := range networkNodes{
+	// ToDo: implement interactive consistency Protocol
+	for _, node := range networkNodes {
 
-	// 	if node.isFinalMember(){
+		if node.isFinalMember() {
 
-	// 		if len(node.commitments) <= c/2{
+			if len(node.commitments) <= c/2 {
 
-	// 			log.Warn("insufficientCommitments")
-	// 			return false, "insufficientCommitments"
-	// 		}
-	// 	}
-	// }
+				log.Warn("insufficientCommitments")
+				return false, "insufficientCommitments"
+			}
+		}
+	}
 
-	//  if len(commitmentSet) == 0{
+	if len(commitmentSet) == 0 {
 
-	// 	 flag := true
-	// 	 for node := range networkNodes{
+		flag := true
+		for _, node := range networkNodes {
 
-	// 		 if node.isFinalMember(){
+			if node.isFinalMember() {
 
-	// 			 if flag && len(commitmentSet) == 0{
+				if flag && len(commitmentSet) == 0 {
 
-	// 				 flag = false
-	// 				 commitmentSet = node.commitments
-	// 			 } else{
+					flag = false
+					commitmentSet = node.commitments
+				} else {
 
-	// 				 commitmentSet = commitmentSet.intersection(node.commitments)
-	// 			 }
-	// 		 }
-	// 	 }
-	//  }
+					// commitmentSet = commitmentSet.intersection(node.commitments)
+				}
+			}
+		}
+	}
 	return true, commitmentSet
 }
 
