@@ -1072,18 +1072,20 @@ func (e *Elastico) receive(msg msgType) {
 		}
 	} else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
 		e.FinalpbftProcessMessage(msg)
+	} else if msg.Type == "FinalBlock" {
+
+		e.receiveFinalTxnBlock(msg)
+
+	} else if msg.Type == "reset-all" {
+		var decodeMsg ResetMsg
+		err := json.Unmarshal(msg.Data, &decodeMsg)
+		failOnError(err, "fail to decode reset msg", true)
+		if e.verifyPoW(decodeMsg.Identity) {
+			// reset the elastico node
+			e.reset()
+		}
+
 	}
-	/* else if msg.Type == "finalTxnBlock" {
-			e.receiveFinalTxnBlock(msg)
-	}*/
-
-	/*  else if msg.Type == "reset-all" {
-		// ToDo: Add verification of pow here.
-		// reset the elastico node
-		e.reset()
-
-	} */ /*
-	 */
 }
 
 // ElasticoInit :- initialise of data members
