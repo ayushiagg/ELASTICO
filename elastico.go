@@ -765,7 +765,8 @@ func (e *Elastico) receiveNewNode(msg msgType) {
 		if ok == false {
 
 			// Add the Identity in committee
-			e.committeeList[identityobj.CommitteeID] = []IDENTITY{identityobj}
+			e.committeeList[identityobj.CommitteeID] = make([]IDENTITY, 0)
+			e.committeeList[identityobj.CommitteeID] = append(e.committeeList[identityobj.CommitteeID], identityobj)
 
 		} else if len(e.committeeList[identityobj.CommitteeID]) < c {
 			// Add the Identity in committee
