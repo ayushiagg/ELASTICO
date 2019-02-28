@@ -46,7 +46,7 @@ var s = 2
 var c = 4
 
 // D - difficulty level , leading bits of PoW must have D 0's (keep w.r.t to hex)
-var D = 3
+var D = 4
 
 // r - number of bits in random string
 var r int64 = 4
@@ -185,10 +185,8 @@ func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txn
 		for _, memberID := range commMembers {
 
 			// send the committee members , final committee members
-			data := make(map[string]interface{})
-			data["CommitteeMembers"] = commMembers
-			data["FinalCommitteeMembers"] = finalCommitteeMembers
-			data["Identity"] = identityobj
+			data := map[string]interface{}{"CommitteeMembers": commMembers, "FinalCommitteeMembers": finalCommitteeMembers, "Identity": identityobj}
+
 			// give txns only to the primary node
 			if memberID.isEqual(&primaryID) {
 				data["Txns"] = txns[CommitteeID]
