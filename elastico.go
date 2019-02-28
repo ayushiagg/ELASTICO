@@ -3380,6 +3380,7 @@ func createNodes() {
 			networkNodes[i].ElasticoInit() //initialise elastico nodes
 		}
 	}
+	commitmentSet = make(map[string]bool)
 }
 
 func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
