@@ -1052,6 +1052,8 @@ func (e *Elastico) receive(msg msgType) {
 		if e.verifyPoW(identityobj) && e.CommitteeID == finNum {
 			e.isFinal = true
 		}
+	} else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
+		e.FinalpbftProcessMessage(msg)
 	}
 	/* else if msg.Type == "finalTxnBlock" {
 			e.receiveFinalTxnBlock(msg)
