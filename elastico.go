@@ -338,7 +338,8 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 	*/
 	// comparing uncomparable type []interface {} ie. set Of Rs
 
-	// ToDo: compare set of Rs
+	// ToDo: compare set of Rs and fix this
+
 	// listOfRsInI := i.PoW["setOfRs"].([]interface{})
 	// setOfRsInI := make([]string, len(listOfRsInI))
 	// for i := range listOfRsInI {
@@ -635,6 +636,7 @@ func (e *Elastico) computePoW() {
 			e.PoW["setOfRs"] = randomsetR
 			e.PoW["nonce"] = nonce
 			// change the state after solving the puzzle
+			fmt.Println("PoW computed", e.Port)
 			e.state = ElasticoStates["PoW Computed"]
 		} else {
 			// try for other nonce
@@ -664,7 +666,7 @@ func (e *Elastico) checkCommitteeFull() {
 	}
 	if flag == 0 {
 
-		log.Warn("committees full  - good")
+		log.Info("committees full  - good")
 		if e.state == ElasticoStates["RunAsDirectory after-TxnReceived"] {
 
 			// notify the final members
@@ -702,7 +704,7 @@ func (e *Elastico) receiveViews(msg msgType) {
 			if len(Txns) > 0 {
 
 				e.txnBlock = e.unionTxns(e.txnBlock, Txns)
-				log.Warn("I am primary", e.Port)
+				log.Info("I am primary", e.Port)
 				e.primary = true
 			}
 
@@ -1041,7 +1043,7 @@ func (e *Elastico) receive(msg msgType) {
 
 		e.receiveIntraCommitteeBlock(msg)
 	} else if msg.Type == "notify final member" {
-		log.Warn("notifying final member ", e.Port)
+		log.Info("notifying final member ", e.Port)
 		var decodeMsg NotifyFinalMsg
 		err := json.Unmarshal(msg.Data, &decodeMsg)
 		failOnError(err, "error in decoding final member msg", true)
@@ -1059,10 +1061,8 @@ func (e *Elastico) receive(msg msgType) {
 		// reset the elastico node
 		e.reset()
 
-	} */ /* else if msg.Type == "Finalpre-prepare" || msg.Type == "Finalprepare" || msg.Type == "Finalcommit" {
-		e.FinalpbftProcessMessage(msg)
-	}
-	*/
+	} */ /*
+	 */
 }
 
 // ElasticoInit :- initialise of data members
@@ -1246,8 +1246,7 @@ func (e *Elastico) executePoW() {
 
 // SendtoFinal :- Each committee member sends the signed value(txn block after intra committee consensus along with signatures to final committee
 func (e *Elastico) SendtoFinal() {
-	// PK := e.key.Public() // public key
-	// rsaPublickey := PK.(*rsa.PublicKey) //converted to rsa public key object
+
 	for viewID := range e.committedData {
 		committedDataViewID := e.committedData[viewID]
 		for seqnum := range committedDataViewID {
@@ -1257,8 +1256,8 @@ func (e *Elastico) SendtoFinal() {
 			e.txnBlock = e.unionTxns(e.txnBlock, msgList)
 		}
 	}
-	log.Warn("size of committee members", len(e.finalCommitteeMembers))
-	log.Warn("send to final---txns", e.CommitteeID, e.Port, e.txnBlock)
+	log.Warn("size of fin committee members", len(e.finalCommitteeMembers))
+	log.Warn("size of txns in txn block", len(e.txnBlock))
 	for _, finalID := range e.finalCommitteeMembers {
 
 		//  here txnBlock is a set, since sets are unordered hence can't sign them. So convert set to list for signing
@@ -1414,6 +1413,7 @@ func (e *Elastico) isPrepared() bool {
 	}
 	if len(preparedData) > 0 {
 		e.preparedData = preparedData
+		log.Warn("prepared check done")
 		return true
 	}
 
@@ -1428,6 +1428,7 @@ func (e *Elastico) runFinalPBFT() {
 
 		if e.primary {
 
+			fmt.Println("port of final primary- ", e.Port)
 			// construct pre-prepare msg
 			finalPrePreparemsg := e.constructFinalPrePrepare()
 			// multicasts the pre-prepare msg to replicas
@@ -1467,6 +1468,7 @@ func (e *Elastico) runFinalPBFT() {
 		// ToDo: primary has not changed its state to "FinalPBFT_PREPARE_SENT"
 		if e.isFinalPrepared() {
 
+			fmt.Println("final prepared done")
 			e.state = ElasticoStates["FinalPBFT_PREPARED"]
 		}
 	} else if e.state == ElasticoStates["FinalPBFT_PREPARED"] {
@@ -1478,7 +1480,6 @@ func (e *Elastico) runFinalPBFT() {
 	} else if e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] {
 
 		if e.isFinalCommitted() {
-
 			// for viewID := range e.FinalcommittedData {
 
 			// 	for seqnum := range e.FinalcommittedData[viewID] {
@@ -1788,7 +1789,7 @@ func (e *Elastico) verifyAndMergeConsensusData() {
 		}
 	}
 	if len(e.mergedBlock) > 0 {
-
+		fmt.Println("final committee port - ", e.Port, "has merged data")
 		e.state = ElasticoStates["Merged Consensus Data"]
 	}
 }
@@ -1935,7 +1936,7 @@ func (e *Elastico) isFinalPrepared() bool {
 	*/
 	//  collect prepared data
 	preparedData := make(map[int]map[int][]Transaction)
-	f := (c - 1) //3
+	f := (c - 1) / 3
 	//  check for received request messages
 	for socket := range e.FinalPrePrepareMsgLog {
 
@@ -1967,6 +1968,8 @@ func (e *Elastico) isFinalPrepared() bool {
 								count++
 								break
 
+							} else {
+								log.Error("checkdigest doest not match")
 							}
 						}
 
@@ -1977,22 +1980,34 @@ func (e *Elastico) isFinalPrepared() bool {
 						if _, ok := preparedData[e.viewID]; ok == false {
 
 							preparedData[e.viewID] = make(map[int][]Transaction)
+						} else {
+							log.Error("view not there in prepared data")
 						}
 						preparedViewID := preparedData[e.viewID]
 						if _, ok := preparedViewID[seqnum]; ok == false {
 
 							preparedViewID[seqnum] = make([]Transaction, 0)
+						} else {
+							log.Error("seq not there in prepared data")
 						}
 						for _, txn := range requestMsg {
 
 							preparedViewID[seqnum] = append(preparedViewID[seqnum], txn)
 						}
 						preparedData[e.viewID][seqnum] = preparedViewID[seqnum]
+					} else {
+						log.Error("count is less than 2f")
 					}
 
+				} else {
+					log.Error("no seqnum in final preprepare msg log")
 				}
 
+			} else {
+				log.Error("no view in final preprepare msg log")
 			}
+		} else {
+			log.Error("pre-prepare data view id not matched")
 		}
 	}
 	if len(preparedData) > 0 {
@@ -2000,6 +2015,7 @@ func (e *Elastico) isFinalPrepared() bool {
 		e.FinalpreparedData = preparedData
 		return true
 	}
+	log.Error("len of prepared data == 0")
 	return false
 }
 
@@ -2089,6 +2105,7 @@ func (e *Elastico) isCommitted() bool {
 	if len(committedData) > 0 {
 
 		e.committedData = committedData
+		log.Info("committed check done by port - ", e.Port)
 		return true
 	}
 	return false
@@ -2430,7 +2447,7 @@ func (e *Elastico) checkCountForConsensusData() {
 	if flag == false {
 
 		// when sufficient number of blocks from each committee are received
-		log.Warn("good going for verify and merge")
+		log.Info("good going for verify and merge")
 		e.verifyAndMergeConsensusData()
 	}
 
@@ -2468,7 +2485,7 @@ func (e *Elastico) verifyPrepare(msg PrepareMsg) bool {
 	identityobj := msg.Identity
 	if e.verifyPoW(identityobj) == false {
 
-		log.Warn("wrong pow in verify prepares")
+		log.Error("wrong pow in verify prepares")
 		return false
 	}
 
@@ -2479,7 +2496,7 @@ func (e *Elastico) verifyPrepare(msg PrepareMsg) bool {
 	PK := identityobj.PK
 	if e.verifySign(sign, PrepareContentsDigest, &PK) == false {
 
-		log.Warn("wrong sign in verify prepares")
+		log.Error("wrong sign in verify prepares")
 		return false
 	}
 
@@ -2489,7 +2506,7 @@ func (e *Elastico) verifyPrepare(msg PrepareMsg) bool {
 	digest := prepareData.Digest
 	if viewID != e.viewID {
 
-		log.Warn("wrong view in verify prepares")
+		log.Error("wrong view in verify prepares")
 		return false
 	}
 	// verifying the digest of request msg
@@ -2499,7 +2516,6 @@ func (e *Elastico) verifyPrepare(msg PrepareMsg) bool {
 		prePrepareData := prePrepareMsg.PrePrepareData
 
 		if prePrepareData.ViewID == viewID && prePrepareData.Seq == seq && prePrepareData.Digest == digest {
-			// fmt.Println("prepared verified")
 			return true
 		}
 	}
@@ -2515,7 +2531,7 @@ func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transacti
 		flag := true
 		for _, txn := range actualTxns {
 			if txn.isEqual(transaction) {
-
+				log.Warn("see txns coming same")
 				flag = false
 				break
 			}
@@ -2567,9 +2583,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	}
 	PoW := identityobj.PoW
 	// fmt.Println(PoW)
-	if len(PoW) == 0 {
-		return false
-	}
+
 	hash := PoW["hash"].(string)
 	// length of hash in hex
 
@@ -2654,11 +2668,10 @@ func (e *Elastico) processCommitMsg(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode commit msg", true)
 
-	// fmt.Println("commit msg---------", decodeMsg)
-
+	log.Info("commit msg in--", e.Port, "msg -- ", decodeMsg)
 	verified := e.verifyCommit(decodeMsg)
 	if verified {
-
+		log.Info("commit verified")
 		// Log the commit msgs!
 		e.logCommitMsg(decodeMsg)
 	}
@@ -2674,9 +2687,10 @@ func (e *Elastico) processFinalcommitMsg(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode final commit msg", true)
 
+	log.Info("final commit msg in port--", e.Port, "with msg--", decodeMsg)
 	verified := e.verifyCommit(decodeMsg)
 	if verified {
-
+		fmt.Println("final commit verified")
 		// Log the commit msgs!
 		e.logFinalCommitMsg(decodeMsg)
 	}
@@ -2691,10 +2705,11 @@ func (e *Elastico) processPrepareMsg(msg msgType) {
 
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode prepare msg", true)
+	log.Info("prepare msg in--", e.Port, "msg---", decodeMsg)
 
 	verified := e.verifyPrepare(decodeMsg)
 	if verified {
-
+		log.Info("prepare verified")
 		// Log the prepare msgs!
 		e.logPrepareMsg(decodeMsg)
 	}
@@ -2708,9 +2723,11 @@ func (e *Elastico) processFinalprepareMsg(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode final prepare msg", true)
 	// verify the prepare message
+
+	log.Info("final prepare msg of port--", e.Port, "with msg--", decodeMsg)
 	verified := e.verifyFinalPrepare(decodeMsg)
 	if verified {
-
+		fmt.Println("FINAL PREPARE VERIFIED with port--", e.Port)
 		// Log the prepare msgs!
 		e.logFinalPrepareMsg(decodeMsg)
 	}
@@ -2726,7 +2743,7 @@ func (e *Elastico) verifyPrePrepare(msg PrePrepareMsg) bool {
 	// verify Pow
 	if e.verifyPoW(identityobj) == false {
 
-		log.Warn("wrong pow in  verify pre-prepare")
+		log.Error("wrong pow in  verify pre-prepare")
 		return false
 	}
 	// verify signatures of the received msg
@@ -2735,21 +2752,21 @@ func (e *Elastico) verifyPrePrepare(msg PrePrepareMsg) bool {
 	PK := identityobj.PK
 	if e.verifySign(sign, prePreparedDataDigest, &PK) == false {
 
-		log.Warn("wrong sign in  verify pre-prepare")
+		log.Error("wrong sign in  verify pre-prepare")
 		return false
 	}
 	// verifying the digest of request msg
 	prePreparedDataTxnDigest := prePreparedData.Digest
 	if txnHexdigest(txnBlockList) != prePreparedDataTxnDigest {
 
-		log.Warn("wrong digest in  verify pre-prepare")
+		log.Error("wrong digest in  verify pre-prepare")
 		return false
 	}
 	// check the view is same or not
 	prePreparedDataView := prePreparedData.ViewID
 	if prePreparedDataView != e.viewID {
 
-		log.Warn("wrong view in  verify pre-prepare")
+		log.Error("wrong view in  verify pre-prepare")
 		return false
 	}
 	// check if already accepted a pre-prepare msg for view v and sequence num n with different digest
@@ -2838,6 +2855,7 @@ func (e *Elastico) logPrePrepareMsg(msg PrePrepareMsg) {
 	// create a socket
 	socket := IP + ":" + strconv.Itoa(Port)
 	e.prePrepareMsgLog[socket] = msg
+	log.Info("logging the pre-prepare--", e.prePrepareMsgLog)
 }
 
 func (e *Elastico) logFinalPrePrepareMsg(msg PrePrepareMsg) {
@@ -2896,6 +2914,7 @@ func (e *Elastico) notifyFinalCommittee() {
 		notify the members of the final committee that they are the final committee members
 	*/
 	finalCommList := e.committeeList[finNum]
+	fmt.Println("len of final comm--", len(finalCommList))
 	for _, finalMember := range finalCommList {
 		data := map[string]interface{}{"Identity": e.Identity}
 		// construct the msg
@@ -2991,6 +3010,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 
 		// final committee member runs final pbft
 		e.state = ElasticoStates["FinalPBFT_NONE"]
+		fmt.Println("start pbft by final member with port--", e.Port)
 		e.runFinalPBFT()
 
 	} else if e.state == ElasticoStates["FinalPBFT_NONE"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE"] || e.state == ElasticoStates["FinalPBFT_PREPARE_SENT"] || e.state == ElasticoStates["FinalPBFT_PREPARED"] || e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"] {
@@ -3104,6 +3124,7 @@ func (e *Elastico) processPrePrepareMsg(msg msgType) {
 	verified := e.verifyPrePrepare(decodeMsg)
 	if verified {
 		// Log the pre-prepare msgs!
+		log.Info("pre-prepared verified by port--", e.Port)
 		e.logPrePrepareMsg(decodeMsg)
 
 	} else {
@@ -3121,10 +3142,11 @@ func (e *Elastico) processFinalprePrepareMsg(msg msgType) {
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 	failOnError(err, "fail to decode final pre-prepare msg", true)
 
+	log.Info("final pre-prepare msg of port", e.Port, "msg--", decodeMsg)
 	// verify the Final pre-prepare message
 	verified := e.verifyFinalPrePrepare(decodeMsg)
 	if verified {
-
+		log.Info("final pre-prepare verified")
 		// Log the final pre-prepare msgs!
 		e.logFinalPrePrepareMsg(decodeMsg)
 
@@ -3271,6 +3293,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 
 				response := node.execute(epochTxn)
 				if response == "reset" {
+					fmt.Println("call for reset")
 					// now reset the node
 					node.executeReset()
 					// adding the value reset for the node in the sharedobj

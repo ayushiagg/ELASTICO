@@ -1701,7 +1701,7 @@ class Elastico:
 			raise e
 
 
-	def runFinalPBFT(self , instance):
+	 runFinalPBFT(self , instance):
 		"""
 			Run PBFT by final committee members
 		"""
