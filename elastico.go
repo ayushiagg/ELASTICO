@@ -921,26 +921,38 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 	}
 }
 
+type FinalBlockMsg struct {
+	CommitSet      []string
+	Signature      string
+	Identity       IDENTITY
+	FinalBlock     []Transaction
+	FinalBlockSign string
+}
+
 // BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
 func (e *Elastico) BroadcastFinalTxn() {
 	/*
 		final committee members will broadcast S(commitmentSet), along with final set of
 		X(txn_block) to everyone in the network
 	*/
-	// boolVal , S = consistencyProtocol()
-	// if boolVal == False:
-	// 	return S
-	// commitmentList = list(S)
-	// PK = self.key.publickey().exportKey().decode()
-	// data = {"commitmentSet" : commitmentList, "signature" : self.sign(commitmentList) , "Identity" : self.Identity , "finalTxnBlock" : self.finalBlock["finalBlock"] , "finalTxnBlock_signature" : self.signTxnList(self.finalBlock["finalBlock"])}
-	// logging.warning("finalblock- %s" , str(self.finalBlock["finalBlock"]))
-	// # final Block sent to ntw
-	// self.finalBlock["sent"] = True
-	// # A final node which is already in received state should not change its state
-	// if self.state != ELASTICO_STATES["FinalBlockReceived"]:
-	// 	logging.warning("change state to FinalBlockSent by %s" , str(self.Port))
-	// 	self.state = ELASTICO_STATES["FinalBlockSent"]
-	// BroadcastTo_Network(data, "finalTxnBlock")
+	boolVal, S := consistencyProtocol()
+	if boolVal == false {
+
+		return S
+	}
+	commitmentList = list(S)
+	PK = e.key.publickey().exportKey().decode()
+	data := map[string]interface{}{"CommitSet": commitmentList, "Signature": e.sign(commitmentList), "Identity": e.Identity, "FinalBlock": e.finalBlock["finalBlock"], "FinalBlockSign": e.signTxnList(e.finalBlock["finalBlock"])}
+	log.Warn("finalblock-", e.finalBlock["finalBlock"])
+	// final Block sent to ntw
+	e.finalBlock["sent"] = true
+	// A final node which is already in received state should not change its state
+	if e.state != ElasticoStates["FinalBlockReceived"] {
+
+		e.state = ElasticoStates["FinalBlockSent"]
+	}
+	msg := map[string]interface{}{"data": data, "type": "FinalBlock"}
+	BroadcastTo_Network(msg)
 }
 
 func (e *Elastico) receiveIntraCommitteeBlock(msg msgType) {
