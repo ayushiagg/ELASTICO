@@ -405,7 +405,7 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 	/*
 		compare two objs are equal or not
 	*/
-	return t.Sender == transaction.Sender && t.Receiver == transaction.Receiver && t.Amount == transaction.Amount //&& t.timestamp == transaction.timestamp
+	return t.Sender == transaction.Sender && t.Receiver == transaction.Receiver && t.Amount.Cmp(transaction.Amount) == 0 //&& t.timestamp == transaction.timestamp
 }
 
 type msgType struct {
