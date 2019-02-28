@@ -351,7 +351,8 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 	// 	setOfRsIniobj[i] = listOfRsIniobj[i].(string)
 	// }
 
-	return i.IP == identityobj.IP && i.PK == identityobj.PK && i.CommitteeID == identityobj.CommitteeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
+	// return i.IP == identityobj.IP && i.PK == identityobj.PK && i.CommitteeID == identityobj.CommitteeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
+	return i.Port == identityobj.Port
 }
 
 func (i *IDENTITY) send(msg map[string]interface{}) {
