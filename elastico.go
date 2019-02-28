@@ -2960,6 +2960,10 @@ func (e *Elastico) getCommitment() string {
 	return hashVal
 }
 
+type ResetMsg struct {
+	Identity IDENTITY
+}
+
 func (e *Elastico) executeReset() {
 	/*
 		call for reset
