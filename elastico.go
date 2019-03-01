@@ -959,20 +959,22 @@ func mapToList(m map[string]bool) []string {
 }
 
 // BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
-func (e *Elastico) BroadcastFinalTxn() {
+func (e *Elastico) BroadcastFinalTxn() bool {
 	/*
 		final committee members will broadcast S(commitmentSet), along with final set of
 		X(txn_block) to everyone in the network
 	*/
+	// ToDo :- implement the consistency protocol
 	boolVal, S := consistencyProtocol()
 	if boolVal == false {
 
-		return S
+		return false
 	}
-	commitmentList = list(S)
-	PK = e.key.publickey().exportKey().decode()
-	data := map[string]interface{}{"CommitSet": commitmentList, "Signature": e.sign(commitmentList), "Identity": e.Identity, "FinalBlock": e.finalBlock["finalBlock"], "FinalBlockSign": e.signTxnList(e.finalBlock["finalBlock"])}
-	log.Warn("finalblock-", e.finalBlock["finalBlock"])
+
+	commitmentList := mapToList(S)
+	commitmentDigest := e.digestCommitments(commitmentList)
+	data := map[string]interface{}{"CommitSet": commitmentList, "Signature": e.Sign(commitmentDigest), "Identity": e.Identity, "FinalBlock": e.finalBlock.Txns, "FinalBlockSign": e.signTxnList(e.finalBlock.Txns)}
+	log.Warn("finalblock-", e.finalBlock.Txns)
 	// final Block sent to ntw
 	e.finalBlock.Sent = true
 	// A final node which is already in received state should not change its state
