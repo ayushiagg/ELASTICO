@@ -1015,7 +1015,7 @@ func (e *Elastico) receiveIntraCommitteeBlock(msg msgType) {
 				e.CommitteeConsensusDataTxns[identityobj.CommitteeID] = make(map[string][]Transaction)
 			}
 			TxnBlockDigest := txnHexdigest(TxnBlock)
-			if _, ok := e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest]; ok == false {
+			if _, okk := e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest]; okk == false {
 				e.CommitteeConsensusData[identityobj.CommitteeID][TxnBlockDigest] = make([]string, 0)
 				// store the txns for this digest
 				e.CommitteeConsensusDataTxns[identityobj.CommitteeID][TxnBlockDigest] = TxnBlock
@@ -1276,10 +1276,11 @@ func (e *Elastico) reset() {
 	e.FinalcommittedData = make(map[int]map[int][]Transaction)
 }
 
-func (e *Elastico) getCommitteeid(PoW string) int64 {
+func (e *Elastico) getCommitteeid() {
 	/*
-		returns last s-bit of PoW["hash"] as Identity : CommitteeID
+		sets last s-bit of PoW["hash"] as Identity : CommitteeID
 	*/
+	PoW := e.PoW["hash"].(string)
 	bindigest := ""
 
 	for i := 0; i < len(PoW); i++ {
@@ -1291,7 +1292,8 @@ func (e *Elastico) getCommitteeid(PoW string) int64 {
 	Identity := bindigest[len(bindigest)-s:]
 	iden, err := strconv.ParseInt(Identity, 2, 0) // converts binary string to integer
 	failOnError(err, "binary to int conversion error", true)
-	return iden
+	log.Info("Committe id : ", iden)
+	e.CommitteeID = iden
 }
 
 func (e *Elastico) executePoW() {
@@ -2305,7 +2307,7 @@ func (e *Elastico) formIdentity() {
 		PK := e.key.PublicKey
 
 		// set the committee id acc to PoW solution
-		e.CommitteeID = e.getCommitteeid(e.PoW["hash"].(string))
+		e.getCommitteeid()
 
 		e.Identity = IDENTITY{IP: e.IP, PK: PK, CommitteeID: e.CommitteeID, PoW: e.PoW, EpochRandomness: e.EpochRandomness, Port: e.Port}
 		// changed the state after Identity formation
