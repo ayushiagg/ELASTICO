@@ -815,8 +815,8 @@ func (e *Elastico) receiveNewNode(msg msgType) {
 func (e *Elastico) receiveHash(msg msgType) {
 
 	// receiving H(Ri) by final committe members
-	var decodeMsg HashMsg
-
+	var decodeMsg CommitmentMsg
+	log.Info("receiving commitments by port-", e.Port)
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 
 	failOnError(err, "fail to decode hash msg", true)
@@ -1885,7 +1885,7 @@ func (e *Elastico) Sign(digest []byte) string {
 	return signature
 }
 
-type HashMsg struct {
+type CommitmentMsg struct {
 	Identity IDENTITY
 	HashRi   string
 }
@@ -2622,7 +2622,6 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	*/
 	zeroString := ""
 	for i := 0; i < D; i++ {
-
 		zeroString += "0"
 	}
 	PoW := identityobj.PoW
