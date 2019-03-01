@@ -859,9 +859,9 @@ func (e *Elastico) unionSet(receivedSet []string) {
 	}
 }
 
-func (e *Elastico) digestCommitments(receivedCommitments map[string]bool) []byte {
+func (e *Elastico) digestCommitments(receivedCommitments []string) []byte {
 	digest := sha256.New()
-	for commitment := range receivedCommitments {
+	for _, commitment := range receivedCommitments {
 		digest.Write([]byte(commitment))
 	}
 	return digest.Sum(nil)
