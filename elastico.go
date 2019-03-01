@@ -3463,15 +3463,14 @@ func main() {
 	// open the logging file
 	file, err := os.OpenFile("logfile.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	failOnError(err, "opening file error", true) // report the open file error
+	log.SetOutput(file)
+	log.SetLevel(log.InfoLevel) // set the log level
 
-	numOfEpochs := 2 // num of epochs
+	numOfEpochs := 1 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
 	}
-
-	log.SetOutput(file)
-	log.SetLevel(log.InfoLevel) // set the log level
 
 	// run all the epochs
 	Run(epochTxns)
