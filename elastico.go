@@ -1535,19 +1535,15 @@ func (e *Elastico) runFinalPBFT() {
 	} else if e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] {
 
 		if e.isFinalCommitted() {
-			// for viewID := range e.FinalcommittedData {
+			for viewID := range e.FinalcommittedData {
 
-			// 	for seqnum := range e.FinalcommittedData[viewID] {
+				for seqnum := range e.FinalcommittedData[viewID] {
 
-			// 		msgList := e.FinalcommittedData[viewID][seqnum]
+					msgList := e.FinalcommittedData[viewID][seqnum]
 
-			// 		e.finalBlock["finalBlock"] = e.unionTxns(e.finalBlock["finalBlock"], msgList)
-			// 	}
-			// }
-			// finalTxnBlock := e.finalBlock["finalBlock"]
-			// // finalTxnBlock = list(finalTxnBlock)
-			// // order them! Reason : to avoid errors in signatures as sets are unordered
-			// // e.finalBlock["finalBlock"] = sorted(finalTxnBlock)
+					e.finalBlock.Txns = e.unionTxns(e.finalBlock.Txns, msgList)
+				}
+			}
 			e.state = ElasticoStates["FinalPBFT_COMMITTED"]
 		}
 	}
