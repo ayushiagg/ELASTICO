@@ -950,6 +950,14 @@ type FinalBlockMsg struct {
 	FinalBlockSign string
 }
 
+func mapToList(m map[string]bool) []string {
+	commitmentList := make([]string, 0)
+	for commitment := range m {
+		commitmentList = append(commitmentList, commitment)
+	}
+	return commitmentList
+}
+
 // BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
 func (e *Elastico) BroadcastFinalTxn() {
 	/*
