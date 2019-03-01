@@ -504,7 +504,7 @@ type Elastico struct {
 	finalBlockbyFinalCommitteeTxns map[string][]Transaction
 	state                          int
 	mergedBlock                    []Transaction
-	finalBlock                     map[string]interface{}
+	finalBlock                     FinalBlockData
 	RcommitmentSet                 map[string]bool
 	newRcommitmentSet              map[string]bool
 	finalCommitteeMembers          []IDENTITY
@@ -526,6 +526,11 @@ type Elastico struct {
 	FinalcommitMsgLog     map[int]map[int]map[string][]CommitMsgData
 	FinalpreparedData     map[int]map[int][]Transaction
 	FinalcommittedData    map[int]map[int][]Transaction
+}
+
+type FinalBlockData struct {
+	Sent bool
+	Txns []Transaction
 }
 
 type PrepareMsgData struct {
