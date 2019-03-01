@@ -2999,7 +2999,7 @@ func (e *Elastico) executeReset() {
 	if reflect.TypeOf(e.Identity) == reflect.TypeOf(IDENTITY{}) {
 
 		// if node has formed its Identity
-		data := map[string]interface{}{Identity: e.Identity}
+		data := map[string]interface{}{"Identity": e.Identity}
 		msg := map[string]interface{}{"data": data, "type": "reset-all"}
 		e.Identity.send(msg)
 	} else {
