@@ -513,7 +513,7 @@ type Elastico struct {
 	finalCommitteeMembers          []IDENTITY
 	// only when this is the member of the directory committee
 	txn                   map[int64][]Transaction
-	response              []Transaction
+	response              []FinalCommittedBlock
 	flag                  bool
 	views                 map[int]bool
 	primary               bool
@@ -1184,7 +1184,7 @@ func (e *Elastico) ElasticoInit() {
 	e.finalCommitteeMembers = make([]IDENTITY, 0)
 
 	e.txn = make(map[int64][]Transaction)
-	e.response = make([]Transaction, 0)
+	e.response = make([]FinalCommittedBlock, 0)
 	e.flag = true
 	e.views = make(map[int]bool)
 	e.primary = false
@@ -1257,7 +1257,7 @@ func (e *Elastico) reset() {
 
 	// only when this is the member of the directory committee
 	e.txn = make(map[int64][]Transaction)
-	e.response = make([]Transaction, 0)
+	e.response = make([]FinalCommittedBlock, 0)
 	e.flag = true
 	e.views = make(map[int]bool)
 	e.primary = false
