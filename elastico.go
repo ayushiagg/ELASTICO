@@ -149,7 +149,8 @@ func consistencyProtocol() (bool, map[string]bool) {
 	commitmentset := make(map[string]bool)
 	for _, node := range networkNodes {
 
-		if node.isFinalMember() {
+		// if node.isFinalMember() {
+		if len(node.commitments) > 0 {
 
 			if len(node.commitments) <= c/2 {
 
@@ -162,20 +163,22 @@ func consistencyProtocol() (bool, map[string]bool) {
 	if len(commitmentSet) == 0 {
 
 		flag := true
-		for _, node := range networkNodes {
+		for _, nodeobj := range networkNodes {
 
-			if node.isFinalMember() {
-
+			// if nodeobj.isFinalMember() {
+			if len(nodeobj.commitments) > 0 {
+				log.Info("see the commitment set--", nodeobj.commitments)
 				if flag && len(commitmentSet) == 0 {
 
 					flag = false
-					commitmentSet = node.commitments
+					commitmentSet = nodeobj.commitments
 				} else {
 
-					commitmentSet = intersection(commitmentSet, node.commitments)
+					commitmentSet = intersection(commitmentSet, nodeobj.commitments)
 				}
 			}
 		}
+		log.Info("lennnn of comm from interactive consistency--", len(commitmentSet))
 	}
 	return true, commitmentSet
 }
