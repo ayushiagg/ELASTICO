@@ -126,6 +126,20 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message", true)
 }
 
+func intersection(set1, set2 map[string]bool) map[string]bool {
+	// This function takes intersection of two maps
+	intersectSet := make(map[string]bool)
+
+	for s1 := range set1 {
+		_, ok := set2[s1]
+		if ok {
+			intersectSet[s1] = true
+		}
+	}
+
+	return intersectSet
+}
+
 func consistencyProtocol() (bool, map[string]bool) {
 	/*
 		Agrees on a single set of Hash values(S)
