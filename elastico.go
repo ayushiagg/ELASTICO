@@ -918,7 +918,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 			if len(e.finalBlockbyFinalCommittee[finaltxnBlockDigest]) >= c/2+1 && e.state != ElasticoStates["FinalBlockSentToClient"] {
 				// for final members, their state is updated only when they have also sent the finalblock to ntw
 				if e.isFinalMember() {
-					finalBlockSent := e.finalBlock["sent"].(bool)
+					finalBlockSent := e.finalBlock.Sent
 					if finalBlockSent {
 
 						e.state = ElasticoStates["FinalBlockReceived"]
@@ -966,7 +966,7 @@ func (e *Elastico) BroadcastFinalTxn() {
 	data := map[string]interface{}{"CommitSet": commitmentList, "Signature": e.sign(commitmentList), "Identity": e.Identity, "FinalBlock": e.finalBlock["finalBlock"], "FinalBlockSign": e.signTxnList(e.finalBlock["finalBlock"])}
 	log.Warn("finalblock-", e.finalBlock["finalBlock"])
 	// final Block sent to ntw
-	e.finalBlock["sent"] = true
+	e.finalBlock.Sent = true
 	// A final node which is already in received state should not change its state
 	if e.state != ElasticoStates["FinalBlockReceived"] {
 
@@ -1156,9 +1156,9 @@ func (e *Elastico) ElasticoInit() {
 
 	e.mergedBlock = make([]Transaction, 0)
 
-	e.finalBlock = make(map[string]interface{})
-	e.finalBlock["sent"] = false
-	e.finalBlock["finalBlock"] = make([]Transaction, 0)
+	e.finalBlock = FinalBlockData{}
+	e.finalBlock.Sent = false
+	e.finalBlock.Txns = make([]Transaction, 0)
 
 	e.RcommitmentSet = make(map[string]bool)
 	e.newRcommitmentSet = make(map[string]bool)
@@ -1228,9 +1228,9 @@ func (e *Elastico) reset() {
 	e.state = ElasticoStates["NONE"]
 	e.mergedBlock = make([]Transaction, 0)
 
-	e.finalBlock = make(map[string]interface{})
-	e.finalBlock["sent"] = false
-	e.finalBlock["finalBlock"] = make([]Transaction, 0)
+	e.finalBlock = FinalBlockData{}
+	e.finalBlock.Sent = false
+	e.finalBlock.Txns = make([]Transaction, 0)
 
 	e.RcommitmentSet = e.newRcommitmentSet
 	e.newRcommitmentSet = make(map[string]bool)
