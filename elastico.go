@@ -937,9 +937,9 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 					e.state = ElasticoStates["FinalBlockReceived"]
 				}
 
-				// union of commitments
-				e.unionSet(receivedCommitments)
 			}
+			// union of commitments
+			e.unionSet(receivedCommitments)
 
 		} else {
 
