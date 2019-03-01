@@ -132,7 +132,7 @@ func intersection(set1, set2 map[string]bool) map[string]bool {
 
 	for s1 := range set1 {
 		_, ok := set2[s1]
-		if ok {
+		if ok == true {
 			intersectSet[s1] = true
 		}
 	}
@@ -657,7 +657,6 @@ func (e *Elastico) computePoW() {
 			e.PoW["setOfRs"] = randomsetR
 			e.PoW["nonce"] = nonce
 			// change the state after solving the puzzle
-			fmt.Println("PoW computed", e.Port)
 			e.state = ElasticoStates["PoW Computed"]
 		} else {
 			// try for other nonce
@@ -816,7 +815,6 @@ func (e *Elastico) receiveHash(msg msgType) {
 
 	// receiving H(Ri) by final committe members
 	var decodeMsg CommitmentMsg
-	log.Info("receiving commitments by port-", e.Port)
 	err := json.Unmarshal(msg.Data, &decodeMsg)
 
 	failOnError(err, "fail to decode hash msg", true)
@@ -825,6 +823,8 @@ func (e *Elastico) receiveHash(msg msgType) {
 	HashRi := decodeMsg.HashRi
 	if e.verifyPoW(identityobj) {
 		e.commitments[HashRi] = true
+	} else {
+		log.Error("PoW not verified in receiving commitments")
 	}
 }
 
@@ -847,16 +847,22 @@ func (e *Elastico) receiveRandomStringBroadcast(msg msgType) {
 			e.newsetOfRs[Ri] = true
 
 			if len(e.newsetOfRs) >= c/2+1 {
+				log.Info("received the set of Rs")
 				e.state = ElasticoStates["ReceivedR"]
 			}
 		}
+	} else {
+		log.Error("POW invalid")
 	}
 }
 
 func (e *Elastico) unionSet(receivedSet []string) {
+	log.Info("lenn of commitment---", len(e.newRcommitmentSet))
+	log.Info("received set--", receivedSet)
 	for _, commitment := range receivedSet {
 		e.newRcommitmentSet[commitment] = true
 	}
+	log.Info("new lenn of commitment---", len(e.newRcommitmentSet))
 }
 
 func (e *Elastico) digestCommitments(receivedCommitments []string) []byte {
@@ -879,7 +885,6 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 
 		sign := decodeMsg.Signature
 		receivedCommitments := decodeMsg.CommitSet
-
 		finalTxnBlock := decodeMsg.FinalBlock
 
 		finalTxnBlockSignature := decodeMsg.FinalBlockSign
@@ -2582,7 +2587,6 @@ func (e *Elastico) unionTxns(actualTxns, receivedTxns []Transaction) []Transacti
 		flag := true
 		for _, txn := range actualTxns {
 			if txn.isEqual(transaction) {
-				log.Warn("see txns coming same")
 				flag = false
 				break
 			}
@@ -2984,6 +2988,8 @@ func (e *Elastico) getCommitment() string {
 	commitment := sha256.New()
 	commitment.Write([]byte(e.Ri))
 	hashVal := fmt.Sprintf("%x", commitment.Sum(nil))
+	log.Info("commitment Ri--", e.Ri)
+	log.Info("commitments H(Ri)--", hashVal)
 	return hashVal
 }
 
@@ -3091,7 +3097,10 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 
 		// broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 		if len(e.newRcommitmentSet) >= c/2+1 {
+			log.Info("broadacst R by port--", e.Port)
 			e.BroadcastR()
+		} else {
+			log.Info("insufficient Rs")
 		}
 	} else if e.state == ElasticoStates["ReceivedR"] {
 
@@ -3423,8 +3432,7 @@ func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
 
 // Run :- run all the epochs
 func Run(epochTxns map[int][]Transaction) {
-	// # Manager for managing the shared variable among the processes
-	// manager = Manager()
+
 	sharedObj = make(map[int64]bool)
 
 	createNodes() // create the elastico nodes
