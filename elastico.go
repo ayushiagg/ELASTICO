@@ -853,9 +853,9 @@ func (e *Elastico) receiveRandomStringBroadcast(msg msgType) {
 	}
 }
 
-func unionSet(newSet map[string]bool, receivedSet map[string]bool) {
-	for commitment := range receivedSet {
-		newSet[commitment] = true
+func (e *Elastico) unionSet(receivedSet []string) {
+	for _, commitment := range receivedSet {
+		e.newRcommitmentSet[commitment] = true
 	}
 }
 
