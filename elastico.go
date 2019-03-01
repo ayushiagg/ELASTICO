@@ -2638,13 +2638,13 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	// length of hash in hex
 
 	if len(hash) != 64 {
-		fmt.Println("len of hash less")
+		log.Error("POW not verified - len of hash less")
 		return false
 	}
 
 	// Valid Hash has D leading '0's (in hex)
 	if !strings.HasPrefix(hash, zeroString) {
-		fmt.Println("zero not in prefix")
+		log.Error("POW not verified - zero not in prefix")
 		return false
 	}
 
@@ -2688,7 +2688,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 		// Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
 		return true
 	}
-	fmt.Println("prefix not found")
+	log.Error("POW not verified - prefix not found")
 	return false
 
 }
@@ -3080,6 +3080,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 
 		// broadcast final txn block to ntw
 		if len(e.commitments) >= c/2+1 {
+			log.Info("commitments received sucess")
 			e.BroadcastFinalTxn()
 		}
 	} else if e.state == ElasticoStates["FinalBlockReceived"] {
