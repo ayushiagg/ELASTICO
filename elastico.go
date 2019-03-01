@@ -930,7 +930,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 				}
 
 				// union of commitments
-				unionSet(e.newRcommitmentSet, receivedCommitments)
+				e.unionSet(receivedCommitments)
 			}
 
 		} else {
@@ -973,7 +973,8 @@ func (e *Elastico) BroadcastFinalTxn() {
 		e.state = ElasticoStates["FinalBlockSent"]
 	}
 	msg := map[string]interface{}{"data": data, "type": "FinalBlock"}
-	BroadcastTo_Network(msg)
+	BroadcastToNetwork(msg)
+	return true
 }
 
 func (e *Elastico) receiveIntraCommitteeBlock(msg msgType) {
