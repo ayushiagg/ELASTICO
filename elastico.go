@@ -1800,21 +1800,21 @@ func (e *Elastico) checkCountForFinalData() {
 	*/
 	//  collect final blocks sent by final committee and add the blocks to the response
 
-	// for txnBlockDigest := range e.finalBlockbyFinalCommittee {
+	for txnBlockDigest := range e.finalBlockbyFinalCommittee {
 
-	// 	if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2+1 {
+		if len(e.finalBlockbyFinalCommittee[txnBlockDigest]) >= c/2+1 {
 
-	// 		TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
-	// 		//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
-	// 		finalCommittedBlock := FinalCommittedBlock(TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest])
-	// 		//  add the block to the response
-	// 		e.response = append(e.response, finalCommittedBlock)
+			TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
+			//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
+			finalCommittedBlock := FinalCommittedBlock{TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest]}
+			//  add the block to the response
+			e.response = append(e.response, finalCommittedBlock)
 
-	// 	} else {
+		} else {
 
-	// 		log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
-	// 	}
-	// }
+			log.Error("less block signs : ", len(e.finalBlockbyFinalCommittee[txnBlockDigest]))
+		}
+	}
 
 	if len(e.response) > 0 {
 
@@ -3379,6 +3379,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 			}
 			// process consume the msgs from the queue
 			node.consumeMsg()
+			// networkNodes[nodeIndex] = node
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
 		// time.sleep(60)
