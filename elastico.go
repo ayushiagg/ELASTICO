@@ -57,7 +57,7 @@ var finNum int64
 // networkNodes - list of elastico objects
 var networkNodes []Elastico
 
-var sharedObj map[int64]bool
+// var sharedObj map[int64]bool
 
 // commitmentSet - set of commitments S
 var commitmentSet map[string]bool
@@ -3339,7 +3339,7 @@ func txnHexdigest(txnList []Transaction) string {
 	return hashVal
 }
 
-func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction) {
 	/*
 		A process will execute based on its state and then it will consume
 	*/
@@ -3349,34 +3349,34 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 		// epochTxn holds the txn for the current epoch
 
 		// delete the entry of the node in sharedobj for the next epoch
-		if _, ok := sharedObj[nodeIndex]; ok {
-			delete(sharedObj, nodeIndex)
-		}
+		// if _, ok := sharedObj[nodeIndex]; ok {
+		// 	delete(sharedObj, nodeIndex)
+		// }
 
 		// startTime = time.time()
 		for {
 
 			// execute one step of elastico node, execution of a node is done only when it has not done reset
-			if _, ok := sharedObj[nodeIndex]; ok == false {
+			// if _, ok := sharedObj[nodeIndex]; ok == false {
 
-				response := node.execute(epochTxn)
-				if response == "reset" {
-					fmt.Println("call for reset")
-					// now reset the node
-					node.executeReset()
-					// adding the value reset for the node in the sharedobj
-					sharedObj[nodeIndex] = true
-				}
+			response := node.execute(epochTxn)
+			if response == "reset" {
+				fmt.Println("call for reset")
+				// now reset the node
+				node.executeReset()
+				// adding the value reset for the node in the sharedobj
+				// sharedObj[nodeIndex] = true
 			}
+
 			// stop the faulty node in between
 			if node.faulty == true { //and time.time() - startTime >= 60:
 				log.Warn("bye bye!")
 				break
 			}
 			// All the elastico objects has done their reset
-			if int64(len(sharedObj)) == n {
-				break
-			}
+			// if int64(len(sharedObj)) == n {
+			// 	break
+			// }
 			// process consume the msgs from the queue
 			node.consumeMsg()
 			// networkNodes[nodeIndex] = node
