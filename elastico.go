@@ -358,13 +358,13 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 
 	// ToDo: compare set of Rs and fix this
 
-	// listOfRsInI := i.PoW["setOfRs"].([]interface{})
+	// listOfRsInI := i.PoW["SetOfRs"].([]interface{})
 	// setOfRsInI := make([]string, len(listOfRsInI))
 	// for i := range listOfRsInI {
 	// 	setOfRsInI[i] = listOfRsInI[i].(string)
 	// }
 
-	// listOfRsIniobj := identityobj.PoW["setOfRs"].([]interface{})
+	// listOfRsIniobj := identityobj.PoW["SetOfRs"].([]interface{})
 	// setOfRsIniobj := make([]string, len(listOfRsIniobj))
 	// for i := range listOfRsIniobj {
 	// 	setOfRsIniobj[i] = listOfRsIniobj[i].(string)
@@ -372,7 +372,7 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 	if i.PK.N.Cmp(identityobj.PK.N) != 0 {
 		return false
 	}
-	return i.IP == identityobj.IP && i.PK.E == identityobj.PK.E && i.CommitteeID == identityobj.CommitteeID && i.PoW["hash"] == identityobj.PoW["hash"] && i.PoW["nonce"] == identityobj.PoW["nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
+	return i.IP == identityobj.IP && i.PK.E == identityobj.PK.E && i.CommitteeID == identityobj.CommitteeID && i.PoW["Hash"] == identityobj.PoW["Hash"] && i.PoW["Nonce"] == identityobj.PoW["Nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
 }
 
 func (i *IDENTITY) send(msg map[string]interface{}) {
@@ -629,14 +629,14 @@ func (e *Elastico) xorR() (string, []string) {
 
 func (e *Elastico) computePoW() {
 	/*
-		returns hash which satisfies the difficulty challenge(D) : PoW["hash"]
+		returns hash which satisfies the difficulty challenge(D) : PoW["Hash"]
 	*/
 	zeroString := ""
 	for i := 0; i < D; i++ {
 		zeroString += "0"
 	}
 	if e.state == ElasticoStates["NONE"] {
-		nonce := e.PoW["nonce"].(int) // type assertion
+		nonce := e.PoW["Nonce"].(int) // type assertion
 		PK := e.key.PublicKey         // public key
 		IP := e.IP
 		// If it is the first epoch , randomsetR will be an empty set .
@@ -656,17 +656,23 @@ func (e *Elastico) computePoW() {
 		hashVal := fmt.Sprintf("%x", digest.Sum(nil))
 		if strings.HasPrefix(hashVal, zeroString) {
 			//hash starts with leading D 0's
-			e.PoW["hash"] = hashVal
-			e.PoW["setOfRs"] = randomsetR
-			e.PoW["nonce"] = nonce
+			e.PoW["Hash"] = hashVal
+			e.PoW["SetOfRs"] = randomsetR
+			e.PoW["Nonce"] = nonce
 			// change the state after solving the puzzle
 			e.state = ElasticoStates["PoW Computed"]
 		} else {
 			// try for other nonce
 			nonce++
-			e.PoW["nonce"] = nonce
+			e.PoW["Nonce"] = nonce
 		}
 	}
+}
+
+type PoWmsg struct {
+	Hash    string
+	SetOfRs []string
+	Nonce   int
 }
 
 func (e *Elastico) checkCommitteeFull() {
@@ -1142,9 +1148,9 @@ func (e *Elastico) ElasticoInit() {
 	e.getKey()
 	// Initialize PoW!
 	e.PoW = make(map[string]interface{})
-	e.PoW["hash"] = ""
-	e.PoW["setOfRs"] = ""
-	e.PoW["nonce"] = 0
+	e.PoW["Hash"] = ""
+	e.PoW["SetOfRs"] = ""
+	e.PoW["Nonce"] = 0
 
 	e.curDirectory = make([]IDENTITY, 0)
 
@@ -1218,9 +1224,9 @@ func (e *Elastico) reset() {
 	// e.Port = e.getPort()
 
 	e.PoW = make(map[string]interface{})
-	e.PoW["hash"] = ""
-	e.PoW["setOfRs"] = ""
-	e.PoW["nonce"] = 0
+	e.PoW["Hash"] = ""
+	e.PoW["SetOfRs"] = ""
+	e.PoW["Nonce"] = 0
 
 	e.curDirectory = make([]IDENTITY, 0)
 	// only when this node is the member of directory committee
@@ -1278,9 +1284,9 @@ func (e *Elastico) reset() {
 
 func (e *Elastico) getCommitteeid() {
 	/*
-		sets last s-bit of PoW["hash"] as Identity : CommitteeID
+		sets last s-bit of PoW["Hash"] as Identity : CommitteeID
 	*/
-	PoW := e.PoW["hash"].(string)
+	PoW := e.PoW["Hash"].(string)
 	bindigest := ""
 
 	for i := 0; i < len(PoW); i++ {
@@ -1943,7 +1949,7 @@ func (e *Elastico) computeFakePoW() {
 			for i := 0; i < D; i++ {
 				hashVal += "0"
 			}
-			e.PoW["hash"] = hashVal + ranHash[D:]
+			e.PoW["Hash"] = hashVal + ranHash[D:]
 
 		} else if index == 1 {
 
@@ -1958,17 +1964,17 @@ func (e *Elastico) computeFakePoW() {
 			for {
 
 				digest := sha256.New()
-				nonce := e.PoW["nonce"]
+				nonce := e.PoW["Nonce"]
 				digest.Write([]byte(strconv.Itoa(nonce)))
 				hashVal := fmt.Sprintf("%x", digest.Sum(nil))
 				if strings.HasPrefix(hashVal, zeroString) {
-					e.PoW["hash"] = hashVal
-					e.PoW["setOfRs"] = randomsetR
-					e.PoW["nonce"] = nonce
+					e.PoW["Hash"] = hashVal
+					e.PoW["SetOfRs"] = randomsetR
+					e.PoW["Nonce"] = nonce
 				} else {
 					// try for other nonce
 					nonce++
-					e.PoW["nonce"] = nonce
+					e.PoW["Nonce"] = nonce
 				}
 			}
 		} else if index == 2 {
@@ -1980,10 +1986,10 @@ func (e *Elastico) computeFakePoW() {
 			digest := sha256.New()
 			ranHash := fmt.Sprintf("%x", digest.Sum(nil))
 			nonce := randomGen()
-			e.PoW["hash"] = ranHash
-			e.PoW["setOfRs"] = randomsetR
+			e.PoW["Hash"] = ranHash
+			e.PoW["SetOfRs"] = randomsetR
 			// ToDo: nonce has to be in int instead of big.Int
-			e.PoW["nonce"] = nonce
+			e.PoW["Nonce"] = nonce
 		}
 
 		log.Warn("computed fake POW ", index)
@@ -2643,7 +2649,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	PoW := identityobj.PoW
 	// fmt.Println(PoW)
 
-	hash := PoW["hash"].(string)
+	hash := PoW["Hash"].(string)
 	// length of hash in hex
 
 	if len(hash) != 64 {
@@ -2658,7 +2664,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	}
 
 	// check Digest for set of Ri strings
-	// for Ri in PoW["setOfRs"]:
+	// for Ri in PoW["SetOfRs"]:
 	// 	digest = e.hexdigest(Ri)
 	// 	if digest not in e.RcommitmentSet:
 	// 		return false
@@ -2666,7 +2672,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	// reconstruct epoch randomness
 	EpochRandomness := identityobj.EpochRandomness
 
-	listOfRs := PoW["setOfRs"].([]interface{})
+	listOfRs := PoW["SetOfRs"].([]interface{})
 	setOfRs := make([]string, len(listOfRs))
 	for i := range listOfRs {
 		setOfRs[i] = listOfRs[i].(string)
@@ -2682,7 +2688,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	// public key
 	rsaPublickey := identityobj.PK
 	IP := identityobj.IP
-	nonce := int(PoW["nonce"].(float64))
+	nonce := int(PoW["Nonce"].(float64))
 
 	// 	compute the digest
 	digest := sha256.New()
@@ -2694,7 +2700,7 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 
 	hashVal := fmt.Sprintf("%x", digest.Sum(nil))
 	if strings.HasPrefix(hashVal, zeroString) && hashVal == hash {
-		// Found a valid Pow, If this doesn't match with PoW["hash"] then Doesnt verify!
+		// Found a valid Pow, If this doesn't match with PoW["Hash"] then Doesnt verify!
 		return true
 	}
 	log.Error("POW not verified - prefix not found")
@@ -3357,6 +3363,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 		for {
 
 			// execute one step of elastico node, execution of a node is done only when it has not done reset
+
 			if _, ok := sharedObj[nodeIndex]; ok == false {
 
 				response := node.execute(epochTxn)
@@ -3367,6 +3374,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 					// adding the value reset for the node in the sharedobj
 					sharedObj[nodeIndex] = true
 				}
+
 			}
 			// stop the faulty node in between
 			if node.faulty == true { //and time.time() - startTime >= 60:
@@ -3426,20 +3434,20 @@ func createNodes() {
 	commitmentSet = make(map[string]bool)
 }
 
-func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+func createRoutines(epochTxns map[int][]Transaction) {
 	/*
 		create a Go Routine for each elastico node
 	*/
 
 	for nodeIndex := int64(0); nodeIndex < n; nodeIndex++ {
-		go executeSteps(nodeIndex, epochTxns, sharedObj) // start thread
+		go executeSteps(nodeIndex, epochTxns) // start thread
 	}
 }
 
 // Run :- run all the epochs
 func Run(epochTxns map[int][]Transaction) {
 
-	sharedObj = make(map[int64]bool)
+	// sharedObj = make(map[int64]bool)
 
 	createNodes() // create the elastico nodes
 
@@ -3448,7 +3456,7 @@ func Run(epochTxns map[int][]Transaction) {
 	makeFaulty()
 
 	// create the threads
-	createRoutines(epochTxns, sharedObj)
+	createRoutines(epochTxns)
 
 	// log.Warn("LEDGER- , length - ", ledger, len(ledger))
 	// for block in ledger:
@@ -3466,7 +3474,7 @@ func main() {
 	log.SetOutput(file)
 	log.SetLevel(log.InfoLevel) // set the log level
 
-	numOfEpochs := 1 // num of epochs
+	numOfEpochs := 2 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
