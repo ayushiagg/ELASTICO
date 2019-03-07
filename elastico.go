@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	random "math/rand"
-	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +33,7 @@ var wg sync.WaitGroup
 // shared lock among processes
 var lock sync.Mutex
 
-// shared Port among the processes
+// Port shared among the processes
 var Port = 49152
 
 // n : number of nodes
@@ -151,7 +151,6 @@ func consistencyProtocol() (bool, map[string]bool) {
 
 		// if node.isFinalMember() {
 		if len(node.commitments) > 0 {
-
 			if len(node.commitments) <= c/2 {
 
 				log.Warn("insufficientCommitments")
@@ -183,6 +182,7 @@ func consistencyProtocol() (bool, map[string]bool) {
 	return true, commitmentSet
 }
 
+// ViewsMsg - Views of committees
 type ViewsMsg struct {
 	CommitteeMembers      []IDENTITY
 	FinalCommitteeMembers []IDENTITY
@@ -336,17 +336,19 @@ func (bd *BlockData) hexdigest() []byte {
 
 // IDENTITY :- structure for Identity of nodes
 type IDENTITY struct {
-	IP              string
-	PK              rsa.PublicKey
-	CommitteeID     int64
-	PoW             map[string]interface{}
+	IP          string
+	PK          rsa.PublicKey
+	CommitteeID int64
+	// PoW             map[string]interface{}
+	PoW             PoWmsg
 	EpochRandomness string
 	Port            int
 }
 
 // IdentityInit :- initialise of Identity members
 func (i *IDENTITY) IdentityInit() {
-	i.PoW = make(map[string]interface{})
+	// i.PoW = make(map[string]interface{})
+	i.PoW = PoWmsg{}
 }
 
 func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
@@ -372,7 +374,7 @@ func (i *IDENTITY) isEqual(identityobj *IDENTITY) bool {
 	if i.PK.N.Cmp(identityobj.PK.N) != 0 {
 		return false
 	}
-	return i.IP == identityobj.IP && i.PK.E == identityobj.PK.E && i.CommitteeID == identityobj.CommitteeID && i.PoW["Hash"] == identityobj.PoW["Hash"] && i.PoW["Nonce"] == identityobj.PoW["Nonce"] && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
+	return i.IP == identityobj.IP && i.PK.E == identityobj.PK.E && i.CommitteeID == identityobj.CommitteeID && i.PoW.Hash == identityobj.PoW.Hash && i.PoW.Nonce == identityobj.PoW.Nonce && i.EpochRandomness == identityobj.EpochRandomness && i.Port == identityobj.Port
 }
 
 func (i *IDENTITY) send(msg map[string]interface{}) {
@@ -480,11 +482,12 @@ type Elastico struct {
 		FinalcommittedData - data after committed state in final pbft run
 		faulty - Flag denotes whether this node is faulty or not
 	*/
-	connection   *amqp.Connection
-	IP           string
-	Port         int
-	key          *rsa.PrivateKey
-	PoW          map[string]interface{}
+	connection *amqp.Connection
+	IP         string
+	Port       int
+	key        *rsa.PrivateKey
+	// PoW          map[string]interface{}
+	PoW          PoWmsg
 	curDirectory []IDENTITY
 	Identity     IDENTITY
 	CommitteeID  int64
@@ -531,16 +534,19 @@ type Elastico struct {
 	FinalcommittedData    map[int]map[int][]Transaction
 }
 
+// FinalBlockData - final block data
 type FinalBlockData struct {
 	Sent bool
 	Txns []Transaction
 }
 
+// PrepareMsgData - prepare msg data
 type PrepareMsgData struct {
 	Digest   string
 	Identity IDENTITY
 }
 
+// CommitMsgData - commit msg data
 type CommitMsgData struct {
 	Digest   string
 	Identity IDENTITY
@@ -636,8 +642,9 @@ func (e *Elastico) computePoW() {
 		zeroString += "0"
 	}
 	if e.state == ElasticoStates["NONE"] {
-		nonce := e.PoW["Nonce"].(int) // type assertion
-		PK := e.key.PublicKey         // public key
+		// nonce := e.PoW["Nonce"].(int) // type assertion
+		nonce := e.PoW.Nonce
+		PK := e.key.PublicKey // public key
 		IP := e.IP
 		// If it is the first epoch , randomsetR will be an empty set .
 		// otherwise randomsetR will be any c/2 + 1 random strings Ri that node receives from the previous epoch
@@ -656,19 +663,20 @@ func (e *Elastico) computePoW() {
 		hashVal := fmt.Sprintf("%x", digest.Sum(nil))
 		if strings.HasPrefix(hashVal, zeroString) {
 			//hash starts with leading D 0's
-			e.PoW["Hash"] = hashVal
-			e.PoW["SetOfRs"] = randomsetR
-			e.PoW["Nonce"] = nonce
+			e.PoW.Hash = hashVal
+			e.PoW.SetOfRs = randomsetR
+			e.PoW.Nonce = nonce
 			// change the state after solving the puzzle
 			e.state = ElasticoStates["PoW Computed"]
 		} else {
 			// try for other nonce
 			nonce++
-			e.PoW["Nonce"] = nonce
+			e.PoW.Nonce = nonce
 		}
 	}
 }
 
+// PoWmsg - PoWmsg
 type PoWmsg struct {
 	Hash    string
 	SetOfRs []string
@@ -758,7 +766,7 @@ func (e *Elastico) receiveDirectoryMember(msg msgType) {
 	failOnError(err, "fail to decode directory member msg", true)
 
 	identityobj := decodeMsg.Identity
-
+	// fmt.Println("identity", identityobj.PoW)
 	// verify the PoW of the sender
 	if e.verifyPoW(identityobj) {
 		if len(e.curDirectory) < c {
@@ -832,6 +840,7 @@ func (e *Elastico) receiveHash(msg msgType) {
 	HashRi := decodeMsg.HashRi
 	if e.verifyPoW(identityobj) {
 		e.commitments[HashRi] = true
+		log.Info("commitment received-of port", e.Port, e.commitments)
 	} else {
 		log.Error("PoW not verified in receiving commitments")
 	}
@@ -956,6 +965,7 @@ func (e *Elastico) receiveFinalTxnBlock(msg msgType) {
 	}
 }
 
+// FinalBlockMsg - final block msg
 type FinalBlockMsg struct {
 	CommitSet      []string
 	Signature      string
@@ -1147,10 +1157,14 @@ func (e *Elastico) ElasticoInit() {
 	// set RSA
 	e.getKey()
 	// Initialize PoW!
-	e.PoW = make(map[string]interface{})
-	e.PoW["Hash"] = ""
-	e.PoW["SetOfRs"] = ""
-	e.PoW["Nonce"] = 0
+	// e.PoW = make(map[string]interface{})
+	e.PoW = PoWmsg{}
+	// e.PoW["Hash"] = ""
+	// e.PoW["SetOfRs"] = ""
+	// e.PoW["Nonce"] = 0
+	e.PoW.Hash = ""
+	e.PoW.SetOfRs = make([]string, 0)
+	e.PoW.Nonce = 0
 
 	e.curDirectory = make([]IDENTITY, 0)
 
@@ -1213,20 +1227,25 @@ func (e *Elastico) reset() {
 	/*
 		reset some of the elastico class members
 	*/
+	log.Info("reset!!")
 	e.getIP()
 	e.getKey()
 
-	// channel = e.connection.channel()
-	// # to delete the queue in rabbitmq for next epoch
-	// channel.queue_delete(queue='hello' + str(e.Port))
-	// channel.close()
+	channel, err := e.connection.Channel()
+	failOnError(err, "Failed to open a channel", true)
+	// close the channel
+	defer channel.Close()
+	nodeport := strconv.Itoa(e.Port)
+	queueName := "hello" + nodeport
+	_, deleteErr := channel.QueueDelete(queueName, false, false, false)
+	failOnError(deleteErr, "Failed to delete queue", true)
 
-	// e.Port = e.getPort()
+	e.getPort()
 
-	e.PoW = make(map[string]interface{})
-	e.PoW["Hash"] = ""
-	e.PoW["SetOfRs"] = ""
-	e.PoW["Nonce"] = 0
+	e.PoW = PoWmsg{}
+	e.PoW.Hash = ""
+	e.PoW.SetOfRs = make([]string, 0)
+	e.PoW.Nonce = 0
 
 	e.curDirectory = make([]IDENTITY, 0)
 	// only when this node is the member of directory committee
@@ -1286,7 +1305,8 @@ func (e *Elastico) getCommitteeid() {
 	/*
 		sets last s-bit of PoW["Hash"] as Identity : CommitteeID
 	*/
-	PoW := e.PoW["Hash"].(string)
+	// PoW := e.PoW["Hash"].(string)
+	PoW := e.PoW.Hash
 	bindigest := ""
 
 	for i := 0; i < len(PoW); i++ {
@@ -1298,7 +1318,7 @@ func (e *Elastico) getCommitteeid() {
 	Identity := bindigest[len(bindigest)-s:]
 	iden, err := strconv.ParseInt(Identity, 2, 0) // converts binary string to integer
 	failOnError(err, "binary to int conversion error", true)
-	log.Info("Committe id : ", iden)
+	// log.Info("Committe id : ", iden)
 	e.CommitteeID = iden
 }
 
@@ -1340,6 +1360,7 @@ func (e *Elastico) SendtoFinal() {
 	e.state = ElasticoStates["Intra Consensus Result Sent to Final"]
 }
 
+// IntraBlockMsg - intra block msg
 type IntraBlockMsg struct {
 	Txnblock []Transaction
 	Sign     string
@@ -1449,12 +1470,12 @@ func (e *Elastico) isPrepared() bool {
 					// need to find matching prepare msgs from different replicas atleast c/2 + 1
 					count := 0
 					prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
-					for replicaId := range prepareMsgLogSeq {
-						prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
+					for replicaID := range prepareMsgLogSeq {
+						prepareMsgLogReplica := prepareMsgLogSeq[replicaID]
 						for _, msg := range prepareMsgLogReplica {
 							checkdigest := msg.Digest
 							if checkdigest == digest {
-								count += 1
+								count++
 								break
 							}
 						}
@@ -1565,12 +1586,15 @@ func (e *Elastico) runFinalPBFT() {
 	}
 }
 
+// PrePrepareContents - PrePrepare Contents
 type PrePrepareContents struct {
 	Type   string
 	ViewID int
 	Seq    int
 	Digest string
 }
+
+// PrePrepareMsg - PrePrepare Message
 type PrePrepareMsg struct {
 	Message        []Transaction
 	PrePrepareData PrePrepareContents
@@ -1593,6 +1617,7 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	return prePrepareMsg
 }
 
+// PrepareContents - Prepare Contents
 type PrepareContents struct {
 	Type   string
 	ViewID int
@@ -1600,6 +1625,7 @@ type PrepareContents struct {
 	Digest string
 }
 
+// PrepareMsg - Prepare Msg
 type PrepareMsg struct {
 	PrepareData PrepareContents
 	Sign        string
@@ -1654,6 +1680,7 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 	return FinalprepareMsgList
 }
 
+// CommitContents - Commit msg Contents
 type CommitContents struct {
 	Type   string
 	ViewID int
@@ -1661,6 +1688,7 @@ type CommitContents struct {
 	Digest string
 }
 
+// CommitMsg - Commit Msg
 type CommitMsg struct {
 	Sign       string
 	CommitData CommitContents
@@ -1908,6 +1936,7 @@ func (e *Elastico) Sign(digest []byte) string {
 	return signature
 }
 
+// CommitmentMsg - Commitment Message
 type CommitmentMsg struct {
 	Identity IDENTITY
 	HashRi   string
@@ -2027,8 +2056,8 @@ func (e *Elastico) isFinalPrepared() bool {
 					//  need to find matching prepare msgs from different replicas atleast c//2 + 1
 					count := 0
 					prepareMsgLogSeq := prepareMsgLogViewID[seqnum]
-					for replicaId := range prepareMsgLogSeq {
-						prepareMsgLogReplica := prepareMsgLogSeq[replicaId]
+					for replicaID := range prepareMsgLogSeq {
+						prepareMsgLogReplica := prepareMsgLogSeq[replicaID]
 						for _, msg := range prepareMsgLogReplica {
 							checkdigest := msg.Digest
 							if checkdigest == digest {
@@ -2115,9 +2144,9 @@ func (e *Elastico) isCommitted() bool {
 							if _, okkkk := e.commitMsgLog[e.viewID][seqnum]; okkkk == true {
 
 								count := 0
-								for replicaId := range e.commitMsgLog[e.viewID][seqnum] {
+								for replicaID := range e.commitMsgLog[e.viewID][seqnum] {
 
-									for _, msg := range e.commitMsgLog[e.viewID][seqnum][replicaId] {
+									for _, msg := range e.commitMsgLog[e.viewID][seqnum][replicaID] {
 
 										if msg.Digest == digest {
 
@@ -2203,8 +2232,8 @@ func (e *Elastico) isFinalCommitted() bool {
 						if _, ok := e.FinalcommitMsgLog[e.viewID]; ok == true {
 							if _, okk := e.FinalcommitMsgLog[e.viewID][seqnum]; okk == true {
 								count := 0
-								for replicaId := range e.FinalcommitMsgLog[e.viewID][seqnum] {
-									for _, msg := range e.FinalcommitMsgLog[e.viewID][seqnum][replicaId] {
+								for replicaID := range e.FinalcommitMsgLog[e.viewID][seqnum] {
+									for _, msg := range e.FinalcommitMsgLog[e.viewID][seqnum][replicaID] {
 
 										if msg.Digest == digest {
 											count++
@@ -2649,7 +2678,8 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	PoW := identityobj.PoW
 	// fmt.Println(PoW)
 
-	hash := PoW["Hash"].(string)
+	// hash := PoW["Hash"].(string)
+	hash := PoW.Hash
 	// length of hash in hex
 
 	if len(hash) != 64 {
@@ -2671,11 +2701,11 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 
 	// reconstruct epoch randomness
 	EpochRandomness := identityobj.EpochRandomness
-
-	listOfRs := PoW["SetOfRs"].([]interface{})
+	listOfRs := PoW.SetOfRs
+	// listOfRs := PoW["SetOfRs"].([]interface{})
 	setOfRs := make([]string, len(listOfRs))
 	for i := range listOfRs {
-		setOfRs[i] = listOfRs[i].(string)
+		setOfRs[i] = listOfRs[i] //.(string)
 	}
 
 	if len(setOfRs) > 0 {
@@ -2688,7 +2718,8 @@ func (e *Elastico) verifyPoW(identityobj IDENTITY) bool {
 	// public key
 	rsaPublickey := identityobj.PK
 	IP := identityobj.IP
-	nonce := int(PoW["Nonce"].(float64))
+	// nonce := int(PoW["Nonce"].(float64))
+	nonce := PoW.Nonce
 
 	// 	compute the digest
 	digest := sha256.New()
@@ -2970,6 +3001,7 @@ func (e *Elastico) generateRandomstrings() {
 	}
 }
 
+// NotifyFinalMsg - Notify final members
 type NotifyFinalMsg struct {
 	Identity IDENTITY
 }
@@ -3004,6 +3036,7 @@ func (e *Elastico) getCommitment() string {
 	return hashVal
 }
 
+// ResetMsg - Reset msg
 type ResetMsg struct {
 	Identity IDENTITY
 }
@@ -3013,17 +3046,17 @@ func (e *Elastico) executeReset() {
 		call for reset
 	*/
 	log.Warn("call for reset for ", e.Port)
-	if reflect.TypeOf(e.Identity) == reflect.TypeOf(IDENTITY{}) {
+	// if reflect.TypeOf(e.Identity) == reflect.TypeOf(IDENTITY{}) {
 
-		// if node has formed its Identity
-		data := map[string]interface{}{"Identity": e.Identity}
-		msg := map[string]interface{}{"data": data, "type": "reset-all"}
-		e.Identity.send(msg)
-	} else {
+	// 	// if node has formed its Identity
+	// 	data := map[string]interface{}{"Identity": e.Identity}
+	// 	msg := map[string]interface{}{"data": data, "type": "reset-all"}
+	// 	e.Identity.send(msg)
+	// } else {
 
-		// this node has not computed its Identity,calling reset explicitly for node
-		e.reset()
-	}
+	// this node has not computed its Identity,calling reset explicitly for node
+	e.reset()
+	// }
 }
 
 func (e *Elastico) execute(epochTxn []Transaction) string {
@@ -3126,6 +3159,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 	return ""
 }
 
+// NewNodeMsg - Msg for new Node
 type NewNodeMsg struct {
 	Identity IDENTITY
 }
@@ -3336,10 +3370,15 @@ func txnHexdigest(txnList []Transaction) string {
 		return hexdigest for a list of transactions
 	*/
 	// ToDo : Sort the Txns based on hash value
-	digest := sha256.New()
+	txnDigestList := make([]string, len(txnList))
 	for i := 0; i < len(txnList); i++ {
 		txnDigest := txnList[i].hexdigest()
-		digest.Write([]byte(txnDigest))
+		txnDigestList[i] = txnDigest
+	}
+	sort.Strings(txnDigestList)
+	digest := sha256.New()
+	for i := 0; i < len(txnDigestList); i++ {
+		digest.Write([]byte(txnDigestList[i]))
 	}
 	hashVal := fmt.Sprintf("%x", digest.Sum(nil)) // hash of the list of txns
 	return hashVal
@@ -3368,7 +3407,6 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 
 				response := node.execute(epochTxn)
 				if response == "reset" {
-					fmt.Println("call for reset")
 					// now reset the node
 					node.executeReset()
 					// adding the value reset for the node in the sharedobj
@@ -3383,6 +3421,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 			}
 			// All the elastico objects has done their reset
 			if int64(len(sharedObj)) == n {
+				log.Warn("exit!")
 				break
 			}
 			// process consume the msgs from the queue
@@ -3390,7 +3429,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 			// networkNodes[nodeIndex] = node
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
-		// time.sleep(60)
+		time.Sleep(time.Minute)
 	}
 }
 
@@ -3434,20 +3473,20 @@ func createNodes() {
 	commitmentSet = make(map[string]bool)
 }
 
-func createRoutines(epochTxns map[int][]Transaction) {
+func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
 	/*
 		create a Go Routine for each elastico node
 	*/
 
 	for nodeIndex := int64(0); nodeIndex < n; nodeIndex++ {
-		go executeSteps(nodeIndex, epochTxns) // start thread
+		go executeSteps(nodeIndex, epochTxns, sharedObj) // start thread
 	}
 }
 
 // Run :- run all the epochs
 func Run(epochTxns map[int][]Transaction) {
 
-	// sharedObj = make(map[int64]bool)
+	sharedObj = make(map[int64]bool)
 
 	createNodes() // create the elastico nodes
 
@@ -3456,7 +3495,7 @@ func Run(epochTxns map[int][]Transaction) {
 	makeFaulty()
 
 	// create the threads
-	createRoutines(epochTxns)
+	createRoutines(epochTxns, sharedObj)
 
 	// log.Warn("LEDGER- , length - ", ledger, len(ledger))
 	// for block in ledger:
