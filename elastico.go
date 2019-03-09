@@ -1092,7 +1092,7 @@ func (e *Elastico) verifySignTxnList(TxnBlockSignature string, TxnBlock []Transa
 	return true
 }
 
-func (e *Elastico) receive(msg msgType) {
+func (e *Elastico) receive(msg msgType, epoch int) {
 	/*
 		method to recieve messages for a node as per the type of a msg
 	*/
@@ -1657,7 +1657,7 @@ func (e *Elastico) constructPrepare(epoch int) []map[string]interface{} {
 
 }
 
-func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
+func (e *Elastico) constructFinalPrepare(epoch int) []map[string]interface{} {
 	/*
 		construct prepare msg in the prepare phase
 	*/
@@ -3042,7 +3042,7 @@ type ResetMsg struct {
 	Identity IDENTITY
 }
 
-func (e *Elastico) executeReset() {
+func (e *Elastico) executeReset(epoch int) {
 	/*
 		call for reset
 	*/
@@ -3330,7 +3330,7 @@ func (e *Elastico) verifyCommit(msg CommitMsg) bool {
 	return true
 }
 
-func (e *Elastico) consumeMsg() {
+func (e *Elastico) consumeMsg(epoch int) {
 	/*
 		consume the msgs for this node
 	*/
@@ -3359,7 +3359,7 @@ func (e *Elastico) consumeMsg() {
 				err := json.Unmarshal(msg.Body, &decoded)
 				failOnError(err, "error in unmarshall", true)
 				// consume the msg by taking the action in receive
-				e.receive(decoded)
+				e.receive(decoded, epoch)
 			}
 		}
 	}
@@ -3426,7 +3426,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 				break
 			}
 			// process consume the msgs from the queue
-			node.consumeMsg()
+			node.consumeMsg(epoch)
 			// networkNodes[nodeIndex] = node
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
@@ -3514,7 +3514,7 @@ func main() {
 	log.SetOutput(file)
 	log.SetLevel(log.InfoLevel) // set the log level
 
-	numOfEpochs := 2 // num of epochs
+	numOfEpochs := 1 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
