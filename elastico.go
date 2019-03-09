@@ -431,8 +431,9 @@ func (t *Transaction) isEqual(transaction Transaction) bool {
 }
 
 type msgType struct {
-	Data json.RawMessage
-	Type string
+	Data  json.RawMessage
+	Type  string
+	Epoch int
 }
 
 // Elastico :- structure of elastico node
@@ -1336,7 +1337,7 @@ func (e *Elastico) executePoW() {
 }
 
 // SendtoFinal :- Each committee member sends the signed value(txn block after intra committee consensus along with signatures to final committee
-func (e *Elastico) SendtoFinal() {
+func (e *Elastico) SendtoFinal(epoch int) {
 
 	for viewID := range e.committedData {
 		committedDataViewID := e.committedData[viewID]
@@ -1354,7 +1355,7 @@ func (e *Elastico) SendtoFinal() {
 		//  here txnBlock is a set, since sets are unordered hence can't sign them. So convert set to list for signing
 		txnBlock := e.txnBlock
 		data := map[string]interface{}{"Txnblock": txnBlock, "Sign": e.signTxnList(txnBlock), "Identity": e.Identity}
-		msg := map[string]interface{}{"data": data, "type": "intraCommitteeBlock"}
+		msg := map[string]interface{}{"data": data, "type": "intraCommitteeBlock", "epoch": epoch}
 		finalID.send(msg)
 	}
 	e.state = ElasticoStates["Intra Consensus Result Sent to Final"]
@@ -1374,13 +1375,13 @@ func (e *Elastico) isFinalMember() bool {
 	return e.isFinal
 }
 
-func (e *Elastico) runPBFT() {
+func (e *Elastico) runPBFT(epoch int) {
 	/*
 		Runs a Pbft instance for the intra-committee consensus
 	*/
 	if e.state == ElasticoStates["PBFT_NONE"] {
 		if e.primary {
-			prePrepareMsg := e.constructPrePrepare() //construct pre-prepare msg
+			prePrepareMsg := e.constructPrePrepare(epoch) //construct pre-prepare msg
 			// multicasts the pre-prepare msg to replicas
 			// ToDo: what if primary does not send the pre-prepare to one of the nodes
 			e.sendPrePrepare(prePrepareMsg)
@@ -1409,7 +1410,7 @@ func (e *Elastico) runPBFT() {
 
 			// construct prepare msg
 			// ToDo: verify whether the pre-prepare msg comes from various primaries or not
-			preparemsgList := e.constructPrepare()
+			preparemsgList := e.constructPrepare(epoch)
 			e.sendPrepare(preparemsgList)
 			e.state = ElasticoStates["PBFT_PREPARE_SENT"]
 		}
@@ -1424,7 +1425,7 @@ func (e *Elastico) runPBFT() {
 
 	} else if e.state == ElasticoStates["PBFT_PREPARED"] {
 
-		commitMsgList := e.constructCommit()
+		commitMsgList := e.constructCommit(epoch)
 		e.sendCommit(commitMsgList)
 		e.state = ElasticoStates["PBFT_COMMIT_SENT"]
 
@@ -1512,7 +1513,7 @@ func (e *Elastico) isPrepared() bool {
 	return false
 }
 
-func (e *Elastico) runFinalPBFT() {
+func (e *Elastico) runFinalPBFT(epoch int) {
 	/*
 		Run PBFT by final committee members
 	*/
@@ -1522,7 +1523,7 @@ func (e *Elastico) runFinalPBFT() {
 
 			fmt.Println("port of final primary- ", e.Port)
 			// construct pre-prepare msg
-			finalPrePreparemsg := e.constructFinalPrePrepare()
+			finalPrePreparemsg := e.constructFinalPrePrepare(epoch)
 			// multicasts the pre-prepare msg to replicas
 			e.sendPrePrepare(finalPrePreparemsg)
 
@@ -1551,7 +1552,7 @@ func (e *Elastico) runFinalPBFT() {
 		if e.primary == false {
 
 			// construct prepare msg
-			FinalpreparemsgList := e.constructFinalPrepare()
+			FinalpreparemsgList := e.constructFinalPrepare(epoch)
 			e.sendPrepare(FinalpreparemsgList)
 			e.state = ElasticoStates["FinalPBFT_PREPARE_SENT"]
 		}
@@ -1565,7 +1566,7 @@ func (e *Elastico) runFinalPBFT() {
 		}
 	} else if e.state == ElasticoStates["FinalPBFT_PREPARED"] {
 
-		commitMsgList := e.constructFinalCommit()
+		commitMsgList := e.constructFinalCommit(epoch)
 		e.sendCommit(commitMsgList)
 		e.state = ElasticoStates["FinalPBFT_COMMIT_SENT"]
 
@@ -1602,7 +1603,7 @@ type PrePrepareMsg struct {
 	Identity       IDENTITY
 }
 
-func (e *Elastico) constructPrePrepare() map[string]interface{} {
+func (e *Elastico) constructPrePrepare(epoch int) map[string]interface{} {
 	/*
 		construct pre-prepare msg , done by primary
 	*/
@@ -1613,7 +1614,7 @@ func (e *Elastico) constructPrePrepare() map[string]interface{} {
 	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
 
 	data := map[string]interface{}{"Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
-	prePrepareMsg := map[string]interface{}{"data": data, "type": "pre-prepare"}
+	prePrepareMsg := map[string]interface{}{"data": data, "type": "pre-prepare", "epoch": epoch}
 	return prePrepareMsg
 }
 
@@ -1632,7 +1633,7 @@ type PrepareMsg struct {
 	Identity    IDENTITY
 }
 
-func (e *Elastico) constructPrepare() []map[string]interface{} {
+func (e *Elastico) constructPrepare(epoch int) []map[string]interface{} {
 	/*
 		construct prepare msg in the prepare phase
 	*/
@@ -1649,7 +1650,7 @@ func (e *Elastico) constructPrepare() []map[string]interface{} {
 		prepareContents := PrepareContents{Type: "prepare", ViewID: e.viewID, Seq: seqnum, Digest: digest}
 		PrepareContentsDigest := e.digestPrepareMsg(prepareContents)
 		data := map[string]interface{}{"PrepareData": prepareContents, "Sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
-		preparemsg := map[string]interface{}{"data": data, "type": "prepare"}
+		preparemsg := map[string]interface{}{"data": data, "type": "prepare", "epoch": epoch}
 		prepareMsgList = append(prepareMsgList, preparemsg)
 	}
 	return prepareMsgList
@@ -1674,7 +1675,7 @@ func (e *Elastico) constructFinalPrepare() []map[string]interface{} {
 
 		data := map[string]interface{}{"PrepareData": prepareContents, "Sign": e.Sign(PrepareContentsDigest), "Identity": e.Identity}
 
-		prepareMsg := map[string]interface{}{"data": data, "type": "Finalprepare"}
+		prepareMsg := map[string]interface{}{"data": data, "type": "Finalprepare", "epoch": epoch}
 		FinalprepareMsgList = append(FinalprepareMsgList, prepareMsg)
 	}
 	return FinalprepareMsgList
@@ -1695,7 +1696,7 @@ type CommitMsg struct {
 	Identity   IDENTITY
 }
 
-func (e *Elastico) constructCommit() []map[string]interface{} {
+func (e *Elastico) constructCommit(epoch int) []map[string]interface{} {
 	/*
 		Construct commit msgs
 	*/
@@ -1710,7 +1711,7 @@ func (e *Elastico) constructCommit() []map[string]interface{} {
 			commitContents := CommitContents{Type: "commit", ViewID: viewID, Seq: seqnum, Digest: digest}
 			commitContentsDigest := e.digestCommitMsg(commitContents)
 			data := map[string]interface{}{"Sign": e.Sign(commitContentsDigest), "CommitData": commitContents, "Identity": e.Identity}
-			commitMsg := map[string]interface{}{"data": data, "type": "commit"}
+			commitMsg := map[string]interface{}{"data": data, "type": "commit", "epoch": epoch}
 			commitMsges = append(commitMsges, commitMsg)
 
 		}
@@ -1719,7 +1720,7 @@ func (e *Elastico) constructCommit() []map[string]interface{} {
 	return commitMsges
 }
 
-func (e *Elastico) constructFinalCommit() []map[string]interface{} {
+func (e *Elastico) constructFinalCommit(epoch int) []map[string]interface{} {
 	/*
 		Construct commit msgs
 	*/
@@ -1735,7 +1736,7 @@ func (e *Elastico) constructFinalCommit() []map[string]interface{} {
 			commitContentsDigest := e.digestCommitMsg(commitContents)
 
 			data := map[string]interface{}{"Sign": e.Sign(commitContentsDigest), "CommitData": commitContents, "Identity": e.Identity}
-			commitMsg := map[string]interface{}{"data": data, "type": "Finalcommit"}
+			commitMsg := map[string]interface{}{"data": data, "type": "Finalcommit", "epoch": epoch}
 			commitMsges = append(commitMsges, commitMsg)
 
 		}
@@ -1771,7 +1772,7 @@ func (e *Elastico) digestCommitMsg(msg CommitContents) []byte {
 	return digest.Sum(nil)
 }
 
-func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
+func (e *Elastico) constructFinalPrePrepare(epoch int) map[string]interface{} {
 	/*
 		construct pre-prepare msg , done by primary final
 	*/
@@ -1782,7 +1783,7 @@ func (e *Elastico) constructFinalPrePrepare() map[string]interface{} {
 	prePrepareContentsDigest := e.digestPrePrepareMsg(prePrepareContents)
 
 	data := map[string]interface{}{"Message": txnBlockList, "PrePrepareData": prePrepareContents, "Sign": e.Sign(prePrepareContentsDigest), "Identity": e.Identity}
-	prePrepareMsg := map[string]interface{}{"data": data, "type": "Finalpre-prepare"}
+	prePrepareMsg := map[string]interface{}{"data": data, "type": "Finalpre-prepare", "epoch": epoch}
 	return prePrepareMsg
 
 }
@@ -1942,7 +1943,7 @@ type CommitmentMsg struct {
 	HashRi   string
 }
 
-func (e *Elastico) sendCommitment() {
+func (e *Elastico) sendCommitment(epoch int) {
 	/*
 		send the H(Ri) to the final committe members.This is done by a final committee member
 	*/
@@ -1953,7 +1954,7 @@ func (e *Elastico) sendCommitment() {
 
 			log.Warn("sent the commitment by", e.Port)
 			data := map[string]interface{}{"Identity": e.Identity, "HashRi": HashRi}
-			msg := map[string]interface{}{"data": data, "type": "hash"}
+			msg := map[string]interface{}{"data": data, "type": "hash", "epoch": epoch}
 			nodeID.send(msg)
 		}
 		e.state = ElasticoStates["CommitmentSentToFinal"]
@@ -2643,7 +2644,7 @@ type Dmsg struct {
 	Identity IDENTITY
 }
 
-func (e *Elastico) formCommittee() {
+func (e *Elastico) formCommittee(epoch int) {
 	/*
 		creates directory committee if not yet created otherwise informs all the directory members
 	*/
@@ -2652,7 +2653,7 @@ func (e *Elastico) formCommittee() {
 		e.isDirectory = true
 
 		data := map[string]interface{}{"Identity": e.Identity}
-		msg := map[string]interface{}{"data": data, "type": "directoryMember"}
+		msg := map[string]interface{}{"data": data, "type": "directoryMember", "epoch": epoch}
 
 		BroadcastToNetwork(msg)
 		// change the state as it is the directory member
@@ -3059,7 +3060,7 @@ func (e *Elastico) executeReset() {
 	// }
 }
 
-func (e *Elastico) execute(epochTxn []Transaction) string {
+func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 	/*
 		executing the functions based on the running state
 	*/
@@ -3073,7 +3074,7 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 	} else if e.state == ElasticoStates["Formed Identity"] {
 
 		// form committee, when formed Identity
-		e.formCommittee()
+		e.formCommittee(epoch)
 	} else if e.isDirectory && e.state == ElasticoStates["RunAsDirectory"] {
 
 		log.Info("The directory member :- ", e.Port)
@@ -3092,17 +3093,17 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 		// initial state for the PBFT
 		e.state = ElasticoStates["PBFT_NONE"]
 		// run PBFT for intra-committee consensus
-		e.runPBFT()
+		e.runPBFT(epoch)
 
 	} else if e.state == ElasticoStates["PBFT_NONE"] || e.state == ElasticoStates["PBFT_PRE_PREPARE"] || e.state == ElasticoStates["PBFT_PREPARE_SENT"] || e.state == ElasticoStates["PBFT_PREPARED"] || e.state == ElasticoStates["PBFT_COMMIT_SENT"] || e.state == ElasticoStates["PBFT_PRE_PREPARE_SENT"] {
 
 		// run pbft for intra consensus
-		e.runPBFT()
+		e.runPBFT(epoch)
 	} else if e.state == ElasticoStates["PBFT_COMMITTED"] {
 
 		// send pbft consensus blocks to final committee members
 		log.Info("pbft finished by members", e.Port)
-		e.SendtoFinal()
+		e.SendtoFinal(epoch)
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["Intra Consensus Result Sent to Final"] {
 
@@ -3114,16 +3115,16 @@ func (e *Elastico) execute(epochTxn []Transaction) string {
 		// final committee member runs final pbft
 		e.state = ElasticoStates["FinalPBFT_NONE"]
 		fmt.Println("start pbft by final member with port--", e.Port)
-		e.runFinalPBFT()
+		e.runFinalPBFT(epoch)
 
 	} else if e.state == ElasticoStates["FinalPBFT_NONE"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE"] || e.state == ElasticoStates["FinalPBFT_PREPARE_SENT"] || e.state == ElasticoStates["FinalPBFT_PREPARED"] || e.state == ElasticoStates["FinalPBFT_COMMIT_SENT"] || e.state == ElasticoStates["FinalPBFT_PRE_PREPARE_SENT"] {
 
-		e.runFinalPBFT()
+		e.runFinalPBFT(epoch)
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["FinalPBFT_COMMITTED"] {
 
 		// send the commitment to other final committee members
-		e.sendCommitment()
+		e.sendCommitment(epoch)
 		log.Warn("pbft finished by final committee", e.Port)
 
 	} else if e.isFinalMember() && e.state == ElasticoStates["CommitmentSentToFinal"] {
@@ -3390,7 +3391,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 	*/
 	defer wg.Done()
 	node := networkNodes[nodeIndex]
-	for _, epochTxn := range epochTxns {
+	for epoch, epochTxn := range epochTxns {
 		// epochTxn holds the txn for the current epoch
 
 		// delete the entry of the node in sharedobj for the next epoch
@@ -3405,10 +3406,10 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 
 			if _, ok := sharedObj[nodeIndex]; ok == false {
 
-				response := node.execute(epochTxn)
+				response := node.execute(epoch, epochTxn)
 				if response == "reset" {
 					// now reset the node
-					node.executeReset()
+					node.executeReset(epoch)
 					// adding the value reset for the node in the sharedobj
 					sharedObj[nodeIndex] = true
 				}
