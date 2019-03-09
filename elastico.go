@@ -191,7 +191,7 @@ type ViewsMsg struct {
 }
 
 // MulticastCommittee :- each node getting views of its committee members from directory members
-func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txns map[int64][]Transaction) {
+func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txns map[int64][]Transaction, epoch int) {
 
 	// get the final committee members with the fixed committee id
 	finalCommitteeMembers := commList[finNum]
@@ -212,7 +212,7 @@ func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txn
 				data["Txns"] = make([]Transaction, 0)
 			}
 			// construct the msg
-			msg := map[string]interface{}{"data": data, "type": "committee members views"}
+			msg := map[string]interface{}{"data": data, "type": "committee members views", "epoch": epoch}
 			// send the committee member views to nodes
 			memberID.send(msg)
 		}
@@ -684,7 +684,7 @@ type PoWmsg struct {
 	Nonce   int
 }
 
-func (e *Elastico) checkCommitteeFull() {
+func (e *Elastico) checkCommitteeFull(epoch int) {
 	/*
 		directory member checks whether the committees are full or not
 	*/
@@ -708,9 +708,9 @@ func (e *Elastico) checkCommitteeFull() {
 		if e.state == ElasticoStates["RunAsDirectory after-TxnReceived"] {
 
 			// notify the final members
-			e.notifyFinalCommittee()
+			e.notifyFinalCommittee(epoch)
 			// multicast the txns and committee members to the nodes
-			MulticastCommittee(commList, e.Identity, e.txn)
+			MulticastCommittee(commList, e.Identity, e.txn, epoch)
 			// change the state after multicast
 			e.state = ElasticoStates["RunAsDirectory after-TxnMulticast"]
 		}
@@ -790,7 +790,7 @@ func (e *Elastico) receiveDirectoryMember(msg msgType) {
 
 }
 
-func (e *Elastico) receiveNewNode(msg msgType) {
+func (e *Elastico) receiveNewNode(msg msgType, epoch int) {
 	var decodeMsg NewNodeMsg
 
 	err := json.Unmarshal(msg.Data, &decodeMsg)
@@ -819,7 +819,7 @@ func (e *Elastico) receiveNewNode(msg msgType) {
 				e.committeeList[identityobj.CommitteeID] = append(e.committeeList[identityobj.CommitteeID], identityobj)
 				if len(e.committeeList[identityobj.CommitteeID]) == c {
 					// check that if all committees are full
-					e.checkCommitteeFull()
+					e.checkCommitteeFull(epoch)
 				}
 			}
 		}
@@ -984,7 +984,7 @@ func mapToList(m map[string]bool) []string {
 }
 
 // BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
-func (e *Elastico) BroadcastFinalTxn() bool {
+func (e *Elastico) BroadcastFinalTxn(epoch int) bool {
 	/*
 		final committee members will broadcast S(commitmentSet), along with final set of
 		X(txn_block) to everyone in the network
@@ -1007,7 +1007,7 @@ func (e *Elastico) BroadcastFinalTxn() bool {
 
 		e.state = ElasticoStates["FinalBlockSent"]
 	}
-	msg := map[string]interface{}{"data": data, "type": "FinalBlock"}
+	msg := map[string]interface{}{"data": data, "type": "FinalBlock", "epoch": epoch}
 	BroadcastToNetwork(msg)
 	return true
 }
@@ -1101,7 +1101,7 @@ func (e *Elastico) receive(msg msgType) {
 		e.receiveDirectoryMember(msg)
 
 	} else if msg.Type == "newNode" && e.isDirectory {
-		e.receiveNewNode(msg)
+		e.receiveNewNode(msg, epoch)
 
 	} else if msg.Type == "committee members views" && e.isDirectory == false {
 		e.receiveViews(msg)
@@ -2660,7 +2660,7 @@ func (e *Elastico) formCommittee(epoch int) {
 		e.state = ElasticoStates["RunAsDirectory"]
 	} else {
 
-		e.SendToDirectory()
+		e.SendToDirectory(epoch)
 		if e.state != ElasticoStates["Receiving Committee Members"] {
 
 			e.state = ElasticoStates["Formed Committee"]
@@ -2975,13 +2975,13 @@ type BroadcastRmsg struct {
 }
 
 // BroadcastR :- broadcast Ri to all the network, final member will do this
-func (e *Elastico) BroadcastR() {
+func (e *Elastico) BroadcastR(epoch int) {
 
 	if e.isFinalMember() {
 
 		data := map[string]interface{}{"Ri": e.Ri, "Identity": e.Identity}
 
-		msg := map[string]interface{}{"data": data, "type": "RandomStringBroadcast"}
+		msg := map[string]interface{}{"data": data, "type": "RandomStringBroadcast", "epoch": epoch}
 
 		e.state = ElasticoStates["BroadcastedR"]
 
@@ -3007,7 +3007,7 @@ type NotifyFinalMsg struct {
 	Identity IDENTITY
 }
 
-func (e *Elastico) notifyFinalCommittee() {
+func (e *Elastico) notifyFinalCommittee(epoch int) {
 	/*
 		notify the members of the final committee that they are the final committee members
 	*/
@@ -3016,7 +3016,7 @@ func (e *Elastico) notifyFinalCommittee() {
 	for _, finalMember := range finalCommList {
 		data := map[string]interface{}{"Identity": e.Identity}
 		// construct the msg
-		msg := map[string]interface{}{"data": data, "type": "notify final member"}
+		msg := map[string]interface{}{"data": data, "type": "notify final member", "epoch": epoch}
 		finalMember.send(msg)
 	}
 }
@@ -3132,7 +3132,7 @@ func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 		// broadcast final txn block to ntw
 		if len(e.commitments) >= c/2+1 {
 			log.Info("commitments received sucess")
-			e.BroadcastFinalTxn()
+			e.BroadcastFinalTxn(epoch)
 		}
 	} else if e.state == ElasticoStates["FinalBlockReceived"] {
 
@@ -3143,7 +3143,7 @@ func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 		// broadcast Ri is done when received commitment has atleast c/2  + 1 signatures
 		if len(e.newRcommitmentSet) >= c/2+1 {
 			log.Info("broadacst R by port--", e.Port)
-			e.BroadcastR()
+			e.BroadcastR(epoch)
 		} else {
 			log.Info("insufficient Rs")
 		}
@@ -3166,14 +3166,14 @@ type NewNodeMsg struct {
 }
 
 // SendToDirectory :- Send about new nodes to directory committee members
-func (e *Elastico) SendToDirectory() {
+func (e *Elastico) SendToDirectory(epoch int) {
 
 	// Add the new processor in particular committee list of directory committee nodes
 	for _, nodeID := range e.curDirectory {
 
 		data := map[string]interface{}{"Identity": e.Identity}
 
-		msg := map[string]interface{}{"data": data, "type": "newNode"}
+		msg := map[string]interface{}{"data": data, "type": "newNode", "epoch": epoch}
 
 		nodeID.send(msg)
 	}
