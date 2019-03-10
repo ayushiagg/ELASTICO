@@ -1231,18 +1231,7 @@ func (e *Elastico) reset() {
 	log.Info("reset!!")
 	e.getIP()
 	e.getKey()
-
-	channel, err := e.connection.Channel()
-	failOnError(err, "Failed to open a channel", true)
-	// close the channel
-	defer channel.Close()
-	nodeport := strconv.Itoa(e.Port)
-	queueName := "hello" + nodeport
-	_, deleteErr := channel.QueueDelete(queueName, false, false, false)
-	failOnError(deleteErr, "Failed to delete queue", true)
-
-	e.getPort()
-
+	// removed queue delete and port update!
 	e.PoW = PoWmsg{}
 	e.PoW.Hash = ""
 	e.PoW.SetOfRs = make([]string, 0)
@@ -3057,6 +3046,7 @@ func (e *Elastico) executeReset(epoch int) {
 
 	// this node has not computed its Identity,calling reset explicitly for node
 	e.reset()
+	log.Warn("executed reset ", e.Port)
 	// }
 }
 
@@ -3514,7 +3504,7 @@ func main() {
 	log.SetOutput(file)
 	log.SetLevel(log.InfoLevel) // set the log level
 
-	numOfEpochs := 1 // num of epochs
+	numOfEpochs := 2 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
