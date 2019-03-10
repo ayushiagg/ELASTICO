@@ -3420,7 +3420,8 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 			// networkNodes[nodeIndex] = node
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
-		time.Sleep(time.Minute)
+		time.Sleep(30 * time.Second)
+		log.Info("Sleep over ", node.Port)
 	}
 }
 
@@ -3504,6 +3505,7 @@ func main() {
 	log.SetOutput(file)
 	log.SetLevel(log.InfoLevel) // set the log level
 
+	log.Info("Start!")
 	numOfEpochs := 2 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
