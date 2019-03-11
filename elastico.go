@@ -49,7 +49,7 @@ var c = 4
 var D = 4
 
 // r - number of bits in random string
-var r int64 = 4
+var r int64 = 8
 
 // finNum - final committee id
 var finNum int64
@@ -60,7 +60,7 @@ var networkNodes []Elastico
 var sharedObj map[int64]bool
 
 // commitmentSet - set of commitments S
-var commitmentSet map[string]bool
+var EpochcommitmentSet map[int]map[string]bool
 
 func failOnError(err error, msg string, exit bool) {
 	// logging the error
@@ -140,7 +140,7 @@ func intersection(set1, set2 map[string]bool) map[string]bool {
 	return intersectSet
 }
 
-func consistencyProtocol() (bool, map[string]bool) {
+func consistencyProtocol(epoch int) (bool, map[string]bool) {
 	/*
 		Agrees on a single set of Hash values(S)
 		presently selecting random c hash of Ris from the total set of commitments
@@ -158,8 +158,8 @@ func consistencyProtocol() (bool, map[string]bool) {
 			}
 		}
 	}
-
-	if len(commitmentSet) == 0 {
+	if len(EpochcommitmentSet[epoch]) == 0 {
+		log.Info("Commitment consistency protocol! Epoch - ", epoch)
 
 		flag := true
 		for _, nodeobj := range networkNodes {
@@ -167,19 +167,19 @@ func consistencyProtocol() (bool, map[string]bool) {
 			// if nodeobj.isFinalMember() {
 			if len(nodeobj.commitments) > 0 {
 				log.Info("see the commitment set--", nodeobj.commitments)
-				if flag && len(commitmentSet) == 0 {
+				if flag && len(EpochcommitmentSet[epoch]) == 0 {
 
 					flag = false
-					commitmentSet = nodeobj.commitments
+					EpochcommitmentSet[epoch] = nodeobj.commitments
 				} else {
 
-					commitmentSet = intersection(commitmentSet, nodeobj.commitments)
+					EpochcommitmentSet[epoch] = intersection(EpochcommitmentSet[epoch], nodeobj.commitments)
 				}
 			}
 		}
-		log.Info("lennnn of comm from interactive consistency--", len(commitmentSet))
+		log.Info("lennnn of comm from interactive consistency--", len(EpochcommitmentSet[epoch]))
 	}
-	return true, commitmentSet
+	return true, EpochcommitmentSet[epoch]
 }
 
 // ViewsMsg - Views of committees
@@ -211,6 +211,7 @@ func MulticastCommittee(commList map[int64][]IDENTITY, identityobj IDENTITY, txn
 			} else {
 				data["Txns"] = make([]Transaction, 0)
 			}
+			fmt.Println("epoch : ", epoch)
 			// construct the msg
 			msg := map[string]interface{}{"data": data, "type": "committee members views", "epoch": epoch}
 			// send the committee member views to nodes
@@ -997,7 +998,7 @@ func (e *Elastico) BroadcastFinalTxn(epoch int) bool {
 		X(txn_block) to everyone in the network
 	*/
 	// ToDo :- implement the consistency protocol
-	boolVal, S := consistencyProtocol()
+	boolVal, S := consistencyProtocol(epoch)
 	if boolVal == false {
 		log.Info("Consistency false")
 		return false
@@ -1180,6 +1181,7 @@ func (e *Elastico) ElasticoInit() {
 
 	e.committeeMembers = make([]IDENTITY, 0)
 
+	e.CommitteeID = -1
 	// for setting EpochRandomness
 	e.initER()
 
@@ -1252,7 +1254,8 @@ func (e *Elastico) reset() {
 
 	e.Identity = IDENTITY{}
 	e.CommitteeID = -1
-	e.Ri = ""
+	var Ri string
+	e.Ri = Ri
 
 	e.isDirectory = false
 	e.isFinal = false
@@ -3029,7 +3032,7 @@ func (e *Elastico) getCommitment() string {
 	commitment := sha256.New()
 	commitment.Write([]byte(e.Ri))
 	hashVal := fmt.Sprintf("%x", commitment.Sum(nil))
-	log.Info("commitment Ri--", e.Ri)
+	log.Info("commitment Ri--", e.Ri, " of port : ", e.Port)
 	log.Info("commitments H(Ri)--", hashVal)
 	return hashVal
 }
@@ -3145,6 +3148,13 @@ func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 			e.BroadcastR(epoch)
 		} else {
 			log.Info("insufficient Rs")
+		}
+	} else if e.state == ElasticoStates["BroadcastedR"] {
+		if len(e.newsetOfRs) >= c/2+1 {
+			log.Info("received the set of Rs")
+			e.state = ElasticoStates["ReceivedR"]
+		} else {
+			log.Info("Insuffice Set of Rs")
 		}
 	} else if e.state == ElasticoStates["ReceivedR"] {
 
@@ -3358,11 +3368,13 @@ func (e *Elastico) consumeMsg(epoch int) {
 				err := json.Unmarshal(msg.Body, &decodedmsg)
 				failOnError(err, "error in unmarshall", true)
 
-				if decodedmsg.Epoch < epoch {
-					log.Warn("Discarding Msgs")
-				} else {
+				if decodedmsg.Epoch == epoch {
 					// consume the msg by taking the action in receive
 					e.receive(decodedmsg, epoch)
+				} else if decodedmsg.Epoch > epoch {
+					log.Warn("Need to requeue msgs! type - ", decodedmsg.Type, " epoch - ", decodedmsg.Epoch, " present epoch : ", epoch)
+				} else {
+					log.Warn("Discarding Msgs type - ", decodedmsg.Type, " epoch - ", decodedmsg.Epoch, " present epoch : ", epoch)
 				}
 			}
 		}
@@ -3389,13 +3401,16 @@ func txnHexdigest(txnList []Transaction) string {
 	return hashVal
 }
 
-func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, numOfEpochs int) {
 	/*
 		A process will execute based on its state and then it will consume
 	*/
 	defer wg.Done()
 	node := networkNodes[nodeIndex]
-	for epoch, epochTxn := range epochTxns {
+
+	for epoch := 0; epoch < numOfEpochs; epoch++ {
+		epochTxn := epochTxns[epoch]
+		log.Info("Start Epoch : ", epoch, " Port : ", node.Port)
 		// epochTxn holds the txn for the current epoch
 
 		// startTime = time.time()
@@ -3452,7 +3467,7 @@ func createTxns() []Transaction {
 	return txns
 }
 
-func createNodes() {
+func createNodes(numOfEpochs int) {
 	/*
 		create the elastico nodes
 	*/
@@ -3463,32 +3478,34 @@ func createNodes() {
 			networkNodes[i].ElasticoInit() //initialise elastico nodes
 		}
 	}
-	commitmentSet = make(map[string]bool)
+	EpochcommitmentSet = make(map[int]map[string]bool)
+	for epoch := 0; epoch < numOfEpochs; epoch++ {
+		EpochcommitmentSet[epoch] = make(map[string]bool)
+	}
 }
 
-func createRoutines(epochTxns map[int][]Transaction, sharedObj map[int64]bool) {
+func createRoutines(epochTxns map[int][]Transaction, numOfEpochs int) {
 	/*
 		create a Go Routine for each elastico node
 	*/
-
 	for nodeIndex := int64(0); nodeIndex < n; nodeIndex++ {
-		go executeSteps(nodeIndex, epochTxns, sharedObj) // start thread
+		go executeSteps(nodeIndex, epochTxns, numOfEpochs) // start thread
 	}
 }
 
 // Run :- run all the epochs
-func Run(epochTxns map[int][]Transaction) {
+func Run(epochTxns map[int][]Transaction, numOfEpochs int) {
 
 	sharedObj = make(map[int64]bool)
 
-	createNodes() // create the elastico nodes
+	createNodes(numOfEpochs) // create the elastico nodes
 
 	// make some nodes malicious and faulty
 	makeMalicious()
 	makeFaulty()
 
 	// create the threads
-	createRoutines(epochTxns, sharedObj)
+	createRoutines(epochTxns, numOfEpochs)
 
 	// log.Warn("LEDGER- , length - ", ledger, len(ledger))
 	// for block in ledger:
@@ -3514,7 +3531,7 @@ func main() {
 	}
 
 	// run all the epochs
-	Run(epochTxns)
+	Run(epochTxns, numOfEpochs)
 
 	wg.Wait()
 }
