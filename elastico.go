@@ -868,7 +868,12 @@ func (e *Elastico) receiveRandomStringBroadcast(msg msgType) {
 			if len(e.newsetOfRs) >= c/2+1 {
 				log.Info("received the set of Rs")
 				e.state = ElasticoStates["ReceivedR"]
+			} else {
+				log.Info("insufficient set of Rs")
 			}
+		} else {
+			log.Warn("Ri's Commitment not found in CommitmentSet Ri -- ", Ri)
+			log.Warn("commitments present ", e.newRcommitmentSet)
 		}
 	} else {
 		log.Error("POW invalid")
@@ -976,9 +981,11 @@ type FinalBlockMsg struct {
 }
 
 func mapToList(m map[string]bool) []string {
-	commitmentList := make([]string, 0)
+	commitmentList := make([]string, len(m))
+	i := 0
 	for commitment := range m {
-		commitmentList = append(commitmentList, commitment)
+		commitmentList[i] = commitment
+		i = i + 1
 	}
 	return commitmentList
 }
@@ -992,7 +999,7 @@ func (e *Elastico) BroadcastFinalTxn(epoch int) bool {
 	// ToDo :- implement the consistency protocol
 	boolVal, S := consistencyProtocol()
 	if boolVal == false {
-
+		log.Info("Consistency false")
 		return false
 	}
 
@@ -1831,6 +1838,7 @@ func (e *Elastico) checkCountForFinalData() {
 			TxnList := e.finalBlockbyFinalCommitteeTxns[txnBlockDigest]
 			//  create the final committed block that contatins the txnlist and set of signatures and identities to that txn list
 			finalCommittedBlock := FinalCommittedBlock{TxnList, e.finalBlockbyFinalCommittee[txnBlockDigest]}
+			log.Info("response received by final committee")
 			//  add the block to the response
 			e.response = append(e.response, finalCommittedBlock)
 
@@ -3043,7 +3051,8 @@ func (e *Elastico) executeReset(epoch int) {
 	// 	msg := map[string]interface{}{"data": data, "type": "reset-all"}
 	// 	e.Identity.send(msg)
 	// } else {
-
+	log.Info("consume msg before reset")
+	e.consumeMsg(epoch)
 	// this node has not computed its Identity,calling reset explicitly for node
 	e.reset()
 	log.Warn("executed reset ", e.Port)
@@ -3337,7 +3346,7 @@ func (e *Elastico) consumeMsg(epoch int) {
 	Queue, err := channel.QueueInspect(queueName)
 	// failOnError(err, "error in inspect", false)
 
-	var decoded msgType
+	var decodedmsg msgType
 	if err == nil {
 		// consume all the messages one by one
 		for ; Queue.Messages > 0; Queue.Messages-- {
@@ -3346,10 +3355,15 @@ func (e *Elastico) consumeMsg(epoch int) {
 			msg, ok, err := channel.Get(Queue.Name, true)
 			failOnError(err, "error in get of queue", true)
 			if ok {
-				err := json.Unmarshal(msg.Body, &decoded)
+				err := json.Unmarshal(msg.Body, &decodedmsg)
 				failOnError(err, "error in unmarshall", true)
-				// consume the msg by taking the action in receive
-				e.receive(decoded, epoch)
+
+				if decodedmsg.Epoch < epoch {
+					log.Warn("Discarding Msgs")
+				} else {
+					// consume the msg by taking the action in receive
+					e.receive(decodedmsg, epoch)
+				}
 			}
 		}
 	}
@@ -3384,44 +3398,31 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, sharedObj ma
 	for epoch, epochTxn := range epochTxns {
 		// epochTxn holds the txn for the current epoch
 
-		// delete the entry of the node in sharedobj for the next epoch
-		if _, ok := sharedObj[nodeIndex]; ok {
-			delete(sharedObj, nodeIndex)
-		}
-
 		// startTime = time.time()
 		for {
 
 			// execute one step of elastico node, execution of a node is done only when it has not done reset
-
-			if _, ok := sharedObj[nodeIndex]; ok == false {
-
-				response := node.execute(epoch, epochTxn)
-				if response == "reset" {
-					// now reset the node
-					node.executeReset(epoch)
-					// adding the value reset for the node in the sharedobj
-					sharedObj[nodeIndex] = true
-				}
-
+			response := node.execute(epoch, epochTxn)
+			if response == "reset" {
+				// now reset the node
+				node.executeReset(epoch)
+				break
 			}
+
+			// }
 			// stop the faulty node in between
 			if node.faulty == true { //and time.time() - startTime >= 60:
 				log.Warn("bye bye!")
 				break
 			}
-			// All the elastico objects has done their reset
-			if int64(len(sharedObj)) == n {
-				log.Warn("exit!")
-				break
-			}
+
 			// process consume the msgs from the queue
 			node.consumeMsg(epoch)
 			// networkNodes[nodeIndex] = node
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
+		log.Info("Sleeping - ", node.Port)
 		time.Sleep(30 * time.Second)
-		log.Info("Sleep over ", node.Port)
 	}
 }
 
