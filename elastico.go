@@ -26,7 +26,7 @@ import (
 )
 
 // ElasticoStates - states reperesenting the running state of the node
-var ElasticoStates = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "FinalBlockSent": 26, "FinalBlockReceived": 27, "BroadcastedR": 28, "ReceivedR": 29, "FinalBlockSentToClient": 30, "LedgerUpdated": 31}
+var ElasticoStates = map[string]int{"NONE": 0, "PoW Computed": 1, "Formed Identity": 2, "Formed Committee": 3, "RunAsDirectory": 4, "RunAsDirectory after-TxnReceived": 5, "RunAsDirectory after-TxnMulticast": 6, "Receiving Committee Members": 7, "PBFT_NONE": 8, "PBFT_PRE_PREPARE": 9, "PBFT_PRE_PREPARE_SENT": 10, "PBFT_PREPARE_SENT": 11, "PBFT_PREPARED": 12, "PBFT_COMMITTED": 13, "PBFT_COMMIT_SENT": 14, "Intra Consensus Result Sent to Final": 15, "Merged Consensus Data": 16, "FinalPBFT_NONE": 17, "FinalPBFT_PRE_PREPARE": 18, "FinalPBFT_PRE_PREPARE_SENT": 19, "FinalPBFT_PREPARE_SENT": 20, "FinalPBFT_PREPARED": 21, "FinalPBFT_COMMIT_SENT": 22, "FinalPBFT_COMMITTED": 23, "PBFT Finished-FinalCommittee": 24, "CommitmentSentToFinal": 25, "InteractiveConsistencyStarted": 33, "InteractiveConsistencyAchieved": 26, "FinalBlockSent": 27, "FinalBlockReceived": 28, "BroadcastedR": 29, "ReceivedR": 30, "FinalBlockSentToClient": 31, "LedgerUpdated": 32}
 
 var wg sync.WaitGroup
 
@@ -56,11 +56,6 @@ var finNum int64
 
 // networkNodes - list of elastico objects
 var networkNodes []Elastico
-
-var sharedObj map[int64]bool
-
-// commitmentSet - set of commitments S
-var EpochcommitmentSet map[int]map[string]bool
 
 func failOnError(err error, msg string, exit bool) {
 	// logging the error
@@ -126,12 +121,12 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 	failOnError(err, "Failed to publish a message", true)
 }
 
-func intersection(set1, set2 map[string]bool) map[string]bool {
+func intersection(set1 map[string]bool, set2 []string) map[string]bool {
 	// This function takes intersection of two maps
 	intersectSet := make(map[string]bool)
 
-	for s1 := range set1 {
-		_, ok := set2[s1]
+	for _, s1 := range set2 {
+		_, ok := set1[s1]
 		if ok == true {
 			intersectSet[s1] = true
 		}
@@ -140,47 +135,47 @@ func intersection(set1, set2 map[string]bool) map[string]bool {
 	return intersectSet
 }
 
-func consistencyProtocol(epoch int) (bool, map[string]bool) {
-	/*
-		Agrees on a single set of Hash values(S)
-		presently selecting random c hash of Ris from the total set of commitments
-	*/
-	// ToDo: implment interactive consistency Protocol
-	commitmentset := make(map[string]bool)
-	for _, node := range networkNodes {
+// func consistencyProtocol(epoch int) (bool, map[string]bool) {
+// 	/*
+// 		Agrees on a single set of Hash values(S)
+// 		presently selecting random c hash of Ris from the total set of commitments
+// 	*/
+// 	// ToDo: implment interactive consistency Protocol
+// 	commitmentset := make(map[string]bool)
+// 	for _, node := range networkNodes {
 
-		// if node.isFinalMember() {
-		if len(node.commitments) > 0 {
-			if len(node.commitments) <= c/2 {
+// 		// if node.isFinalMember() {
+// 		if len(node.commitments) > 0 {
+// 			if len(node.commitments) <= c/2 {
 
-				log.Warn("insufficientCommitments")
-				return false, commitmentset
-			}
-		}
-	}
-	if len(EpochcommitmentSet[epoch]) == 0 {
-		log.Info("Commitment consistency protocol! Epoch - ", epoch)
+// 				log.Warn("insufficientCommitments")
+// 				return false, commitmentset
+// 			}
+// 		}
+// 	}
+// 	if len(EpochcommitmentSet[epoch]) == 0 {
+// 		log.Info("Commitment consistency protocol! Epoch - ", epoch)
 
-		flag := true
-		for _, nodeobj := range networkNodes {
+// 		flag := true
+// 		for _, nodeobj := range networkNodes {
 
-			// if nodeobj.isFinalMember() {
-			if len(nodeobj.commitments) > 0 {
-				log.Info("see the commitment set--", nodeobj.commitments)
-				if flag && len(EpochcommitmentSet[epoch]) == 0 {
+// 			// if nodeobj.isFinalMember() {
+// 			if nodeobj.isFinalMember() {
+// 				log.Info("see the commitment set-- by port ", nodeobj.Port, nodeobj.commitments)
+// 				if flag && len(EpochcommitmentSet[epoch]) == 0 {
 
-					flag = false
-					EpochcommitmentSet[epoch] = nodeobj.commitments
-				} else {
+// 					flag = false
+// 					EpochcommitmentSet[epoch] = nodeobj.commitments
+// 				} else {
 
-					EpochcommitmentSet[epoch] = intersection(EpochcommitmentSet[epoch], nodeobj.commitments)
-				}
-			}
-		}
-		log.Info("lennnn of comm from interactive consistency--", len(EpochcommitmentSet[epoch]))
-	}
-	return true, EpochcommitmentSet[epoch]
-}
+// 					EpochcommitmentSet[epoch] = intersection(EpochcommitmentSet[epoch], nodeobj.commitments)
+// 				}
+// 			}
+// 		}
+// 		log.Info("lennnn of comm from interactive consistency--", len(EpochcommitmentSet[epoch]))
+// 	}
+// 	return true, EpochcommitmentSet[epoch]
+// }
 
 // ViewsMsg - Views of committees
 type ViewsMsg struct {
@@ -534,6 +529,7 @@ type Elastico struct {
 	FinalcommitMsgLog     map[int]map[int]map[string][]CommitMsgData
 	FinalpreparedData     map[int]map[int][]Transaction
 	FinalcommittedData    map[int]map[int][]Transaction
+	EpochcommitmentSet    map[string]bool
 }
 
 // FinalBlockData - final block data
@@ -988,7 +984,54 @@ func mapToList(m map[string]bool) []string {
 		commitmentList[i] = commitment
 		i = i + 1
 	}
+	sort.Strings(commitmentList)
+	log.Info("commitmentList - ", commitmentList)
 	return commitmentList
+}
+
+type IntraConsistencyMsg struct {
+	Identity    IDENTITY
+	commitments []string
+}
+
+func (e *Elastico) RunInteractiveConsistency(epoch int) {
+	/*
+		send the H(Ri) to the final committe members.This is done by a final committee member
+	*/
+	if e.isFinalMember() == true {
+		for _, nodeID := range e.committeeMembers {
+
+			log.Warn("sent the Int. commitments ", e.Port, " to ", nodeID.Port)
+			commitments := mapToList(e.commitments)
+			data := map[string]interface{}{"Identity": e.Identity, "commitments": commitments}
+			msg := map[string]interface{}{"data": data, "type": "InteractiveConsistency", "epoch": epoch}
+			nodeID.send(msg)
+		}
+		e.state = ElasticoStates["InteractiveConsistencyStarted"]
+	}
+}
+
+func (e *Elastico) receiveConsistency(msg msgType) {
+	// receive consistency msgs
+	var decodeMsg IntraConsistencyMsg
+	err := json.Unmarshal(msg.Data, &decodeMsg)
+	failOnError(err, "error in unmarshal intra committee block", true)
+
+	identityobj := decodeMsg.Identity
+
+	if e.verifyPoW(identityobj) {
+		commitments := decodeMsg.commitments
+		if len(e.EpochcommitmentSet) == 0 {
+			for _, commitment := range commitments {
+				e.EpochcommitmentSet[commitment] = true
+			}
+		} else {
+			e.EpochcommitmentSet = intersection(e.EpochcommitmentSet, commitments)
+		}
+		log.Info("received Int. Consistency commitments! ", len(e.EpochcommitmentSet), " port :", e.Port, " commitments : ", commitments)
+	} else {
+		log.Error("pow invalid for intra committee block")
+	}
 }
 
 // BroadcastFinalTxn :- final committee members will broadcast S(commitmentSet), along with final set of X(txn_block) to everyone in the network
@@ -998,13 +1041,13 @@ func (e *Elastico) BroadcastFinalTxn(epoch int) bool {
 		X(txn_block) to everyone in the network
 	*/
 	// ToDo :- implement the consistency protocol
-	boolVal, S := consistencyProtocol(epoch)
-	if boolVal == false {
-		log.Info("Consistency false")
-		return false
-	}
+	// boolVal, S := consistencyProtocol(epoch)
+	// if boolVal == false {
+	// 	log.Info("Consistency false")
+	// 	return false
+	// }
 
-	commitmentList := mapToList(S)
+	commitmentList := mapToList(e.EpochcommitmentSet)
 	commitmentDigest := e.digestCommitments(commitmentList)
 	data := map[string]interface{}{"CommitSet": commitmentList, "Signature": e.Sign(commitmentDigest), "Identity": e.Identity, "FinalBlock": e.finalBlock.Txns, "FinalBlockSign": e.signTxnList(e.finalBlock.Txns)}
 	log.Warn("finalblock-", e.finalBlock.Txns)
@@ -1126,6 +1169,10 @@ func (e *Elastico) receive(msg msgType, epoch int) {
 	} else if msg.Type == "intraCommitteeBlock" && e.isFinalMember() {
 
 		e.receiveIntraCommitteeBlock(msg)
+	} else if msg.Type == "InteractiveConsistency" && e.isFinalMember() {
+
+		e.receiveConsistency(msg)
+
 	} else if msg.Type == "notify final member" {
 		log.Info("notifying final member ", e.Port)
 		var decodeMsg NotifyFinalMsg
@@ -1231,6 +1278,7 @@ func (e *Elastico) ElasticoInit() {
 	e.FinalcommitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
 	e.FinalpreparedData = make(map[int]map[int][]Transaction)
 	e.FinalcommittedData = make(map[int]map[int][]Transaction)
+	e.EpochcommitmentSet = make(map[string]bool)
 }
 
 func (e *Elastico) reset() {
@@ -1299,6 +1347,7 @@ func (e *Elastico) reset() {
 	e.FinalcommitMsgLog = make(map[int]map[int]map[string][]CommitMsgData)
 	e.FinalpreparedData = make(map[int]map[int][]Transaction)
 	e.FinalcommittedData = make(map[int]map[int][]Transaction)
+	e.EpochcommitmentSet = make(map[string]bool)
 }
 
 func (e *Elastico) getCommitteeid() {
@@ -1952,7 +2001,7 @@ func (e *Elastico) sendCommitment(epoch int) {
 		HashRi := e.getCommitment()
 		for _, nodeID := range e.committeeMembers {
 
-			log.Warn("sent the commitment by", e.Port)
+			log.Warn("sent the commitment by ", e.Port, " to ", nodeID.Port)
 			data := map[string]interface{}{"Identity": e.Identity, "HashRi": HashRi}
 			msg := map[string]interface{}{"data": data, "type": "hash", "epoch": epoch}
 			nodeID.send(msg)
@@ -2978,7 +3027,7 @@ type BroadcastRmsg struct {
 func (e *Elastico) BroadcastR(epoch int) {
 
 	if e.isFinalMember() {
-
+		log.Info("Broadcast Ri , -", e.Ri, " by ", e.Port)
 		data := map[string]interface{}{"Ri": e.Ri, "Identity": e.Identity}
 
 		msg := map[string]interface{}{"data": data, "type": "RandomStringBroadcast", "epoch": epoch}
@@ -3134,8 +3183,19 @@ func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 		// broadcast final txn block to ntw
 		if len(e.commitments) >= c/2+1 {
 			log.Info("commitments received sucess")
-			e.BroadcastFinalTxn(epoch)
+			e.RunInteractiveConsistency(epoch)
 		}
+	} else if e.isFinalMember() && e.state == ElasticoStates["InteractiveConsistencyStarted"] {
+		if len(e.EpochcommitmentSet) >= c/2+1 {
+			e.state = ElasticoStates["InteractiveConsistencyAchieved"]
+		} else {
+			log.Warn("Int. Consistency short : ", len(e.EpochcommitmentSet), " port :", e.Port)
+		}
+	} else if e.isFinalMember() && e.state == ElasticoStates["InteractiveConsistencyAchieved"] {
+
+		// broadcast final txn block to ntw
+		log.Info("Consistency received sucess")
+		e.BroadcastFinalTxn(epoch)
 	} else if e.state == ElasticoStates["FinalBlockReceived"] {
 
 		e.checkCountForFinalData()
@@ -3153,9 +3213,10 @@ func (e *Elastico) execute(epoch int, epochTxn []Transaction) string {
 		if len(e.newsetOfRs) >= c/2+1 {
 			log.Info("received the set of Rs")
 			e.state = ElasticoStates["ReceivedR"]
-		} else {
-			log.Info("Insuffice Set of Rs")
 		}
+		//  else {
+		// 	log.Info("Insuffice Set of Rs")
+		// }
 	} else if e.state == ElasticoStates["ReceivedR"] {
 
 		e.appendToLedger()
@@ -3477,10 +3538,6 @@ func createNodes(numOfEpochs int) {
 		for i := int64(0); i < n; i++ {
 			networkNodes[i].ElasticoInit() //initialise elastico nodes
 		}
-	}
-	EpochcommitmentSet = make(map[int]map[string]bool)
-	for epoch := 0; epoch < numOfEpochs; epoch++ {
-		EpochcommitmentSet[epoch] = make(map[string]bool)
 	}
 }
 
