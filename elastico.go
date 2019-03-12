@@ -3580,7 +3580,7 @@ func main() {
 	log.SetLevel(log.InfoLevel) // set the log level
 
 	log.Info("Start!")
-	numOfEpochs := 2 // num of epochs
+	numOfEpochs := 3 // num of epochs
 	epochTxns := make(map[int][]Transaction)
 	for epoch := 0; epoch < numOfEpochs; epoch++ {
 		epochTxns[epoch] = createTxns()
