@@ -991,7 +991,7 @@ func mapToList(m map[string]bool) []string {
 
 type IntraConsistencyMsg struct {
 	Identity    IDENTITY
-	commitments []string
+	Commitments []string
 }
 
 func (e *Elastico) RunInteractiveConsistency(epoch int) {
@@ -1020,7 +1020,7 @@ func (e *Elastico) receiveConsistency(msg msgType) {
 	identityobj := decodeMsg.Identity
 
 	if e.verifyPoW(identityobj) {
-		commitments := decodeMsg.commitments
+		commitments := decodeMsg.Commitments
 		if len(e.EpochcommitmentSet) == 0 {
 			for _, commitment := range commitments {
 				e.EpochcommitmentSet[commitment] = true
@@ -3500,6 +3500,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, numOfEpochs 
 		log.Info("Sleeping - ", node.Port)
 		time.Sleep(30 * time.Second)
 	}
+	log.Info("All Epochs Finished by : ", node.Port)
 }
 
 func (e *Elastico) hexdigest(data string) string {
@@ -3552,8 +3553,6 @@ func createRoutines(epochTxns map[int][]Transaction, numOfEpochs int) {
 
 // Run :- run all the epochs
 func Run(epochTxns map[int][]Transaction, numOfEpochs int) {
-
-	sharedObj = make(map[int64]bool)
 
 	createNodes(numOfEpochs) // create the elastico nodes
 
