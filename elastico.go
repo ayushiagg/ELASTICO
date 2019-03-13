@@ -123,16 +123,16 @@ func publishMsg(channel *amqp.Channel, queueName string, msg map[string]interfac
 
 func intersection(set1 map[string]bool, set2 []string) map[string]bool {
 	// This function takes intersection of two maps
-	intersectSet := make(map[string]bool)
+	// intersectSet := make(map[string]bool)
 
 	for _, s1 := range set2 {
-		_, ok := set1[s1]
-		if ok == true {
-			intersectSet[s1] = true
-		}
+		// _, ok := set1[s1]
+		// if ok == true {
+		set1[s1] = true
+		// }
 	}
 
-	return intersectSet
+	return set1
 }
 
 // func consistencyProtocol(epoch int) (bool, map[string]bool) {
@@ -3103,8 +3103,8 @@ func (e *Elastico) executeReset(epoch int) {
 	// 	msg := map[string]interface{}{"data": data, "type": "reset-all"}
 	// 	e.Identity.send(msg)
 	// } else {
-	log.Info("consume msg before reset")
-	e.consumeMsg(epoch)
+	// log.Info("consume msg before reset")
+	// e.consumeMsg(epoch)
 	// this node has not computed its Identity,calling reset explicitly for node
 	e.reset()
 	log.Warn("executed reset ", e.Port)
