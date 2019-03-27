@@ -3420,6 +3420,7 @@ func (e *Elastico) consumeMsg(epoch int) {
 	var decodedmsg msgType
 	if err == nil {
 		// consume all the messages one by one
+		var requeueMsgs [][]byte
 		for ; Queue.Messages > 0; Queue.Messages-- {
 
 			// get the message from the queue
@@ -3433,11 +3434,25 @@ func (e *Elastico) consumeMsg(epoch int) {
 					// consume the msg by taking the action in receive
 					e.receive(decodedmsg, epoch)
 				} else if decodedmsg.Epoch > epoch {
+					requeueMsgs = append(requeueMsgs, msg.Body)
 					log.Warn("Need to requeue msgs! type - ", decodedmsg.Type, " epoch - ", decodedmsg.Epoch, " present epoch : ", epoch)
 				} else {
 					log.Warn("Discarding Msgs type - ", decodedmsg.Type, " epoch - ", decodedmsg.Epoch, " present epoch : ", epoch)
 				}
 			}
+		}
+		// requeue the messages of future epochs
+		for _, msg := range requeueMsgs {
+			err := channel.Publish(
+				"",         // exchange
+				Queue.Name, // routing key
+				false,      // mandatory
+				false,      // immediate
+				amqp.Publishing{
+					ContentType: "text/plain",
+					Body:        msg,
+				})
+			failOnError(err, "fail to requeue", true)
 		}
 	}
 }
@@ -3498,7 +3513,7 @@ func executeSteps(nodeIndex int64, epochTxns map[int][]Transaction, numOfEpochs 
 		}
 		// Ensuring that all nodes are reset and sharedobj is not affected
 		log.Info("Sleeping - ", node.Port)
-		time.Sleep(30 * time.Second)
+		// time.Sleep(30 * time.Second)
 	}
 	log.Info("All Epochs Finished by : ", node.Port)
 }
